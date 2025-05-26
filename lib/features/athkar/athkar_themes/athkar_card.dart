@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:share_plus/share_plus.dart';
 import '../../../app/themes/theme_constants.dart';
-import '../../../app/themes/glassmorphism_widgets.dart';
+import '../../../app/themes/widgets/glassmorphism_widgets.dart';
 import '../../../app/themes/app_theme.dart';
 import 'action_buttons.dart';
 

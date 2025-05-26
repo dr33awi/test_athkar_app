@@ -15,7 +15,7 @@ import '../../data/utils/icon_helper.dart';
 import '../../domain/entities/athkar.dart';
 import '../../../../app/themes/loading_widget.dart';
 import '../../../../app/themes/theme_constants.dart';
-import '../../../../app/themes/glassmorphism_widgets.dart';
+import '../../../../app/themes/widgets/glassmorphism_widgets.dart';
 import '../../../../app/themes/screen_template.dart';
 import '../../../../app/themes/app_theme.dart';
 

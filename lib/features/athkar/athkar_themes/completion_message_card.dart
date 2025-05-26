@@ -1,6 +1,6 @@
 // lib/app/widgets/completion_message_card.dart
 import 'package:athkar_app/app/themes/app_theme.dart';
-import 'package:athkar_app/app/themes/glassmorphism_widgets.dart';
+import 'package:athkar_app/app/themes/widgets/glassmorphism_widgets.dart';
 import 'package:athkar_app/app/themes/theme_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';

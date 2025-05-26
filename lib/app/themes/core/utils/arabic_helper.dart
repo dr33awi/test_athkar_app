@@ -1,6 +1,6 @@
 // lib/app/themes/arabic_theme_helper.dart
 import 'package:flutter/material.dart';
-import '../theme_constants.dart';
+import '../../theme_constants.dart';
 
 /// مساعد للثيم العربي - يوفر خصائص وتنسيقات مناسبة للتطبيقات العربية
 class ArabicThemeHelper {

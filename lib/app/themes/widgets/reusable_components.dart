@@ -1,5 +1,5 @@
 // lib/app/themes/reusable_components.dart
-import 'package:athkar_app/app/themes/glassmorphism_widgets.dart';
+import 'package:athkar_app/app/themes/widgets/glassmorphism_widgets.dart';
 import 'package:athkar_app/app/themes/theme_constants.dart';
 import 'package:athkar_app/app/themes/app_theme.dart';
 import 'package:flutter/material.dart';
