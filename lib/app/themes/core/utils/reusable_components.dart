@@ -549,7 +549,7 @@ class ThemedEmptyMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final Color surfaceContainerHighestColor = theme.colorScheme.surfaceContainerHighest ?? theme.cardTheme.color ?? theme.colorScheme.surface;
+    final Color surfaceContainerHighestColor = theme.colorScheme.surfaceContainerHighest;
 
     return Center(
       child: Padding(

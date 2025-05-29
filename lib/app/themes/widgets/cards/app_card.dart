@@ -250,7 +250,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
             width: AppDimens.borderThin,
           ),
         );
-      case CardStyle.outlined:
+        case CardStyle.outlined:
         return BoxDecoration(
           borderRadius: borderRadius,
           color: cardBgColor,
@@ -259,8 +259,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
             width: AppDimens.borderMedium,
           ),
         );
-      case CardStyle.normal: // Fallthrough intended if default is the same
-      default: // Should be last or ensure all cases are handled if no fallthrough
+      case CardStyle.normal:
         return BoxDecoration(
           borderRadius: borderRadius,
           color: cardBgColor,
