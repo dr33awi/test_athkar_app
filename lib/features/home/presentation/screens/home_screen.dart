@@ -1,6 +1,6 @@
 // lib/features/home/presentation/screens/home_screen.dart
 import 'package:athkar_app/app/themes/widgets/glassmorphism_widgets.dart';
-import 'package:athkar_app/app/themes/widgets/reusable_components.dart';
+import 'package:athkar_app/app/themes/core/utils/reusable_components.dart';
 import 'package:athkar_app/app/themes/screen_template.dart';
 import 'package:athkar_app/app/themes/theme_constants.dart';
 import 'package:athkar_app/app/themes/app_theme.dart';
