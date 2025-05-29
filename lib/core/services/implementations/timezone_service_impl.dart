@@ -1,130 +1,131 @@
 // lib/core/services/implementations/timezone_service_impl.dart
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart'; // <--- تم الحذف: استيراد غير مستخدم
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_native_timezone_latest/flutter_native_timezone_latest.dart';
 import '../interfaces/timezone_service.dart';
+import '../interfaces/logger_service.dart';
+import '../../../app/di/service_locator.dart';
 
 class TimezoneServiceImpl implements TimezoneService {
+  final LoggerService _logger;
   bool _isInitialized = false;
+
+  TimezoneServiceImpl({LoggerService? logger})
+      : _logger = logger ?? getIt<LoggerService>() {
+    _logger.debug(message: 'TimezoneServiceImpl initialized');
+  }
 
   @override
   Future<void> initializeTimeZones() async {
-    if (_isInitialized) return;
-    
-    // Inicializar las zonas horarias
+    if (_isInitialized) {
+      _logger.debug(message: 'Timezones already initialized.');
+      return;
+    }
+
+    _logger.debug(message: 'Initializing timezones data...');
     tz_data.initializeTimeZones();
-    
+
     try {
-      // Obtener la zona horaria local usando flutter_native_timezone_latest
       final String timeZoneName = await FlutterNativeTimezoneLatest.getLocalTimezone();
-      
-      debugPrint('Zona horaria detectada: $timeZoneName');
-      
-      // Establecer la zona horaria local
+      _logger.info(message: 'Native timezone detected: $timeZoneName');
       tz.setLocalLocation(tz.getLocation(timeZoneName));
-    } catch (e) {
-      debugPrint('Error al configurar la zona horaria local: $e');
-      // Fallback a detectar por offset si no se puede usar la biblioteca nativa
+    } catch (e, s) {
+      // <--- تم التعديل: تصحيح استدعاء logger.warning
+      _logger.warning(
+          message: 'Error setting local timezone via native library: ${e.toString()}. Falling back to offset detection.',
+          data: {'error': e, 'stackTrace': s.toString()});
       try {
-        final String timeZone = await _detectTimeZoneFromOffset();
-        tz.setLocalLocation(tz.getLocation(timeZone));
-      } catch (e2) {
-        // Usar UTC como fallback final
-        debugPrint('Error al detectar zona horaria por offset: $e2');
+        final String timeZoneFromOffset = await _detectTimeZoneFromOffset();
+        _logger.info(message: 'Timezone detected from offset: $timeZoneFromOffset');
+        tz.setLocalLocation(tz.getLocation(timeZoneFromOffset));
+      } catch (e2, s2) {
+        // <--- تم التعديل: التأكد من صحة استدعاء logger.error
+        _logger.error(
+            message: 'Error detecting timezone from offset. Falling back to UTC.',
+            error: e2, // هذا صحيح حسب الواجهة
+            stackTrace: s2); // هذا صحيح حسب الواجهة
         tz.setLocalLocation(tz.getLocation('Etc/UTC'));
       }
     }
-    
+
     _isInitialized = true;
-    debugPrint('TimezoneService inicializado. Zona horaria local: ${tz.local.name}');
+    _logger.info(message: 'TimezoneService initialization complete. Local timezone set to: ${tz.local.name}');
   }
 
   @override
   Future<String> getLocalTimezone() async {
+    if (!_isInitialized) {
+      _logger.warning(message: "getLocalTimezone called before initializeTimeZones. Initializing now.");
+      await initializeTimeZones();
+    }
     try {
-      // Intentar obtener la zona horaria con la biblioteca nativa
       return await FlutterNativeTimezoneLatest.getLocalTimezone();
-    } catch (e) {
-      debugPrint('Error al obtener zona horaria nativa: $e');
+    } catch (e, s) {
+      _logger.warning(
+          message: 'Error getting native timezone: ${e.toString()}. Falling back to offset detection.',
+          data: {'error': e, 'stackTrace': s.toString()});
       return await _detectTimeZoneFromOffset();
     }
   }
 
-  /// Método de respaldo para detectar la zona horaria basada en el offset
   Future<String> _detectTimeZoneFromOffset() async {
     final DateTime now = DateTime.now();
     final Duration offset = now.timeZoneOffset;
-    
-    // Mapa de offsets comunes a zonas horarias
+    _logger.debug(message: "Attempting to detect timezone from offset: $offset");
+
+    // الخريطة هنا هي تبسيط وقد لا تكون دقيقة تمامًا لجميع الحالات (مثل التوقيت الصيفي).
+    // يفضل الاعتماد على flutter_native_timezone_latest قدر الإمكان.
     final Map<Duration, String> commonTimeZones = {
       const Duration(hours: 0): 'Etc/UTC',
       const Duration(hours: 1): 'Europe/Paris',
-      const Duration(hours: 2): 'Europe/Cairo',
-      const Duration(hours: 3): 'Asia/Riyadh',
+      const Duration(hours: 2): 'Africa/Cairo', // أو Europe/Helsinki, Europe/Bucharest الخ
+      const Duration(hours: 3): 'Asia/Riyadh', // أو Europe/Moscow
       const Duration(hours: 4): 'Asia/Dubai',
       const Duration(hours: 5): 'Asia/Karachi',
       const Duration(hours: 5, minutes: 30): 'Asia/Kolkata',
-      const Duration(hours: 6): 'Asia/Dhaka',
-      const Duration(hours: 7): 'Asia/Bangkok',
-      const Duration(hours: 8): 'Asia/Shanghai',
-      const Duration(hours: 9): 'Asia/Tokyo',
-      const Duration(hours: 10): 'Australia/Sydney',
-      const Duration(hours: 11): 'Pacific/Noumea',
-      const Duration(hours: 12): 'Pacific/Auckland',
-      const Duration(hours: -1): 'Atlantic/Azores',
-      const Duration(hours: -2): 'America/Noronha',
-      const Duration(hours: -3): 'America/Sao_Paulo',
-      const Duration(hours: -4): 'America/New_York',
-      const Duration(hours: -5): 'America/Chicago',
-      const Duration(hours: -6): 'America/Denver',
-      const Duration(hours: -7): 'America/Los_Angeles',
-      const Duration(hours: -8): 'Pacific/Honolulu',
-      const Duration(hours: -9): 'Pacific/Marquesas',
-      const Duration(hours: -10): 'Pacific/Samoa',
+      // يمكن إضافة المزيد من المناطق الشائعة هنا
     };
-    
-    // Tratar de encontrar una coincidencia exacta
+
     if (commonTimeZones.containsKey(offset)) {
-      return commonTimeZones[offset]!;
+      final matchedZone = commonTimeZones[offset]!;
+      _logger.info(message: "Found exact offset match: $matchedZone for offset $offset");
+      return matchedZone;
     }
-    
-    // Si no hay coincidencia exacta, buscar la más cercana
-    var closestOffset = const Duration(hours: 0);
-    var minDifference = const Duration(hours: 24);
-    
-    for (var tzOffset in commonTimeZones.keys) {
-      final difference = Duration(
-        microseconds: (offset.inMicroseconds - tzOffset.inMicroseconds).abs()
-      );
-      
-      if (difference < minDifference) {
-        minDifference = difference;
-        closestOffset = tzOffset;
-      }
-    }
-    
-    return commonTimeZones[closestOffset] ?? 'Etc/UTC';
+    _logger.warning(message: "No exact offset match found for $offset. Returning UTC as fallback.");
+    return 'Etc/UTC';
   }
 
   @override
   tz.TZDateTime getLocalTZDateTime(DateTime dateTime) {
+    if (!_isInitialized) {
+      _logger.warning(message: "getLocalTZDateTime called before timezones initialized. TZDateTime might use default/uninitialized tz.local.");
+      // Consider throwing an exception or awaiting initializeTimeZones() if critical.
+    }
     return tz.TZDateTime.from(dateTime, tz.local);
   }
 
   @override
   tz.TZDateTime nowLocal() {
+    if (!_isInitialized) {
+      _logger.warning(message: "nowLocal called before timezones initialized. TZDateTime might use default/uninitialized tz.local.");
+    }
     return tz.TZDateTime.now(tz.local);
   }
 
   @override
   tz.TZDateTime fromDateTime(DateTime dateTime) {
+     if (!_isInitialized) {
+       _logger.warning(message: "fromDateTime called before timezones initialized. TZDateTime might use default/uninitialized tz.local.");
+    }
     return tz.TZDateTime.from(dateTime, tz.local);
   }
 
   @override
   tz.TZDateTime getNextDateTimeInstance(DateTime dateTime) {
+    if (!_isInitialized) {
+       _logger.warning(message: "getNextDateTimeInstance called before timezones initialized. Scheduling might use incorrect local zone.");
+    }
     final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate = tz.TZDateTime(
       tz.local,
@@ -137,30 +138,25 @@ class TimezoneServiceImpl implements TimezoneService {
     );
 
     if (scheduledDate.isBefore(now)) {
-      // Si ya pasó, programar para el día siguiente
-      if (dateTime.hour == 0 && dateTime.minute == 0) {
-        scheduledDate = scheduledDate.add(const Duration(days: 1));
-      } else {
-        final Duration difference = now.difference(scheduledDate);
-        if (difference.inHours < 24) {
-          scheduledDate = scheduledDate.add(const Duration(days: 1));
-        } else {
-          final int daysToAdd = (difference.inHours / 24).ceil();
-          scheduledDate = scheduledDate.add(Duration(days: daysToAdd));
-        }
-      }
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+      _logger.debug(message: "Original scheduled date ($dateTime) was in the past. Moved to next day: $scheduledDate");
     }
-
     return scheduledDate;
   }
 
   @override
   tz.TZDateTime getDateTimeInTimeZone(DateTime dateTime, String timeZoneId) {
+    if (!_isInitialized) {
+       _logger.warning(message: "getDateTimeInTimeZone called before timezones initialized.");
+    }
     try {
       final location = tz.getLocation(timeZoneId);
       return tz.TZDateTime.from(dateTime, location);
-    } catch (e) {
-      debugPrint('Error al convertir a zona horaria $timeZoneId: $e');
+    } catch (e, s) {
+      _logger.error(
+          message: 'Error converting DateTime to timezone $timeZoneId. Falling back to local TZDateTime.',
+          error: e,
+          stackTrace: s);
       return getLocalTZDateTime(dateTime);
     }
   }
