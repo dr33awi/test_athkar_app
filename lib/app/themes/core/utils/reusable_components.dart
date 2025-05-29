@@ -1,9 +1,9 @@
-// lib/app/themes/reusable_components.dart
-import 'package:athkar_app/app/themes/widgets/glassmorphism_widgets.dart';
-import 'package:athkar_app/app/themes/theme_constants.dart';
-import 'package:athkar_app/app/themes/app_theme.dart';
+// lib/app/themes/core/utils/reusable_components.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../constants/app_colors.dart';
+import '../../constants/app_dimensions.dart';
+import '../../constants/app_typography.dart';
 
 /// عنوان قسم متناسق مع الثيم
 class ThemedSectionHeader extends StatelessWidget {
@@ -24,32 +24,34 @@ class ThemedSectionHeader extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: ThemeSizes.marginSmall, 
-        vertical: ThemeSizes.marginMedium,
+      padding: EdgeInsets.symmetric(
+        horizontal: AppDimens.space2, 
+        vertical: AppDimens.space4,
       ),
       child: Row(
         children: [
           if (icon != null) ...[
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: AppTheme.getPrimaryColor(context).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(ThemeSizes.borderRadiusMedium),
+                color: theme.primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               ),
               child: Icon(
                 icon,
-                color: AppTheme.getPrimaryColor(context),
+                color: theme.primaryColor,
                 size: 20,
               ),
             ),
-            const SizedBox(width: ThemeSizes.marginMedium),
+            SizedBox(width: AppDimens.space4),
           ],
           Expanded(
             child: Text(
               title,
-              style: AppTheme.getHeadingStyle(context, fontSize: 18),
+              style: theme.textTheme.headlineSmall,
             ),
           ),
           if (onActionPressed != null) 
@@ -64,9 +66,9 @@ class ThemedSectionHeader extends StatelessWidget {
                 onActionPressed!();
               },
               style: TextButton.styleFrom(
-                foregroundColor: AppTheme.getAccentColor(context),
-                textStyle: const TextStyle(
-                  fontFamily: 'Cairo',
+                foregroundColor: AppColors.accent,
+                textStyle: TextStyle(
+                  fontFamily: AppTypography.fontFamilyArabic,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -99,65 +101,73 @@ class ThemedInfoCard extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return SoftCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(ThemeSizes.marginMedium),
-      borderRadius: ThemeSizes.borderRadiusLarge,
-      hasBorder: true,
-      child: Row(
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: (iconColor ?? AppTheme.getPrimaryColor(context)).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(ThemeSizes.borderRadiusMedium),
-            ),
-            child: Icon(
-              icon,
-              color: iconColor ?? AppTheme.getPrimaryColor(context),
-              size: 26,
-            ),
-          ),
-          const SizedBox(width: ThemeSizes.marginMedium),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTheme.getBodyStyle(context, 
-                    fontSize: 16, 
-                    fontWeight: FontWeight.w600,
-                  ),
+    final theme = Theme.of(context);
+    final effectiveIconColor = iconColor ?? theme.primaryColor;
+    
+    return Card(
+      margin: EdgeInsets.symmetric(
+        horizontal: AppDimens.space4,
+        vertical: AppDimens.space2,
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        child: Padding(
+          padding: EdgeInsets.all(AppDimens.space4),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: effectiveIconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
-                const SizedBox(height: ThemeSizes.marginXSmall),
-                Text(
-                  subtitle,
-                  style: AppTheme.getBodyStyle(context, 
-                    fontSize: 14, 
-                    isSecondary: true,
-                  ),
+                child: Icon(
+                  icon,
+                  color: effectiveIconColor,
+                  size: 26,
                 ),
-              ],
-            ),
+              ),
+              SizedBox(width: AppDimens.space4),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: AppDimens.space1),
+                    Text(
+                      subtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.textTheme.bodySmall?.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailing != null) 
+                trailing!
+              else if (onTap != null)
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  color: theme.textTheme.bodySmall?.color,
+                  size: 16,
+                ),
+            ],
           ),
-          if (trailing != null) 
-            trailing!
-          else if (onTap != null)
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              color: AppTheme.getTextColor(context, isSecondary: true),
-              size: 16,
-            ),
-        ],
+        ),
       ),
     );
   }
 }
 
 /// زر شائع للتطبيق
-class ThemedActionButton extends StatelessWidget {
+class ThemedActionButton extends StatefulWidget {
   final String text;
   final IconData? icon;
   final VoidCallback onPressed;
@@ -178,19 +188,64 @@ class ThemedActionButton extends StatelessWidget {
     this.backgroundColor,
     this.foregroundColor,
   }) : super(key: key);
-  
+
+  @override
+  State<ThemedActionButton> createState() => _ThemedActionButtonState();
+}
+
+class _ThemedActionButtonState extends State<ThemedActionButton> {
   @override
   Widget build(BuildContext context) {
-    return SoftButton(
-      text: text,
-      icon: icon,
-      onPressed: onPressed,
-      isOutlined: isOutlined,
-      isLoading: isLoading,
-      isFullWidth: isFullWidth,
-      backgroundColor: backgroundColor,
-      foregroundColor: foregroundColor,
-    );
+    final buttonChild = widget.isLoading
+        ? SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                widget.foregroundColor ?? Colors.white,
+              ),
+            ),
+          )
+        : Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (widget.icon != null) ...[
+                Icon(widget.icon, size: 20),
+                SizedBox(width: AppDimens.space2),
+              ],
+              Text(widget.text),
+            ],
+          );
+
+    final button = widget.isOutlined
+        ? OutlinedButton(
+            onPressed: widget.isLoading ? null : widget.onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: widget.foregroundColor,
+              side: BorderSide(
+                color: widget.backgroundColor ?? Theme.of(context).primaryColor,
+              ),
+            ),
+            child: buttonChild,
+          )
+        : ElevatedButton(
+            onPressed: widget.isLoading ? null : widget.onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: widget.backgroundColor,
+              foregroundColor: widget.foregroundColor,
+            ),
+            child: buttonChild,
+          );
+
+    if (widget.isFullWidth) {
+      return SizedBox(
+        width: double.infinity,
+        child: button,
+      );
+    }
+    
+    return button;
   }
 }
 
@@ -215,10 +270,16 @@ class ThemedListItem extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return SoftListTile(
-      title: title,
-      subtitle: subtitle,
-      leadingIcon: icon,
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: (iconColor ?? Theme.of(context).primaryColor).withOpacity(0.1),
+        child: Icon(
+          icon,
+          color: iconColor ?? Theme.of(context).primaryColor,
+        ),
+      ),
+      title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle!) : null,
       trailing: trailing,
       onTap: onTap,
     );
@@ -247,15 +308,17 @@ class ThemedLoadingIndicator extends StatelessWidget {
             width: size,
             height: size,
             child: CircularProgressIndicator(
-              color: AppTheme.getPrimaryColor(context),
+              color: Theme.of(context).primaryColor,
               strokeWidth: 3,
             ),
           ),
           if (message != null) ...[
-            const SizedBox(height: ThemeSizes.marginLarge),
+            SizedBox(height: AppDimens.space5),
             Text(
               message!,
-              style: AppTheme.getBodyStyle(context, isSecondary: true),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).textTheme.bodySmall?.color,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -282,8 +345,9 @@ class ThemedCircleIcon extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final bgColor = backgroundColor ?? AppTheme.getPrimaryColor(context).withOpacity(0.1);
-    final fgColor = iconColor ?? AppTheme.getPrimaryColor(context);
+    final theme = Theme.of(context);
+    final bgColor = backgroundColor ?? theme.primaryColor.withOpacity(0.1);
+    final fgColor = iconColor ?? theme.primaryColor;
     
     return Container(
       width: size,
@@ -312,27 +376,29 @@ class ThemedDividerWithText extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: ThemeSizes.marginMedium),
+      padding: EdgeInsets.symmetric(vertical: AppDimens.space4),
       child: Row(
         children: [
           Expanded(
             child: Divider(
-              color: AppTheme.getDividerColor(context),
-              thickness: ThemeSizes.borderWidthThin,
+              color: theme.dividerColor,
+              thickness: AppDimens.borderThin,
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: ThemeSizes.marginMedium),
+            padding: EdgeInsets.symmetric(horizontal: AppDimens.space4),
             child: Text(
               text,
-              style: AppTheme.getCaptionStyle(context),
+              style: theme.textTheme.bodySmall,
             ),
           ),
           Expanded(
             child: Divider(
-              color: AppTheme.getDividerColor(context),
-              thickness: ThemeSizes.borderWidthThin,
+              color: theme.dividerColor,
+              thickness: AppDimens.borderThin,
             ),
           ),
         ],
@@ -360,11 +426,51 @@ class ThemedStatCard extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return SoftStatCard(
-      label: title,
-      value: value,
-      icon: icon,
-      color: color ?? AppTheme.getPrimaryColor(context),
+    final theme = Theme.of(context);
+    final effectiveColor = color ?? theme.primaryColor;
+    
+    return Card(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+        child: Padding(
+          padding: EdgeInsets.all(AppDimens.space4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: effectiveColor,
+                    size: AppDimens.iconMd,
+                  ),
+                  Spacer(),
+                  if (onTap != null)
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: AppDimens.iconSm,
+                      color: theme.textTheme.bodySmall?.color,
+                    ),
+                ],
+              ),
+              SizedBox(height: AppDimens.space3),
+              Text(
+                value,
+                style: theme.textTheme.headlineMedium?.copyWith(
+                  color: effectiveColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: AppDimens.space1),
+              Text(
+                title,
+                style: theme.textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -386,34 +492,38 @@ class ThemedEmptyMessage extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(ThemeSizes.marginLarge),
+        padding: EdgeInsets.all(AppDimens.space5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ThemedCircleIcon(
               icon: icon,
               size: 80,
-              backgroundColor: AppTheme.getSurfaceColor(context),
-              iconColor: AppTheme.getTextColor(context, isSecondary: true),
+              backgroundColor: theme.colorScheme.surface,
+              iconColor: theme.textTheme.bodySmall?.color,
             ),
-            const SizedBox(height: ThemeSizes.marginLarge),
+            SizedBox(height: AppDimens.space5),
             Text(
               title,
-              style: AppTheme.getHeadingStyle(context, fontSize: 18),
+              style: theme.textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),
             if (subtitle != null) ...[
-              const SizedBox(height: ThemeSizes.marginSmall),
+              SizedBox(height: AppDimens.space2),
               Text(
                 subtitle!,
-                style: AppTheme.getBodyStyle(context, isSecondary: true),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.textTheme.bodySmall?.color,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
             if (action != null) ...[
-              const SizedBox(height: ThemeSizes.marginLarge),
+              SizedBox(height: AppDimens.space5),
               action!,
             ],
           ],
@@ -442,6 +552,8 @@ class ThemedLinearProgress extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -451,24 +563,24 @@ class ThemedLinearProgress extends StatelessWidget {
             children: [
               Text(
                 label!,
-                style: AppTheme.getCaptionStyle(context),
+                style: theme.textTheme.bodySmall,
               ),
               Text(
                 '${(value * 100).toInt()}%',
-                style: AppTheme.getCaptionStyle(context),
+                style: theme.textTheme.bodySmall,
               ),
             ],
           ),
-          const SizedBox(height: ThemeSizes.marginSmall),
+          SizedBox(height: AppDimens.space2),
         ],
         ClipRRect(
           borderRadius: BorderRadius.circular(height / 2),
           child: LinearProgressIndicator(
             value: value,
             minHeight: height,
-            backgroundColor: backgroundColor ?? AppTheme.getDividerColor(context),
+            backgroundColor: backgroundColor ?? theme.dividerColor,
             valueColor: AlwaysStoppedAnimation<Color>(
-              valueColor ?? AppTheme.getPrimaryColor(context),
+              valueColor ?? theme.primaryColor,
             ),
           ),
         ),
@@ -494,16 +606,16 @@ class ThemedAlertCard extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    final alertColor = color ?? ThemeColors.info;
+    final alertColor = color ?? AppColors.info;
     
     return Container(
-      padding: const EdgeInsets.all(ThemeSizes.marginMedium),
+      padding: EdgeInsets.all(AppDimens.space4),
       decoration: BoxDecoration(
         color: alertColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(ThemeSizes.borderRadiusMedium),
+        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         border: Border.all(
           color: alertColor.withOpacity(0.3),
-          width: ThemeSizes.borderWidthThin,
+          width: AppDimens.borderThin,
         ),
       ),
       child: Row(
@@ -513,23 +625,23 @@ class ThemedAlertCard extends StatelessWidget {
             color: alertColor,
             size: 24,
           ),
-          const SizedBox(width: ThemeSizes.marginMedium),
+          SizedBox(width: AppDimens.space4),
           Expanded(
             child: Text(
               message,
-              style: AppTheme.getBodyStyle(context, fontSize: 14),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
           if (onClose != null)
             IconButton(
               icon: Icon(
                 Icons.close,
-                color: AppTheme.getTextColor(context, isSecondary: true),
+                color: Theme.of(context).textTheme.bodySmall?.color,
                 size: 20,
               ),
               onPressed: onClose,
               padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
+              constraints: BoxConstraints(),
             ),
         ],
       ),

@@ -1,5 +1,6 @@
 // lib/app/themes/widgets/states/app_empty_state.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
@@ -91,9 +92,82 @@ class AppEmptyState extends StatelessWidget {
     );
     
     if (animate) {
-      return AppAnimations.bounceIn(
-        child: content,
+      return AnimationConfiguration.synchronized(
         duration: AppAnimations.durationNormal,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: alignment,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // الأيقونة المتحركة
+            ScaleAnimation(
+              scale: 0.5,
+              curve: AppAnimations.curveBounce,
+              duration: AppAnimations.durationSlow,
+              child: FadeInAnimation(
+                child: customIcon ?? Icon(
+                  icon,
+                  size: iconSize ?? AppDimens.icon2xl * 1.5,
+                  color: defaultIconColor,
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: AppDimens.space4),
+            
+            // العنوان المتحرك
+            SlideAnimation(
+              verticalOffset: 20,
+              curve: AppAnimations.curveDefault,
+              delay: Duration(milliseconds: 100),
+              child: FadeInAnimation(
+                child: Text(
+                  title,
+                  style: AppTypography.h5.copyWith(
+                    color: iconColor ?? AppColors.textPrimary(context),
+                  ),
+                  textAlign: alignment == CrossAxisAlignment.center 
+                    ? TextAlign.center 
+                    : TextAlign.start,
+                ),
+              ),
+            ),
+            
+            // العنوان الفرعي المتحرك
+            if (subtitle != null) ...[
+              const SizedBox(height: AppDimens.space2),
+              SlideAnimation(
+                verticalOffset: 20,
+                curve: AppAnimations.curveDefault,
+                delay: Duration(milliseconds: 200),
+                child: FadeInAnimation(
+                  child: Text(
+                    subtitle!,
+                    style: AppTypography.body2.copyWith(
+                      color: AppColors.textSecondary(context),
+                    ),
+                    textAlign: alignment == CrossAxisAlignment.center 
+                      ? TextAlign.center 
+                      : TextAlign.start,
+                  ),
+                ),
+              ),
+            ],
+            
+            // زر الإجراء المتحرك
+            if (action != null) ...[
+              const SizedBox(height: AppDimens.space5),
+              SlideAnimation(
+                verticalOffset: 20,
+                curve: AppAnimations.curveDefault,
+                delay: Duration(milliseconds: 300),
+                child: FadeInAnimation(
+                  child: action!,
+                ),
+              ),
+            ],
+          ],
+        ),
       );
     }
     

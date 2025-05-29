@@ -1,5 +1,6 @@
 // lib/app/themes/widgets/cards/app_quote_card.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
@@ -98,9 +99,16 @@ class AppQuoteCard extends StatelessWidget {
     );
     
     if (animate) {
-      return AppAnimations.bounceIn(
-        child: card,
+      return AnimationConfiguration.synchronized(
         duration: AppAnimations.durationNormal,
+        child: SlideAnimation(
+          horizontalOffset: 50,
+          curve: AppAnimations.curveSmooth,
+          child: FadeInAnimation(
+            curve: AppAnimations.curveDefault,
+            child: card,
+          ),
+        ),
       );
     }
     

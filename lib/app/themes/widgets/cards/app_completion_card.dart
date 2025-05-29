@@ -1,6 +1,7 @@
 // lib/app/themes/widgets/cards/app_completion_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'app_card.dart';
 import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
@@ -89,9 +90,16 @@ class AppCompletionCard extends StatelessWidget {
     );
     
     if (animate) {
-      return AppAnimations.bounceIn(
-        child: content,
+      return AnimationConfiguration.synchronized(
         duration: AppAnimations.durationSlow,
+        child: ScaleAnimation(
+          scale: 0.5,
+          curve: AppAnimations.curveBounce,
+          child: FadeInAnimation(
+            curve: AppAnimations.curveDefault,
+            child: content,
+          ),
+        ),
       );
     }
     
@@ -99,43 +107,63 @@ class AppCompletionCard extends StatelessWidget {
   }
 
   Widget _buildDefaultIcon(Color color) {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        color: color.withOpacity(AppColors.opacity10),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: color.withOpacity(AppColors.opacity30),
-          width: AppDimens.borderMedium,
+    return ScaleAnimation(
+      duration: AppAnimations.durationVerySlow,
+      scale: 0.0,
+      curve: AppAnimations.curveBounce,
+      child: Container(
+        width: 80,
+        height: 80,
+        decoration: BoxDecoration(
+          color: color.withOpacity(AppColors.opacity10),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: color.withOpacity(AppColors.opacity30),
+            width: AppDimens.borderMedium,
+          ),
         ),
-      ),
-      child: Icon(
-        icon,
-        color: color,
-        size: AppDimens.icon2xl,
+        child: Icon(
+          icon,
+          color: color,
+          size: AppDimens.icon2xl,
+        ),
       ),
     );
   }
 
   Widget _buildActions(BuildContext context, Color color) {
-    return Column(
-      children: actions.map((action) {
-        final isFirst = actions.indexOf(action) == 0;
-        
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: actions.indexOf(action) < actions.length - 1 
-              ? AppDimens.space3 
-              : 0,
-          ),
-          child: _CompletionActionButton(
-            action: action,
-            isPrimary: isFirst,
-            color: color,
-          ),
-        );
-      }).toList(),
+    return AnimationLimiter(
+      child: Column(
+        children: actions.asMap().entries.map((entry) {
+          final index = entry.key;
+          final action = entry.value;
+          final isFirst = index == 0;
+          
+          return AnimationConfiguration.staggeredList(
+            position: index,
+            duration: AppAnimations.durationNormal,
+            delay: Duration(milliseconds: index * 100),
+            child: SlideAnimation(
+              verticalOffset: 20,
+              curve: AppAnimations.curveDefault,
+              child: FadeInAnimation(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index < actions.length - 1 
+                      ? AppDimens.space3 
+                      : 0,
+                  ),
+                  child: _CompletionActionButton(
+                    action: action,
+                    isPrimary: isFirst,
+                    color: color,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
