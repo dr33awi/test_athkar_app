@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:adhan/adhan.dart' as adhan;
-import '../../../../features/prayers/qibla_service.dart';
-import '../logging/logger_service.dart';
-import '../../../../app/di/service_locator.dart';
+import 'qibla_service.dart';
+import '../../core/infrastructure/services/logging/logger_service.dart';
+import '../../app/di/service_locator.dart';
 
 class QiblaServiceImpl implements QiblaService {
   final LoggerService _logger;
