@@ -1,53 +1,153 @@
-// lib/core/services/implementations/do_not_disturb_service_impl.dart
+// lib/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart
 import 'dart:async';
-import 'dart:io'; // Platform is used from dart:io
+import 'dart:io';
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/material.dart'; // For debugPrint, consider a dedicated logger service
 import 'do_not_disturb_service.dart';
+import '../../logging/logger_service.dart';
 
 class DoNotDisturbServiceImpl implements DoNotDisturbService {
   static const MethodChannel _channel = MethodChannel('com.athkar.app/do_not_disturb');
+  
+  final LoggerService _logger;
   StreamSubscription<dynamic>? _subscription;
-  Function(bool)? _onDoNotDisturbChangeCallback; // Renamed for clarity
-  bool _currentDoNotDisturbState = false; // Renamed for clarity
+  Function(bool)? _onDoNotDisturbChangeCallback;
+  
+  // State tracking
+  bool _currentDoNotDisturbState = false;
+  DateTime? _lastCheckTime;
+  static const Duration _cacheValidity = Duration(seconds: 30);
+  
+  // Platform availability cache
+  static bool? _platformSupported;
+
+  DoNotDisturbServiceImpl({
+    required LoggerService logger,
+  }) : _logger = logger {
+    _checkPlatformSupport();
+  }
+
+  Future<void> _checkPlatformSupport() async {
+    if (_platformSupported != null) return;
+    
+    try {
+      if (Platform.isAndroid) {
+        // Check Android API level
+        final Map<String, dynamic>? deviceInfo = await _channel.invokeMethod('getDeviceInfo');
+        final int sdkInt = deviceInfo?['sdkInt'] ?? 0;
+        _platformSupported = sdkInt >= 23; // Android M+
+      } else if (Platform.isIOS) {
+        _platformSupported = true; // iOS always supported, but with limitations
+      } else {
+        _platformSupported = false;
+      }
+      
+      _logger.info(
+        message: 'DND platform support checked',
+        data: {'supported': _platformSupported, 'platform': Platform.operatingSystem},
+      );
+    } catch (e) {
+      _logger.warning(
+        message: 'Could not determine DND platform support',
+        data: {'error': e.toString()},
+      );
+      _platformSupported = false;
+    }
+  }
+
+  bool _shouldUseCache() {
+    if (_lastCheckTime == null) return false;
+    return DateTime.now().difference(_lastCheckTime!) < _cacheValidity;
+  }
 
   @override
   Future<bool> isDoNotDisturbEnabled() async {
+    if (_shouldUseCache()) {
+      return _currentDoNotDisturbState;
+    }
+
+    if (_platformSupported == false) {
+      _logger.debug(message: 'DND check skipped - platform not supported');
+      return false;
+    }
+
     try {
       if (Platform.isAndroid) {
         final bool? isDndEnabled = await _channel.invokeMethod<bool>('isDoNotDisturbEnabled');
         _currentDoNotDisturbState = isDndEnabled ?? false;
+        _lastCheckTime = DateTime.now();
+        
+        _logger.debug(
+          message: 'Android DND status checked',
+          data: {'enabled': _currentDoNotDisturbState},
+        );
+        
         return _currentDoNotDisturbState;
       } else if (Platform.isIOS) {
-        // On iOS, direct DND access is not possible.
-        // Alternative: check if notifications are generally permitted.
-        // This is an approximation and might not reflect the actual DND/Focus mode.
+        // iOS: Check notification permissions as proxy
         final bool? canSendNotifications = await _channel.invokeMethod<bool>('canSendNotifications');
-        _currentDoNotDisturbState = !(canSendNotifications ?? true); // If can't send, assume DND-like mode
+        _currentDoNotDisturbState = !(canSendNotifications ?? true);
+        _lastCheckTime = DateTime.now();
+        
+        _logger.debug(
+          message: 'iOS notification status checked (DND proxy)',
+          data: {'canSend': canSendNotifications, 'dndEstimate': _currentDoNotDisturbState},
+        );
+        
         return _currentDoNotDisturbState;
       }
-      return false; // Default for unsupported platforms
+      
+      return false;
     } on PlatformException catch (e) {
-      debugPrint('Error checking DND status: ${e.message}');
-      return false; // Return a consistent value on error
+      _logger.error(
+        message: 'Platform error checking DND status',
+        error: e,
+      );
+      return false;
+    } catch (e, s) {
+      _logger.error(
+        message: 'Unexpected error checking DND status',
+        error: e,
+        stackTrace: s,
+      );
+      return false;
     }
   }
 
   @override
   Future<bool> requestDoNotDisturbPermission() async {
+    if (_platformSupported == false) {
+      _logger.info(message: 'DND permission request skipped - platform not supported');
+      return false;
+    }
+
     try {
       if (Platform.isAndroid) {
-        // Android requires specific permission to read DND state.
         final bool? granted = await _channel.invokeMethod<bool>('requestDoNotDisturbPermission');
+        
+        _logger.info(
+          message: 'DND permission request result',
+          data: {'granted': granted},
+        );
+        
         return granted ?? false;
       } else {
-        // iOS does not have a direct DND permission concept for apps to request this way.
-        // Focus modes are managed by the user.
-        return true; // Assume "granted" as no specific permission is needed or can be requested.
+        // iOS: No direct DND permission
+        _logger.info(message: 'iOS has no direct DND permission API');
+        return true;
       }
     } on PlatformException catch (e) {
-      debugPrint('Error requesting DND permission: ${e.message}');
+      _logger.error(
+        message: 'Platform error requesting DND permission',
+        error: e,
+      );
+      return false;
+    } catch (e, s) {
+      _logger.error(
+        message: 'Unexpected error requesting DND permission',
+        error: e,
+        stackTrace: s,
+      );
       return false;
     }
   }
@@ -56,89 +156,146 @@ class DoNotDisturbServiceImpl implements DoNotDisturbService {
   Future<void> openDoNotDisturbSettings() async {
     try {
       bool openedSuccessfully = false;
+      
       if (Platform.isAndroid) {
-        // Try to open specific DND settings via method channel first
-        final bool? openedViaChannel = await _channel.invokeMethod<bool>('openDoNotDisturbSettings');
-        openedSuccessfully = openedViaChannel ?? false;
+        // Try platform-specific method first
+        try {
+          final bool? opened = await _channel.invokeMethod<bool>('openDoNotDisturbSettings');
+          openedSuccessfully = opened ?? false;
+        } catch (e) {
+          _logger.debug(
+            message: 'Platform channel failed to open DND settings',
+            data: {'error': e.toString()},
+          );
+        }
         
+        // Fallback to app_settings
         if (!openedSuccessfully) {
-          // Fallback to general notification settings if specific DND settings failed
           await AppSettings.openAppSettings(type: AppSettingsType.notification);
-          openedSuccessfully = true; // Assume AppSettings call works or has its own error handling
+          openedSuccessfully = true;
         }
       } else if (Platform.isIOS) {
-        // On iOS, open general app settings, user navigates to Focus/Notifications
+        // iOS: Open general settings
         await AppSettings.openAppSettings();
         openedSuccessfully = true;
       }
       
-      // After attempting to open settings, re-check the DND state after a short delay
-      // to allow the user to make changes and return to the app.
       if (openedSuccessfully) {
-        await Future.delayed(const Duration(seconds: 2)); // Increased delay
-        final bool newDndState = await isDoNotDisturbEnabled();
-        if (_onDoNotDisturbChangeCallback != null && newDndState != _currentDoNotDisturbState) {
-           _currentDoNotDisturbState = newDndState;
-          _onDoNotDisturbChangeCallback!(_currentDoNotDisturbState);
-        }
+        _logger.info(message: 'DND settings opened successfully');
+        
+        // Schedule a recheck after user might return
+        Timer(const Duration(seconds: 3), () async {
+          final newState = await isDoNotDisturbEnabled();
+          if (newState != _currentDoNotDisturbState) {
+            _currentDoNotDisturbState = newState;
+            _onDoNotDisturbChangeCallback?.call(newState);
+          }
+        });
       }
-    } catch (e) {
-      debugPrint('Error opening DND settings: $e');
-      // As a final fallback, attempt to open general app settings
-      await AppSettings.openAppSettings();
+    } catch (e, s) {
+      _logger.error(
+        message: 'Error opening DND settings',
+        error: e,
+        stackTrace: s,
+      );
+      
+      // Last resort fallback
+      try {
+        await AppSettings.openAppSettings();
+      } catch (e2) {
+        _logger.error(
+          message: 'Failed to open any settings',
+          error: e2,
+        );
+      }
     }
   }
 
   @override
-  Future<void> registerDoNotDisturbListener(Function(bool p1) onDoNotDisturbChange) async {
+  Future<void> registerDoNotDisturbListener(Function(bool) onDoNotDisturbChange) async {
     _onDoNotDisturbChangeCallback = onDoNotDisturbChange;
 
-    // Cancel any existing subscription
+    // Cancel existing subscription
     await _subscription?.cancel();
     _subscription = null;
 
-    if (Platform.isAndroid) {
-      _subscription = const EventChannel('com.athkar.app/do_not_disturb_events')
-          .receiveBroadcastStream()
-          .listen((dynamic event) {
-        if (event is bool) {
-          _currentDoNotDisturbState = event;
-          _onDoNotDisturbChangeCallback?.call(event);
-        }
-      }, onError: (Object error) {
-        debugPrint('Error in Android DND listener: $error');
-      });
-    } else if (Platform.isIOS) {
-      // iOS DND listening is more complex.
-      // An EventChannel 'com.athkar.app/notification_settings_events' is mentioned.
-      // This likely observes UIApplication.willEnterForegroundNotification or similar
-      // and re-checks notification permissions as a proxy for DND/Focus changes.
-      _subscription = const EventChannel('com.athkar.app/notification_settings_events')
-          .receiveBroadcastStream()
-          .listen((dynamic event) {
-        // Assuming the event directly provides the approximated DND state for iOS
-        if (event is bool) {
-          _currentDoNotDisturbState = event;
-         _onDoNotDisturbChangeCallback?.call(event);
-        }
-      }, onError: (Object error) {
-        debugPrint('Error in iOS DND (Notification Settings) listener: $error');
-      });
+    if (_platformSupported == false) {
+      _logger.info(message: 'DND listener registration skipped - platform not supported');
+      return;
     }
 
-    // Fetch and report initial state
-    final initialStatus = await isDoNotDisturbEnabled();
-    if (_currentDoNotDisturbState != initialStatus) {
-      _currentDoNotDisturbState = initialStatus;
-       _onDoNotDisturbChangeCallback?.call(_currentDoNotDisturbState);
+    try {
+      if (Platform.isAndroid) {
+        _subscription = const EventChannel('com.athkar.app/do_not_disturb_events')
+            .receiveBroadcastStream()
+            .listen(
+              (dynamic event) {
+                if (event is bool) {
+                  _handleDoNotDisturbChange(event);
+                }
+              },
+              onError: (Object error) {
+                _logger.error(
+                  message: 'Error in Android DND listener',
+                  error: error,
+                );
+              },
+              cancelOnError: false,
+            );
+      } else if (Platform.isIOS) {
+        _subscription = const EventChannel('com.athkar.app/notification_settings_events')
+            .receiveBroadcastStream()
+            .listen(
+              (dynamic event) {
+                if (event is bool) {
+                  _handleDoNotDisturbChange(event);
+                }
+              },
+              onError: (Object error) {
+                _logger.error(
+                  message: 'Error in iOS notification settings listener',
+                  error: error,
+                );
+              },
+              cancelOnError: false,
+            );
+      }
+
+      // Report initial state
+      final initialStatus = await isDoNotDisturbEnabled();
+      if (_currentDoNotDisturbState != initialStatus) {
+        _handleDoNotDisturbChange(initialStatus);
+      }
+      
+      _logger.info(message: 'DND listener registered successfully');
+    } catch (e, s) {
+      _logger.error(
+        message: 'Error registering DND listener',
+        error: e,
+        stackTrace: s,
+      );
     }
   }
-  
+
+  void _handleDoNotDisturbChange(bool newState) {
+    if (_currentDoNotDisturbState != newState) {
+      _currentDoNotDisturbState = newState;
+      _lastCheckTime = DateTime.now();
+      _onDoNotDisturbChangeCallback?.call(newState);
+      
+      _logger.info(
+        message: 'DND state changed',
+        data: {'newState': newState},
+      );
+    }
+  }
+
   @override
   Future<void> unregisterDoNotDisturbListener() async {
     await _subscription?.cancel();
     _subscription = null;
-    _onDoNotDisturbChangeCallback = null; // Clear the callback
+    _onDoNotDisturbChangeCallback = null;
+    _logger.debug(message: 'DND listener unregistered');
   }
 
   @override
@@ -147,21 +304,24 @@ class DoNotDisturbServiceImpl implements DoNotDisturbService {
       return true; // DND is off, no need to override
     }
 
-    // DND is on, check override rules
-    switch (type) {
-      case DoNotDisturbOverrideType.none:
-        return false;
-      case DoNotDisturbOverrideType.prayer:
-      case DoNotDisturbOverrideType.importantAthkar:
-      case DoNotDisturbOverrideType.critical:
-        return true; // These types should override DND
-      // No default needed if all enum values are covered
-      // The lint 'unreachable_switch_default' implies all are covered.
-    }
-    // If the enum could have more values in the future and no 'default' is present,
-    // this would be a compile error (exhaustive switch).
-    // If the linter was correct, this point should not be reached for defined enum values.
-    // However, to be absolutely safe if the enum definition changes without updating the switch:
-    // return false; // Or throw an exception for unhandled override type.
+    final shouldOverride = type != DoNotDisturbOverrideType.none;
+    
+    _logger.debug(
+      message: 'DND override check',
+      data: {
+        'dndEnabled': _currentDoNotDisturbState,
+        'overrideType': type.toString(),
+        'shouldOverride': shouldOverride,
+      },
+    );
+
+    return shouldOverride;
+  }
+
+  /// Dispose resources
+  Future<void> dispose() async {
+    await unregisterDoNotDisturbListener();
+    _lastCheckTime = null;
+    _logger.debug(message: 'DoNotDisturbServiceImpl disposed');
   }
 }

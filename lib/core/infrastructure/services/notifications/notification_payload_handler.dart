@@ -1,11 +1,10 @@
-// lib/core/services/utils/notification_payload_handler.dart
+// lib/core/infrastructure/services/notifications/notification_payload_handler.dart
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
-/// معالج مركزي لـ payload الإشعارات
-/// يوفر تحويل آمن بين Map و String
+/// Generic notification payload handler
 class NotificationPayloadHandler {
-  /// تحويل Map إلى JSON String
+  /// Convert Map to JSON String
   static String encode(Map<String, dynamic> data) {
     try {
       return jsonEncode(data);
@@ -13,12 +12,11 @@ class NotificationPayloadHandler {
       if (kDebugMode) {
         print('Error encoding notification payload: $e');
       }
-      // في حالة الفشل، إرجاع JSON فارغ
       return '{}';
     }
   }
 
-  /// تحويل JSON String إلى Map
+  /// Convert JSON String to Map
   static Map<String, dynamic> decode(String? payload) {
     if (payload == null || payload.isEmpty) {
       return {};
@@ -34,26 +32,33 @@ class NotificationPayloadHandler {
       if (kDebugMode) {
         print('Error decoding notification payload: $e');
       }
-      // في حالة الفشل، إرجاع Map يحتوي على القيمة الأصلية
       return {'raw_payload': payload};
     }
   }
 
-  /// التحقق من صحة payload وتحويله إلى String
-  static String? validateAndEncode(String? payload) {
-    if (payload == null || payload.isEmpty) return null;
-
-    try {
-      // محاولة فك التشفير للتأكد من صحة JSON
-      jsonDecode(payload);
-      return payload;
-    } catch (e) {
-      // إذا لم يكن JSON صالح، تحويله إلى JSON
-      return encode({'value': payload});
+  /// Validate and encode payload
+  static String? validateAndEncode(dynamic payload) {
+    if (payload == null) return null;
+    
+    if (payload is String) {
+      if (payload.isEmpty) return null;
+      
+      try {
+        // Try to decode to validate JSON
+        jsonDecode(payload);
+        return payload;
+      } catch (e) {
+        // If not valid JSON, wrap it
+        return encode({'value': payload});
+      }
+    } else if (payload is Map<String, dynamic>) {
+      return encode(payload);
+    } else {
+      return encode({'value': payload.toString()});
     }
   }
 
-  /// استخراج قيمة محددة من payload
+  /// Extract a specific value from payload
   static T? extractValue<T>(String? payload, String key, {T? defaultValue}) {
     final Map<String, dynamic> data = decode(payload);
     
@@ -62,86 +67,128 @@ class NotificationPayloadHandler {
       if (value is T) {
         return value;
       }
+      
+      // Try type conversion for common cases
+      if (T == int && value is String) {
+        return int.tryParse(value) as T?;
+      } else if (T == double && value is String) {
+        return double.tryParse(value) as T?;
+      } else if (T == bool && value is String) {
+        return (value.toLowerCase() == 'true') as T?;
+      }
     }
     
     return defaultValue;
   }
 
-  /// استخراج معلومات التوجيه من payload
-  static NotificationRoute? extractRoute(String? payload) {
+  /// Extract multiple values
+  static Map<String, dynamic> extractValues(
+    String? payload,
+    List<String> keys,
+  ) {
+    final Map<String, dynamic> data = decode(payload);
+    final Map<String, dynamic> result = {};
+    
+    for (final key in keys) {
+      if (data.containsKey(key)) {
+        result[key] = data[key];
+      }
+    }
+    
+    return result;
+  }
+
+  /// Merge payloads
+  static String mergePayloads(String? basePayload, Map<String, dynamic> additionalData) {
+    final Map<String, dynamic> base = decode(basePayload);
+    base.addAll(additionalData);
+    return encode(base);
+  }
+
+  /// Extract navigation route information
+  static NavigationRoute? extractRoute(String? payload) {
     final data = decode(payload);
     
-    if (data.containsKey('route')) {
-      return NotificationRoute(
-        path: data['route'] as String,
+    if (data.containsKey('route') || data.containsKey('path')) {
+      return NavigationRoute(
+        path: data['route'] ?? data['path'] ?? '/',
         arguments: data['arguments'] as Map<String, dynamic>?,
+        parameters: data['parameters'] as Map<String, String>?,
       );
     }
     
     return null;
   }
 
-  /// بناء payload لإشعار الأذكار
-  static String buildAthkarPayload({
-    required String categoryId,
-    required String categoryName,
-    Map<String, dynamic>? additionalData,
-  }) {
-    return encode({
-      'type': 'athkar',
-      'category': categoryId,
-      'route': '/athkar-details',
-      'arguments': {
-        'categoryId': categoryId,
-        'categoryName': categoryName,
-      },
-      if (additionalData != null) ...additionalData,
-    });
-  }
-
-  /// بناء payload لإشعار الصلاة
-  static String buildPrayerPayload({
-    required String prayerName,
-    required DateTime prayerTime,
-    bool isReminder = false,
-    Map<String, dynamic>? additionalData,
-  }) {
-    return encode({
-      'type': 'prayer',
-      'prayer_name': prayerName,
-      'prayer_time': prayerTime.toIso8601String(),
-      'is_reminder': isReminder,
-      'route': '/prayer-times',
-      if (additionalData != null) ...additionalData,
-    });
-  }
-
-  /// بناء payload عام
-  static String buildCustomPayload({
-    required String type,
-    String? route,
+  /// Build navigation payload
+  static String buildNavigationPayload({
+    required String route,
     Map<String, dynamic>? arguments,
+    Map<String, String>? parameters,
+    Map<String, dynamic>? additionalData,
+  }) {
+    return encode({
+      'route': route,
+      if (arguments != null) 'arguments': arguments,
+      if (parameters != null) 'parameters': parameters,
+      if (additionalData != null) ...additionalData,
+    });
+  }
+
+  /// Build generic payload with type
+  static String buildTypedPayload({
+    required String type,
+    required String id,
+    String? title,
+    String? route,
     Map<String, dynamic>? data,
   }) {
     return encode({
       'type': type,
+      'id': id,
+      if (title != null) 'title': title,
       if (route != null) 'route': route,
-      if (arguments != null) 'arguments': arguments,
-      if (data != null) ...data,
+      if (data != null) 'data': data,
+      'timestamp': DateTime.now().toIso8601String(),
     });
+  }
+
+  /// Check if payload contains a specific type
+  static bool hasType(String? payload, String type) {
+    final data = decode(payload);
+    return data['type'] == type;
+  }
+
+  /// Get payload type
+  static String? getType(String? payload) {
+    return extractValue<String>(payload, 'type');
+  }
+
+  /// Validate payload structure
+  static bool isValidPayload(String? payload, List<String> requiredKeys) {
+    if (payload == null || payload.isEmpty) return false;
+    
+    try {
+      final data = decode(payload);
+      return requiredKeys.every((key) => data.containsKey(key));
+    } catch (e) {
+      return false;
+    }
   }
 }
 
-/// معلومات التوجيه المستخرجة من payload
-class NotificationRoute {
+/// Navigation route information
+class NavigationRoute {
   final String path;
   final Map<String, dynamic>? arguments;
+  final Map<String, String>? parameters;
 
-  NotificationRoute({
+  NavigationRoute({
     required this.path,
     this.arguments,
+    this.parameters,
   });
 
   @override
-  String toString() => 'NotificationRoute(path: $path, arguments: $arguments)';
+  String toString() => 'NavigationRoute(path: $path, arguments: $arguments, parameters: $parameters)';
 }

@@ -15,7 +15,7 @@ import 'core/infrastructure/services/timezone/timezone_service.dart';
 import 'core/infrastructure/services/storage/storage_service.dart';
 import 'features/settings/domain/usecases/get_settings.dart';
 import 'features/settings/domain/usecases/update_settings.dart';
-import 'core/infrastructure/services/notifications/notification_scheduler.dart';
+import 'features/athkar/notification_scheduler.dart';
 import 'core/constants/app_constants.dart';
 import 'features/onboarding/presentation/screens/permissions_onboarding_screen.dart';
 import 'features/athkar/presentation/providers/athkar_provider.dart';

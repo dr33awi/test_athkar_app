@@ -35,7 +35,7 @@ import '../../features/prayers/domain/usecases/get_prayer_times.dart';
 import '../../features/prayers/domain/usecases/get_qibla_direction.dart';
 import '../../features/settings/domain/usecases/get_settings.dart';
 import '../../features/settings/domain/usecases/update_settings.dart';
-import '../../core/infrastructure/services/notifications/notification_scheduler.dart';
+import '../../features/athkar/notification_scheduler.dart';
 
 final getIt = GetIt.instance;
 
