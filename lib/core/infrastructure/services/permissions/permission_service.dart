@@ -1,5 +1,4 @@
-// lib/core/services/interfaces/permission_service.dart
-// import 'package:permission_handler/permission_handler.dart'; // <--- تم الحذف
+// lib/core/services/permissions/permission_service.dart
 
 enum AppPermissionType {
   location,
@@ -14,7 +13,7 @@ enum AppPermissionStatus {
   permanentlyDenied,
   restricted,
   limited,
-  unknown, // تم التأكيد على وجود هذه الحالة
+  unknown,
 }
 
 enum AppSettingsType {
@@ -25,11 +24,18 @@ enum AppSettingsType {
 }
 
 abstract class PermissionService {
-  Future<AppPermissionStatus> requestLocationPermission();
-  Future<AppPermissionStatus> requestNotificationPermission();
-  Future<AppPermissionStatus> requestDoNotDisturbPermission();
-  Future<AppPermissionStatus> requestBatteryOptimizationPermission();
+  /// Request a specific permission
+  Future<AppPermissionStatus> requestPermission(AppPermissionType permission);
+  
+  /// Check status of a specific permission
   Future<AppPermissionStatus> checkPermissionStatus(AppPermissionType permission);
+  
+  /// Check status of all permissions
   Future<Map<AppPermissionType, AppPermissionStatus>> checkAllPermissions();
+  
+  /// Open app settings
   Future<void> openAppSettings([AppSettingsType? settingsPage]);
+  
+  /// Check if should show permission rationale
+  Future<bool> shouldShowPermissionRationale(AppPermissionType permission);
 }

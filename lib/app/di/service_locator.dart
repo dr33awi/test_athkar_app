@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../core/infrastructure/services/notifications/notification_service_impl.dart';
 import '../../core/infrastructure/services/storage/storage_service.dart';
 import '../../core/infrastructure/services/storage/storage_service_impl.dart';

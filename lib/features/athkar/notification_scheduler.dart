@@ -1,8 +1,8 @@
 // lib/features/notifications/domain/services/athkar_notification_scheduler.dart
 import 'package:get_it/get_it.dart';
-import '../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../core/infrastructure/services/logging/logger_service.dart';
-import '../../core/infrastructure/services/notifications/notification_analytics.dart';
+import '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
 
 /// Feature-specific notification scheduler for Athkar
 class AthkarNotificationScheduler {

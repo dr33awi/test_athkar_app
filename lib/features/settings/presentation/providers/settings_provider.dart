@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/settings.dart';
 import '../../domain/usecases/get_settings.dart';
 import '../../domain/usecases/update_settings.dart';
-import '../../../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../../../core/infrastructure/services/device/battery/battery_service.dart';
 import '../../../athkar/notification_scheduler.dart';
 import '../../../../app/di/service_locator.dart';

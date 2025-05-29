@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../../../../app/di/service_locator.dart';
-import '../../../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../../../core/infrastructure/services/device/battery/battery_service.dart';
 import '../../../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
 import '../../../../core/infrastructure/services/permissions/permission_service.dart';

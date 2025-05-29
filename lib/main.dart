@@ -10,7 +10,7 @@ import 'app/app.dart';
 import 'app/di/service_locator.dart';
 import 'app/routes/app_router.dart';
 import 'app/themes/app_theme.dart';
-import 'core/infrastructure/services/notifications/notification_service.dart';
+import 'core/infrastructure/services/notifications/models/notification_data.dart';
 import 'core/infrastructure/services/timezone/timezone_service.dart';
 import 'core/infrastructure/services/storage/storage_service.dart';
 import 'features/settings/domain/usecases/get_settings.dart';

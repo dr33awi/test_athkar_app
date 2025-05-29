@@ -1,6 +1,6 @@
 // lib/features/settings/domain/entities/settings_extensions.dart
 import './settings.dart';
-import '../../../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
 
 /// إضافات لكلاس Settings لدعم الميزات الجديدة
 extension SettingsExtensions on Settings {

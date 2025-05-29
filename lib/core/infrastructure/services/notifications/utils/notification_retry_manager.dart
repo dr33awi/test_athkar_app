@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:flutter/foundation.dart';
-import 'notification_service.dart';
-import '../storage/storage_service.dart';
-import '../../../../app/di/service_locator.dart';
+import '../models/notification_data.dart';
+import '../../storage/storage_service.dart';
+import '../../../../../app/di/service_locator.dart';
 
 /// Manager for retrying failed notifications
 class NotificationRetryManager {

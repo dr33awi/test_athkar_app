@@ -8,7 +8,7 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../notification_scheduler.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../data/datasources/athkar_service.dart';

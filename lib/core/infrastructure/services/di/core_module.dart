@@ -6,9 +6,9 @@ import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do
 import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
 import 'package:athkar_app/core/infrastructure/services/logging/logger_service.dart';
 import 'package:athkar_app/core/infrastructure/services/logging/logger_service_impl.dart';
-import 'package:athkar_app/core/infrastructure/services/notifications/notification_analytics.dart';
-import 'package:athkar_app/core/infrastructure/services/notifications/notification_retry_manager.dart';
-import 'package:athkar_app/core/infrastructure/services/notifications/notification_service.dart';
+import 'package:athkar_app/core/infrastructure/services/notifications/utils/notification_analytics.dart';
+import 'package:athkar_app/core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
+import 'package:athkar_app/core/infrastructure/services/notifications/models/notification_data.dart';
 import 'package:athkar_app/core/infrastructure/services/notifications/notification_service_impl.dart';
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_manager.dart';
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_service.dart';

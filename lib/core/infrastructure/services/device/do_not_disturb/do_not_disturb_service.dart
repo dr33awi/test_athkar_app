@@ -1,28 +1,33 @@
-// lib/core/services/interfaces/do_not_disturb_service.dart
-/// أنواع تجاوز وضع عدم الإزعاج
-enum DoNotDisturbOverrideType {
-  none,          // لا تجاوز
-  prayer,        // إشعارات الصلاة
-  importantAthkar, // الأذكار المهمة
-  critical,      // إشعارات حرجة
+// lib/core/services/device/do_not_disturb_service.dart
+
+/// Generic DND override priorities
+enum DoNotDisturbOverridePriority {
+  none,       // No override
+  low,        // Low priority override
+  medium,     // Medium priority override
+  high,       // High priority override
+  critical,   // Critical priority override
 }
 
 abstract class DoNotDisturbService {
-  /// التحقق من حالة وضع عدم الإزعاج
+  /// Check if Do Not Disturb is enabled
   Future<bool> isDoNotDisturbEnabled();
   
-  /// طلب إذن للوصول لحالة وضع عدم الإزعاج
+  /// Request Do Not Disturb permission
   Future<bool> requestDoNotDisturbPermission();
   
-  /// فتح إعدادات وضع عدم الإزعاج
+  /// Open Do Not Disturb settings
   Future<void> openDoNotDisturbSettings();
   
-  /// تسجيل مراقب لتغييرات وضع عدم الإزعاج
+  /// Register listener for DND state changes
   Future<void> registerDoNotDisturbListener(Function(bool) onDoNotDisturbChange);
   
-  /// إلغاء مراقب تغييرات وضع عدم الإزعاج
+  /// Unregister DND listener
   Future<void> unregisterDoNotDisturbListener();
   
-  /// التحقق مما إذا كان يجب تجاوز وضع عدم الإزعاج بناءً على نوع الإشعار
-  Future<bool> shouldOverrideDoNotDisturb(DoNotDisturbOverrideType type);
+  /// Check if notification should override DND based on priority
+  Future<bool> shouldOverrideDoNotDisturb(DoNotDisturbOverridePriority priority);
+  
+  /// Get current DND policy details (if available)
+  Future<Map<String, dynamic>> getDoNotDisturbPolicy();
 }
