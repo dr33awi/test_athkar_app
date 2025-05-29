@@ -47,7 +47,7 @@ class NotificationData {
   final bool respectDoNotDisturb;
   final String? soundName;
   final String channelId;
-  final String? payload; // <--- تم التعديل: النوع أصبح String?
+  final String? payload; // <--- تم التعديل: النوع الآن String?
   final NotificationVisibility visibility;
 
   NotificationData({
@@ -62,7 +62,7 @@ class NotificationData {
     this.respectDoNotDisturb = true,
     this.soundName,
     this.channelId = 'default_channel',
-    this.payload, // سيتم ترميز Map إلى String هنا بواسطة المرسل
+    this.payload,
     this.visibility = NotificationVisibility.public,
   });
 }
@@ -71,7 +71,6 @@ class NotificationData {
 class NotificationAction {
   final String id;
   final String title;
-  // هذه الخصائص اختيارية، حيث أن سلوك الإجراء يتم تحديده غالبًا في معالج الاستجابة للإشعار
   final bool? showsUserInterface; // <--- تم التعديل: إعادة الخاصية كاختيارية
   final bool? cancelNotification; // <--- تم التعديل: إعادة الخاصية كاختيارية
 
@@ -88,20 +87,14 @@ abstract class NotificationService {
   Future<void> initialize();
   Future<bool> requestPermission();
   Future<bool> scheduleNotification(NotificationData notification);
-
-  // تم دمج scheduleRepeatingNotification في scheduleNotification عبر repeatInterval
-  // إذا كنت بحاجة إليها كدالة منفصلة، يمكنك إبقائها.
-
   Future<bool> scheduleNotificationInTimeZone(
     NotificationData notification,
-    String timeZoneId, // تأكد من أن التنفيذ يستخدم هذا لإنشاء TZDateTime
+    String timeZoneId,
   );
-
   Future<bool> scheduleNotificationWithActions(
     NotificationData notification,
     List<NotificationAction> actions,
   );
-
   Future<void> cancelNotification(int id);
   Future<void> cancelNotificationsByIds(List<int> ids);
   Future<void> cancelNotificationsByTag(String tag);

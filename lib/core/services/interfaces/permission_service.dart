@@ -14,7 +14,7 @@ enum AppPermissionStatus {
   permanentlyDenied,
   restricted,
   limited,
-  unknown, // إضافة حالة غير معروفة
+  unknown, // تم التأكيد على وجود هذه الحالة
 }
 
 enum AppSettingsType {
@@ -22,7 +22,6 @@ enum AppSettingsType {
   location,
   notification,
   battery,
-  // doNotDisturb, // قد لا تكون هناك صفحة إعدادات مباشرة
 }
 
 abstract class PermissionService {
