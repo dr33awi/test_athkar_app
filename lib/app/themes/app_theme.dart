@@ -294,12 +294,10 @@ class AppTheme {
         labelColor: primaryColor,
         unselectedLabelColor: textSecondaryColor,
         indicatorSize: TabBarIndicatorSize.label,
-        indicator: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: primaryColor,
-              width: AppDimens.borderThick,
-            ),
+        indicator: UnderlineTabIndicator(
+          borderSide: BorderSide(
+            color: primaryColor,
+            width: AppDimens.borderThick,
           ),
         ),
         labelStyle: AppTypography.label1.copyWith(
