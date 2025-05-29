@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'models/notification_data.dart';
+import 'models/notification_data.dart' hide NotificationResponse, NotificationVisibility;
 import '../device/battery/battery_service.dart';
 import '../device/do_not_disturb/do_not_disturb_service.dart';
 import '../timezone/timezone_service.dart';

@@ -1,83 +1,186 @@
+// lib/core/error/error_handler.dart
+
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../error/exceptions.dart';
+import 'exceptions.dart';
+import 'failure.dart';
 import '../infrastructure/services/logging/logger_service.dart';
 
-// سجل عام للأخطاء
+/// Generic error handler for the application
 class AppErrorHandler {
   final LoggerService _logger;
   
   AppErrorHandler(this._logger);
   
-  // معالجة أي نوع من الأخطاء
+  /// Handle any type of error with appropriate error handling
   Future<T?> handleError<T>(
     Future<T> Function() operation, {
     String? operationName,
-    Function(String)? onError,
+    Function(Failure)? onError,
     T? defaultValue,
   }) async {
     try {
       return await operation();
     } catch (e, stackTrace) {
-      final errorMessage = _getReadableErrorMessage(e);
+      final failure = _mapErrorToFailure(e, stackTrace);
       _logError(operationName ?? 'unknown_operation', e, stackTrace);
       
       if (onError != null) {
-        onError(errorMessage);
+        onError(failure);
       }
       
       return defaultValue;
     }
   }
   
-  // الحصول على رسالة خطأ مقروءة
-  String _getReadableErrorMessage(dynamic error) {
-    if (error is SocketException) {
-      return 'لا يمكن الاتصال بالإنترنت، يرجى التحقق من اتصالك والمحاولة مرة أخرى';
-    } else if (error is TimeoutException) {
-      return 'استغرقت العملية وقتًا طويلاً، يرجى المحاولة مرة أخرى';
-    } else if (error is DataLoadException) {
-      return 'حدث خطأ أثناء تحميل البيانات: ${error.message}';
-    } else if (error is DataUpdateException) {
-      return 'حدث خطأ أثناء تحديث البيانات: ${error.message}';
-    } else if (error is DataNotFoundException) {
-      return 'البيانات المطلوبة غير موجودة: ${error.message}';
-    } else if (error is LocationException) {
-      return 'حدث خطأ أثناء تحديد الموقع: ${error.message}';
-    } else if (error is NotificationException) {
-      return 'حدث خطأ في نظام الإشعارات: ${error.message}';
-    } else if (error is PrayerTimesException) {
-      return 'حدث خطأ أثناء حساب مواقيت الصلاة: ${error.message}';
-    } else if (error is QiblaException) {
-      return 'حدث خطأ أثناء تحديد اتجاه القبلة: ${error.message}';
-    } else if (error is StorageException) {
-      return 'حدث خطأ في التخزين المحلي: ${error.message}';
+  /// Execute operation with result handling
+  Future<Result<T>> executeOperation<T>(
+    Future<T> Function() operation, {
+    String? operationName,
+  }) async {
+    try {
+      final result = await operation();
+      return Result.success(result);
+    } catch (e, stackTrace) {
+      final failure = _mapErrorToFailure(e, stackTrace);
+      _logError(operationName ?? 'unknown_operation', e, stackTrace);
+      return Result.failure(failure);
     }
-    
-    return 'حدث خطأ غير متوقع، يرجى المحاولة مرة أخرى';
   }
   
-  // تسجيل الخطأ
-  void _logError(String operation, dynamic error, StackTrace stackTrace) {
+  /// Map exceptions to failures
+  Failure _mapErrorToFailure(dynamic error, StackTrace? stackTrace) {
+    if (error is SocketException || error is NetworkException) {
+      return NetworkFailure(
+        message: 'Unable to connect to the internet. Please check your connection.',
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is TimeoutException) {
+      return NetworkFailure(
+        message: 'The operation took too long. Please try again.',
+        code: 'TIMEOUT',
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is DataLoadException) {
+      return StorageFailure(
+        message: 'Error loading data: ${error.message}',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is DataUpdateException) {
+      return StorageFailure(
+        message: 'Error updating data: ${error.message}',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is DataNotFoundException) {
+      return StorageFailure(
+        message: 'Requested data not found: ${error.message}',
+        code: error.code ?? 'NOT_FOUND',
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is LocationException) {
+      return ServiceFailure(
+        message: 'Location service error: ${error.message}',
+        serviceName: 'LocationService',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is NotificationException) {
+      return ServiceFailure(
+        message: 'Notification service error: ${error.message}',
+        serviceName: 'NotificationService',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is StorageException) {
+      return StorageFailure(
+        message: 'Storage error: ${error.message}',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is PermissionException) {
+      return PermissionFailure(
+        message: 'Permission error: ${error.message}',
+        permissionType: error.code ?? 'unknown',
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is ValidationException) {
+      return ValidationFailure(
+        message: error.message,
+        field: error.field ?? 'unknown',
+        code: error.code,
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    } else if (error is FormatException) {
+      return ValidationFailure(
+        message: 'Invalid format: ${error.message}',
+        field: 'format',
+        originalError: error,
+        stackTrace: stackTrace,
+      );
+    }
+    
+    return UnknownFailure(
+      message: 'An unexpected error occurred. Please try again.',
+      originalError: error,
+      stackTrace: stackTrace,
+    );
+  }
+  
+  /// Get user-friendly error message
+  String getUserFriendlyMessage(Failure failure) {
+    if (failure is NetworkFailure) {
+      return failure.message;
+    } else if (failure is StorageFailure) {
+      return 'Unable to access data. Please try again.';
+    } else if (failure is PermissionFailure) {
+      return 'Permission required to continue.';
+    } else if (failure is ServiceFailure) {
+      return 'Service temporarily unavailable.';
+    } else if (failure is ValidationFailure) {
+      return failure.message;
+    }
+    
+    return 'Something went wrong. Please try again.';
+  }
+  
+  /// Log error details
+  void _logError(String operation, dynamic error, StackTrace? stackTrace) {
     _logger.error(
-      message: 'خطأ في عملية: $operation',
+      message: 'Error in operation: $operation',
       error: error,
       stackTrace: stackTrace,
     );
   }
   
-  // عرض رسالة خطأ للمستخدم
-  static void showErrorSnackBar(BuildContext context, String message) {
+  /// Show error snackbar
+  static void showErrorSnackBar(
+    BuildContext context, 
+    String message, {
+    Duration duration = const Duration(seconds: 4),
+    SnackBarAction? action,
+  }) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'حسناً',
-          textColor: Colors.white,
+        duration: duration,
+        action: action ?? SnackBarAction(
+          label: 'Dismiss',
+          textColor: Theme.of(context).colorScheme.onError,
           onPressed: () {
             ScaffoldMessenger.of(context).hideCurrentSnackBar();
           },
@@ -86,34 +189,83 @@ class AppErrorHandler {
     );
   }
   
-  // عرض الخطأ مع خيارات
+  /// Show error dialog
   static Future<bool> showErrorDialog(
-    BuildContext context, 
-    String title, 
-    String message, {
-    String? retryLabel,
-    VoidCallback? onRetry,
+    BuildContext context, {
+    required String title,
+    required String message,
+    String? primaryButtonText,
+    VoidCallback? onPrimaryAction,
+    String? secondaryButtonText,
+    VoidCallback? onSecondaryAction,
   }) async {
     return await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: Text(title),
         content: Text(message),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('إلغاء'),
-          ),
-          if (retryLabel != null && onRetry != null)
-            ElevatedButton(
+          if (secondaryButtonText != null)
+            TextButton(
               onPressed: () {
-                Navigator.pop(context, true);
-                onRetry();
+                Navigator.pop(context, false);
+                onSecondaryAction?.call();
               },
-              child: Text(retryLabel),
+              child: Text(secondaryButtonText),
             ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context, true);
+              onPrimaryAction?.call();
+            },
+            child: Text(primaryButtonText ?? 'OK'),
+          ),
         ],
       ),
     ) ?? false;
+  }
+  
+  /// Show retry dialog
+  static Future<bool> showRetryDialog(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required VoidCallback onRetry,
+    String retryText = 'Retry',
+    String cancelText = 'Cancel',
+  }) async {
+    return await showErrorDialog(
+      context,
+      title: title,
+      message: message,
+      primaryButtonText: retryText,
+      onPrimaryAction: onRetry,
+      secondaryButtonText: cancelText,
+    );
+  }
+}
+
+/// Result wrapper for operations
+class Result<T> {
+  final T? data;
+  final Failure? failure;
+  
+  const Result._({this.data, this.failure});
+  
+  factory Result.success(T data) => Result._(data: data);
+  factory Result.failure(Failure failure) => Result._(failure: failure);
+  
+  bool get isSuccess => data != null;
+  bool get isFailure => failure != null;
+  
+  R fold<R>(
+    R Function(Failure) onFailure,
+    R Function(T) onSuccess,
+  ) {
+    if (isFailure) {
+      return onFailure(failure!);
+    }
+    return onSuccess(data!);
   }
 }
