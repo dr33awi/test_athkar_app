@@ -5,8 +5,8 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
 import '../../constants/app_animations.dart';
+// import '../../core/theme_extensions.dart'; // For ColorExtensionMethods if needed
 
-/// بطاقة عامة لعرض الاقتباسات والحكم
 class AppQuoteCard extends StatelessWidget {
   final String quote;
   final String? author;
@@ -22,7 +22,7 @@ class AppQuoteCard extends StatelessWidget {
   final TextStyle? authorStyle;
 
   const AppQuoteCard({
-    Key? key,
+    super.key,
     required this.quote,
     this.author,
     this.category,
@@ -35,24 +35,21 @@ class AppQuoteCard extends StatelessWidget {
     this.animate = true,
     this.quoteStyle,
     this.authorStyle,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final baseColor = primaryColor ?? theme.primaryColor;
-    final isDark = theme.brightness == Brightness.dark;
-    
-    // ألوان التدرج
-    final colors = gradientColors ?? [
+
+    final List<Color> effectiveGradientColors = gradientColors ?? [
       baseColor,
-      baseColor.withOpacity(0.8),
+      baseColor.withAlpha((0.8 * 255).round()),
     ];
-    
-    // لون النص المتباين
-    final textColor = _getContrastingTextColor(colors.first);
-    final subtextColor = textColor.withOpacity(AppColors.opacity70);
-    
+
+    final textColor = _getContrastingTextColor(effectiveGradientColors.first);
+    // final subtextColor = textColor.withAlpha((AppColors.opacity70 * 255).round()); // Unused variable
+
     Widget card = Container(
       margin: margin ?? const EdgeInsets.symmetric(
         horizontal: AppDimens.space4,
@@ -63,12 +60,12 @@ class AppQuoteCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: colors,
+          colors: effectiveGradientColors,
           stops: const [0.2, 1.0],
         ),
         boxShadow: [
           BoxShadow(
-            color: baseColor.withOpacity(AppColors.opacity30),
+            color: baseColor.withAlpha((AppColors.opacity30 * 255).round()),
             blurRadius: AppDimens.space3,
             offset: const Offset(0, AppDimens.space1),
           ),
@@ -80,24 +77,18 @@ class AppQuoteCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // الفئة
-            if (category != null) _buildCategory(textColor, subtextColor),
-            
+            if (category != null) _buildCategory(textColor),
             if (category != null) const SizedBox(height: AppDimens.space2),
-            
-            // الاقتباس
-            _buildQuote(context, textColor),
-            
-            // المؤلف
+            _buildQuote(textColor),
             if (author != null) ...[
               const SizedBox(height: AppDimens.space3),
-              _buildAuthor(textColor, subtextColor),
+              _buildAuthor(textColor),
             ],
           ],
         ),
       ),
     );
-    
+
     if (animate) {
       return AnimationConfiguration.synchronized(
         duration: AppAnimations.durationNormal,
@@ -111,11 +102,10 @@ class AppQuoteCard extends StatelessWidget {
         ),
       );
     }
-    
     return card;
   }
 
-  Widget _buildCategory(Color textColor, Color subtextColor) {
+  Widget _buildCategory(Color textColor) {
     return Align(
       alignment: AlignmentDirectional.centerEnd,
       child: Container(
@@ -124,7 +114,7 @@ class AppQuoteCard extends StatelessWidget {
           vertical: AppDimens.space1,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(AppColors.opacity20),
+          color: Colors.black.withAlpha((AppColors.opacity20 * 255).round()),
           borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         ),
         child: Text(
@@ -138,31 +128,29 @@ class AppQuoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildQuote(BuildContext context, Color textColor) {
+  Widget _buildQuote(Color textColor) {
     return Container(
       padding: const EdgeInsets.all(AppDimens.space4),
       decoration: BoxDecoration(
-        color: textColor.withOpacity(AppColors.opacity10),
+        color: textColor.withAlpha((AppColors.opacity10 * 255).round()),
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         border: Border.all(
-          color: textColor.withOpacity(AppColors.opacity20),
+          color: textColor.withAlpha((AppColors.opacity20 * 255).round()),
           width: AppDimens.borderThin,
         ),
       ),
       child: Stack(
         children: [
           if (showQuoteMarks) ...[
-            // علامة اقتباس في البداية
             Positioned(
               top: -4,
               right: -4,
               child: Icon(
                 quoteIcon,
                 size: AppDimens.iconSm,
-                color: textColor.withOpacity(AppColors.opacity50),
+                color: textColor.withAlpha((AppColors.opacity50 * 255).round()),
               ),
             ),
-            // علامة اقتباس في النهاية
             Positioned(
               bottom: -4,
               left: -4,
@@ -171,12 +159,11 @@ class AppQuoteCard extends StatelessWidget {
                 child: Icon(
                   quoteIcon,
                   size: AppDimens.iconSm,
-                  color: textColor.withOpacity(AppColors.opacity50),
+                  color: textColor.withAlpha((AppColors.opacity50 * 255).round()),
                 ),
               ),
             ),
           ],
-          
           Padding(
             padding: const EdgeInsets.symmetric(
               vertical: AppDimens.space1,
@@ -198,7 +185,7 @@ class AppQuoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAuthor(Color textColor, Color subtextColor) {
+  Widget _buildAuthor(Color textColor) {
     return Align(
       alignment: AlignmentDirectional.centerStart,
       child: Container(
@@ -207,7 +194,7 @@ class AppQuoteCard extends StatelessWidget {
           vertical: AppDimens.space1,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(AppColors.opacity20),
+          color: Colors.black.withAlpha((AppColors.opacity20 * 255).round()),
           borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         ),
         child: Text(
@@ -221,14 +208,12 @@ class AppQuoteCard extends StatelessWidget {
     );
   }
 
-  /// الحصول على لون نص متباين مع الخلفية
   Color _getContrastingTextColor(Color backgroundColor) {
     return ThemeData.estimateBrightnessForColor(backgroundColor) == Brightness.dark
         ? Colors.white
         : Colors.black87;
   }
 
-  /// إنشاء بطاقة اقتباس بسيطة
   factory AppQuoteCard.simple({
     required String quote,
     String? author,
@@ -242,7 +227,6 @@ class AppQuoteCard extends StatelessWidget {
     );
   }
 
-  /// إنشاء بطاقة اقتباس ديني
   factory AppQuoteCard.religious({
     required String quote,
     required String source,
@@ -252,7 +236,7 @@ class AppQuoteCard extends StatelessWidget {
       quote: quote,
       author: source,
       category: 'حديث شريف',
-      primaryColor: color ?? AppColors.primary,
+      primaryColor: color ?? AppColors.primary, // Direct use of AppColors
       quoteStyle: AppTypography.athkar,
     );
   }

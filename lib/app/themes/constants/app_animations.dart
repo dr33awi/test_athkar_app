@@ -12,7 +12,7 @@ class AppAnimations {
   static const Duration durationSlow = Duration(milliseconds: 400);
   static const Duration durationVerySlow = Duration(milliseconds: 600);
   static const Duration durationExtraSlow = Duration(milliseconds: 1000);
-  
+
   // ===== منحنيات الحركة الموحدة =====
   static const Curve curveDefault = Curves.easeInOut;
   static const Curve curveSharp = Curves.easeInOutCubic;
@@ -20,12 +20,12 @@ class AppAnimations {
   static const Curve curveBounce = Curves.elasticOut;
   static const Curve curveOvershoot = Curves.easeOutBack;
   static const Curve curveAnticipate = Curves.easeInBack;
-  
+
   // ===== إعدادات الحركات المتسلسلة =====
   static const int defaultColumnDelay = 50;
   static const int defaultGridDelay = 100;
   static const int defaultListDelay = 75;
-  
+
   // ===== PageTransitionsTheme للاستخدام في app_theme.dart =====
   static const PageTransitionsTheme pageTransitionsTheme = PageTransitionsTheme(
     builders: {

@@ -15,7 +15,7 @@ class AppSnackBar {
     required String message,
     IconData? icon,
     Color? backgroundColor,
-    Color? textColor,
+    Color? textColor, // Added this parameter to allow customization
     Duration duration = const Duration(seconds: 2),
     EdgeInsetsGeometry? margin,
     SnackBarAction? action,
@@ -26,8 +26,8 @@ class AppSnackBar {
     }
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    
+    // final isDark = theme.brightness == Brightness.dark; // Unused variable
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -35,7 +35,7 @@ class AppSnackBar {
             if (icon != null) ...[
               Icon(
                 icon,
-                color: textColor ?? Colors.white,
+                color: textColor ?? Colors.white, // Use parameter or default
                 size: AppDimens.iconMd,
               ),
               const SizedBox(width: AppDimens.space3),
@@ -44,7 +44,7 @@ class AppSnackBar {
               child: Text(
                 message,
                 style: AppTypography.body2.copyWith(
-                  color: textColor ?? Colors.white,
+                  color: textColor ?? Colors.white, // Use parameter or default
                 ),
               ),
             ),
@@ -74,6 +74,7 @@ class AppSnackBar {
       message: message,
       icon: Icons.check_circle,
       backgroundColor: AppColors.success,
+      textColor: Colors.white, // Explicitly white for success
       duration: duration ?? const Duration(seconds: 2),
       action: action,
     );
@@ -91,6 +92,7 @@ class AppSnackBar {
       message: message,
       icon: Icons.error_outline,
       backgroundColor: AppColors.error,
+      textColor: Colors.white, // Explicitly white for error
       duration: duration ?? const Duration(seconds: 3),
       action: action,
     );
@@ -108,6 +110,7 @@ class AppSnackBar {
       message: message,
       icon: Icons.warning_amber_rounded,
       backgroundColor: AppColors.warning,
+      textColor: AppColors.lightTextPrimary, // Or a color that contrasts with warning
       duration: duration ?? const Duration(seconds: 3),
       action: action,
     );
@@ -125,6 +128,7 @@ class AppSnackBar {
       message: message,
       icon: Icons.info_outline,
       backgroundColor: AppColors.info,
+      textColor: Colors.white, // Explicitly white for info
       duration: duration ?? const Duration(seconds: 2),
       action: action,
     );
@@ -140,15 +144,18 @@ class AppSnackBar {
     String undoLabel = 'تراجع',
     Duration duration = const Duration(seconds: 4),
   }) {
+    final theme = Theme.of(context);
     show(
       context: context,
       message: message,
       icon: icon,
-      backgroundColor: backgroundColor,
+      backgroundColor: backgroundColor, // Defaults to primary in `show`
       duration: duration,
       action: SnackBarAction(
         label: undoLabel,
-        textColor: Colors.white,
+        textColor: backgroundColor != null
+            ? (ThemeData.estimateBrightnessForColor(backgroundColor) == Brightness.dark ? Colors.white : Colors.black)
+            : (ThemeData.estimateBrightnessForColor(theme.primaryColor) == Brightness.dark ? Colors.white : Colors.black),
         onPressed: onUndo,
       ),
     );
@@ -160,7 +167,7 @@ class AppSnackBar {
     required String message,
   }) {
     final theme = Theme.of(context);
-    
+
     return ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -203,20 +210,20 @@ class AppSnackBar {
 
 /// Extension لتسهيل استخدام SnackBar
 extension SnackBarExtension on BuildContext {
-  void showSuccessSnackBar(String message) {
-    AppSnackBar.showSuccess(context: this, message: message);
+  void showSuccessSnackBar(String message, {Duration? duration, SnackBarAction? action}) {
+    AppSnackBar.showSuccess(context: this, message: message, duration: duration, action: action);
   }
 
-  void showErrorSnackBar(String message) {
-    AppSnackBar.showError(context: this, message: message);
+  void showErrorSnackBar(String message, {Duration? duration, SnackBarAction? action}) {
+    AppSnackBar.showError(context: this, message: message, duration: duration, action: action);
   }
 
-  void showInfoSnackBar(String message) {
-    AppSnackBar.showInfo(context: this, message: message);
+  void showInfoSnackBar(String message, {Duration? duration, SnackBarAction? action}) {
+    AppSnackBar.showInfo(context: this, message: message, duration: duration, action: action);
   }
 
-  void showWarningSnackBar(String message) {
-    AppSnackBar.showWarning(context: this, message: message);
+  void showWarningSnackBar(String message, {Duration? duration, SnackBarAction? action}) {
+    AppSnackBar.showWarning(context: this, message: message, duration: duration, action: action);
   }
 
   void hideSnackBars() {

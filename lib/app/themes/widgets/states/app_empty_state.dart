@@ -6,7 +6,6 @@ import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
 import '../../constants/app_animations.dart';
 
-/// مكون عام لعرض الحالات الفارغة
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -20,7 +19,7 @@ class AppEmptyState extends StatelessWidget {
   final CrossAxisAlignment alignment;
 
   const AppEmptyState({
-    Key? key,
+    super.key, // Applied super.key
     required this.icon,
     required this.title,
     this.subtitle,
@@ -31,15 +30,14 @@ class AppEmptyState extends StatelessWidget {
     this.padding,
     this.animate = true,
     this.alignment = CrossAxisAlignment.center,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final defaultIconColor = iconColor ?? 
-        AppColors.textSecondary(context).withOpacity(AppColors.opacity50);
-    
-    Widget content = Center(
+    // final theme = Theme.of(context); // Removed as it was unused
+    final defaultIconColor = this.iconColor ?? AppColors.textSecondary(context).withAlpha((AppColors.opacity50 * 255).round()); // Corrected withAlpha
+
+    Widget contentWidget = Center(
       child: Padding(
         padding: padding ?? const EdgeInsets.all(AppDimens.space5),
         child: Column(
@@ -47,27 +45,21 @@ class AppEmptyState extends StatelessWidget {
           crossAxisAlignment: alignment,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // الأيقونة
             customIcon ?? Icon(
               icon,
               size: iconSize ?? AppDimens.icon2xl * 1.5,
               color: defaultIconColor,
             ),
-            
             const SizedBox(height: AppDimens.space4),
-            
-            // العنوان
             Text(
               title,
               style: AppTypography.h5.copyWith(
-                color: iconColor ?? AppColors.textPrimary(context),
+                color: iconColor ?? AppColors.textPrimary(context), // Removed unnecessary 'this.'
               ),
-              textAlign: alignment == CrossAxisAlignment.center 
-                ? TextAlign.center 
+              textAlign: alignment == CrossAxisAlignment.center
+                ? TextAlign.center
                 : TextAlign.start,
             ),
-            
-            // العنوان الفرعي
             if (subtitle != null) ...[
               const SizedBox(height: AppDimens.space2),
               Text(
@@ -75,13 +67,11 @@ class AppEmptyState extends StatelessWidget {
                 style: AppTypography.body2.copyWith(
                   color: AppColors.textSecondary(context),
                 ),
-                textAlign: alignment == CrossAxisAlignment.center 
-                  ? TextAlign.center 
+                textAlign: alignment == CrossAxisAlignment.center
+                  ? TextAlign.center
                   : TextAlign.start,
               ),
             ],
-            
-            // زر الإجراء
             if (action != null) ...[
               const SizedBox(height: AppDimens.space5),
               action!,
@@ -90,7 +80,7 @@ class AppEmptyState extends StatelessWidget {
         ),
       ),
     );
-    
+
     if (animate) {
       return AnimationConfiguration.synchronized(
         duration: AppAnimations.durationNormal,
@@ -99,7 +89,6 @@ class AppEmptyState extends StatelessWidget {
           crossAxisAlignment: alignment,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // الأيقونة المتحركة
             ScaleAnimation(
               scale: 0.5,
               curve: AppAnimations.curveBounce,
@@ -112,55 +101,48 @@ class AppEmptyState extends StatelessWidget {
                 ),
               ),
             ),
-            
             const SizedBox(height: AppDimens.space4),
-            
-            // العنوان المتحرك
             SlideAnimation(
               verticalOffset: 20,
               curve: AppAnimations.curveDefault,
-              delay: Duration(milliseconds: 100),
+              delay: const Duration(milliseconds: 100),
               child: FadeInAnimation(
                 child: Text(
                   title,
                   style: AppTypography.h5.copyWith(
-                    color: iconColor ?? AppColors.textPrimary(context),
+                    color: iconColor ?? AppColors.textPrimary(context), // Removed unnecessary 'this.'
                   ),
-                  textAlign: alignment == CrossAxisAlignment.center 
-                    ? TextAlign.center 
+                  textAlign: alignment == CrossAxisAlignment.center
+                    ? TextAlign.center
                     : TextAlign.start,
                 ),
               ),
             ),
-            
-            // العنوان الفرعي المتحرك
             if (subtitle != null) ...[
               const SizedBox(height: AppDimens.space2),
               SlideAnimation(
                 verticalOffset: 20,
                 curve: AppAnimations.curveDefault,
-                delay: Duration(milliseconds: 200),
+                delay: const Duration(milliseconds: 200),
                 child: FadeInAnimation(
                   child: Text(
                     subtitle!,
                     style: AppTypography.body2.copyWith(
                       color: AppColors.textSecondary(context),
                     ),
-                    textAlign: alignment == CrossAxisAlignment.center 
-                      ? TextAlign.center 
+                    textAlign: alignment == CrossAxisAlignment.center
+                      ? TextAlign.center
                       : TextAlign.start,
                   ),
                 ),
               ),
             ],
-            
-            // زر الإجراء المتحرك
             if (action != null) ...[
               const SizedBox(height: AppDimens.space5),
               SlideAnimation(
                 verticalOffset: 20,
                 curve: AppAnimations.curveDefault,
-                delay: Duration(milliseconds: 300),
+                delay: const Duration(milliseconds: 300),
                 child: FadeInAnimation(
                   child: action!,
                 ),
@@ -170,16 +152,20 @@ class AppEmptyState extends StatelessWidget {
         ),
       );
     }
-    
-    return content;
+    return contentWidget;
   }
 
-  /// حالة فارغة للقوائم
   static Widget list({
     String title = 'لا توجد عناصر',
     String? subtitle,
     Widget? action,
   }) {
+    if (action == null && subtitle == null) {
+      return AppEmptyState(
+        icon: Icons.inbox_outlined,
+        title: title,
+      );
+    }
     return AppEmptyState(
       icon: Icons.inbox_outlined,
       title: title,
@@ -188,12 +174,18 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  /// حالة فارغة للبحث
   static Widget search({
     String title = 'لا توجد نتائج',
     String? subtitle = 'جرب البحث بكلمات مختلفة',
     Widget? action,
   }) {
+    if (action == null) {
+       return AppEmptyState(
+        icon: Icons.search_off,
+        title: title,
+        subtitle: subtitle, // Default string literals are const compatible
+      );
+    }
     return AppEmptyState(
       icon: Icons.search_off,
       title: title,
@@ -202,12 +194,18 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  /// حالة فارغة للمفضلة
   static Widget favorites({
     String title = 'لا توجد مفضلات',
     String? subtitle = 'أضف عناصر إلى المفضلة لتظهر هنا',
     Widget? action,
   }) {
+    if (action == null) {
+      return AppEmptyState(
+        icon: Icons.favorite_border,
+        title: title,
+        subtitle: subtitle,
+      );
+    }
     return AppEmptyState(
       icon: Icons.favorite_border,
       title: title,
@@ -216,12 +214,21 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  /// حالة عدم وجود اتصال
-  static Widget noConnection({
+  static Widget noConnection({ // Line 166 for error
     String title = 'لا يوجد اتصال',
     String? subtitle = 'تحقق من اتصالك بالإنترنت',
     Widget? action,
   }) {
+    if (action == null) {
+      // AppColors.error is const. Defaults for title & subtitle are const.
+      // This should be const.
+      return AppEmptyState(
+        icon: Icons.wifi_off,
+        title: title,
+        subtitle: subtitle,
+        iconColor: AppColors.error,
+      );
+    }
     return AppEmptyState(
       icon: Icons.wifi_off,
       title: title,
@@ -231,12 +238,18 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  /// حالة خطأ عامة
-  static Widget error({
+  static Widget error({ // Line 232 for error (approx.)
     String title = 'حدث خطأ',
     String? subtitle,
     Widget? action,
   }) {
+    if (action == null && subtitle == null) {
+       return AppEmptyState(
+        icon: Icons.error_outline,
+        title: title,
+        iconColor: AppColors.error,
+      );
+    }
     return AppEmptyState(
       icon: Icons.error_outline,
       title: title,
