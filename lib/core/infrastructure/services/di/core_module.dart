@@ -2,7 +2,7 @@
 import 'package:athkar_app/core/error/error_handler.dart';
 import 'package:athkar_app/core/infrastructure/services/device/battery/battery_service.dart';
 import 'package:athkar_app/core/infrastructure/services/device/battery/battery_service_impl.dart';
-import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
+import 'package:athkar_app/core/infrastructure/services/device/battery/do_not_disturb_service.dart';
 import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
 import 'package:athkar_app/core/infrastructure/services/logging/logger_service.dart';
 import 'package:athkar_app/core/infrastructure/services/logging/logger_service_impl.dart';

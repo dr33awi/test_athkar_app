@@ -6,7 +6,7 @@ enum DoNotDisturbOverridePriority {
   low,        // Low priority override
   medium,     // Medium priority override
   high,       // High priority override
-  critical,   // Critical priority override
+  critical,   // Critical priority override (always override)
 }
 
 abstract class DoNotDisturbService {
@@ -30,4 +30,10 @@ abstract class DoNotDisturbService {
   
   /// Get current DND policy details (if available)
   Future<Map<String, dynamic>> getDoNotDisturbPolicy();
+  
+  /// Set custom override rules
+  Future<void> setOverrideRules(Map<DoNotDisturbOverridePriority, bool> rules);
+  
+  /// Get override statistics
+  Future<Map<String, dynamic>> getOverrideStats();
 }

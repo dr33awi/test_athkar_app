@@ -5,7 +5,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
 import '../../../../core/infrastructure/services/device/battery/battery_service.dart';
-import '../../../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
+import '../../../../core/infrastructure/services/device/battery/do_not_disturb_service.dart';
 import '../../../../core/infrastructure/services/permissions/permission_service.dart';
 import '../../../../core/infrastructure/services/permissions/permission_manager.dart';
 import '../../../prayers/presentation/providers/prayer_times_provider.dart';
