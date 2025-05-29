@@ -14,6 +14,7 @@ import 'utils/notification_payload_handler.dart';
 import 'utils/notification_analytics.dart';
 import 'utils/notification_retry_manager.dart';
 import '../../../../app/di/service_locator.dart';
+import 'notification_service.dart';
 
 /// Callback for background notifications
 @pragma('vm:entry-point')
@@ -579,7 +580,7 @@ class NotificationServiceImpl implements NotificationService {
     if (_isDisposed) return false;
 
     // Check battery optimization
-    if (_config.respectBatteryOptimization && notification.respectBatteryOptimizations) {
+    if (_config.respectSystemSettings && notification.respectSystemSettings) {
       try {
         final canSend = await _batteryService.canSendNotification();
         if (!canSend) {
@@ -598,21 +599,37 @@ class NotificationServiceImpl implements NotificationService {
       }
     }
 
-    // Check Do Not Disturb
-    if (_config.respectDoNotDisturb && notification.respectDoNotDisturb) {
+    // Check Do Not Disturb with custom handler
+    if (_config.respectSystemSettings && notification.respectSystemSettings) {
       try {
         final dndEnabled = await _doNotDisturbService.isDoNotDisturbEnabled();
         if (dndEnabled) {
-          final overrideType = _getDoNotDisturbOverrideType(notification);
-          final shouldOverride = await _doNotDisturbService.shouldOverrideDoNotDisturb(overrideType);
-          
-          if (!shouldOverride) {
-            _logger.info(
-              message: "Notification suppressed by DND",
-              data: {'id': notification.id}
-            );
-            _analytics.recordNotificationSuppressed('dnd');
-            return false;
+          // Use custom handler if provided
+          if (_config.systemConstraintHandler != null) {
+            final shouldOverride = await _config.systemConstraintHandler!
+                .shouldSendNotification(notification);
+            
+            if (!shouldOverride) {
+              _logger.info(
+                message: "Notification suppressed by DND",
+                data: {'id': notification.id}
+              );
+              _analytics.recordNotificationSuppressed('dnd');
+              return false;
+            }
+          } else {
+            // Default behavior - check priority
+            final shouldOverride = await _doNotDisturbService
+                .shouldOverrideDoNotDisturb(_mapToSystemOverridePriority(notification.priority));
+            
+            if (!shouldOverride) {
+              _logger.info(
+                message: "Notification suppressed by DND",
+                data: {'id': notification.id}
+              );
+              _analytics.recordNotificationSuppressed('dnd');
+              return false;
+            }
           }
         }
       } catch (e) {
@@ -626,32 +643,19 @@ class NotificationServiceImpl implements NotificationService {
     return true;
   }
 
-  DoNotDisturbOverrideType _getDoNotDisturbOverrideType(NotificationData notification) {
-    // Critical notifications always override
-    if (notification.priority == NotificationPriority.critical) {
-      return DoNotDisturbOverrideType.critical;
+  SystemOverridePriority _mapToSystemOverridePriority(NotificationPriority priority) {
+    switch (priority) {
+      case NotificationPriority.min:
+      case NotificationPriority.low:
+        return SystemOverridePriority.low;
+      case NotificationPriority.normal:
+        return SystemOverridePriority.medium;
+      case NotificationPriority.high:
+        return SystemOverridePriority.high;
+      case NotificationPriority.max:
+      case NotificationPriority.critical:
+        return SystemOverridePriority.critical;
     }
-    
-    // Prayer notifications override
-    if (_isPrayerNotification(notification.notificationTime)) {
-      return DoNotDisturbOverrideType.prayer;
-    }
-    
-    // Important athkar override
-    if (notification.notificationTime == NotificationTime.morning ||
-        notification.notificationTime == NotificationTime.evening) {
-      return DoNotDisturbOverrideType.importantAthkar;
-    }
-    
-    return DoNotDisturbOverrideType.none;
-  }
-
-  bool _isPrayerNotification(NotificationTime time) {
-    return time == NotificationTime.fajr ||
-           time == NotificationTime.dhuhr ||
-           time == NotificationTime.asr ||
-           time == NotificationTime.maghrib ||
-           time == NotificationTime.isha;
   }
 
   tz.TZDateTime _getNextValidScheduleTime(
@@ -666,6 +670,9 @@ class NotificationServiceImpl implements NotificationService {
         case NotificationRepeatInterval.once:
           // Should not reach here
           return nextTime;
+        case NotificationRepeatInterval.hourly:
+          nextTime = nextTime.add(const Duration(hours: 1));
+          break;
         case NotificationRepeatInterval.daily:
           nextTime = nextTime.add(const Duration(days: 1));
           break;
@@ -873,6 +880,12 @@ class NotificationServiceImpl implements NotificationService {
     _onNotificationAction = handler;
   }
 
+  /// Set custom configuration
+  void setConfiguration(NotificationConfig config) {
+    _config = config;
+    _logger.debug(message: "Notification configuration updated");
+  }
+
   @override
   Future<void> dispose() async {
     if (_isDisposed) return;
@@ -893,7 +906,7 @@ class NotificationServiceImpl implements NotificationService {
 
   AndroidScheduleMode _getAndroidScheduleMode(NotificationData notification) {
     if (notification.priority == NotificationPriority.critical ||
-        !notification.respectBatteryOptimizations) {
+        !notification.respectSystemSettings) {
       return AndroidScheduleMode.exactAllowWhileIdle;
     }
     return AndroidScheduleMode.exact;
@@ -905,6 +918,8 @@ class NotificationServiceImpl implements NotificationService {
     switch (interval) {
       case NotificationRepeatInterval.once:
         return null;
+      case NotificationRepeatInterval.hourly:
+        return DateTimeComponents.time;
       case NotificationRepeatInterval.daily:
         return DateTimeComponents.time;
       case NotificationRepeatInterval.weekly:

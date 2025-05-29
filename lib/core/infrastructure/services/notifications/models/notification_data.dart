@@ -165,6 +165,70 @@ class NotificationData {
       customSchedulingData: customSchedulingData ?? this.customSchedulingData,
     );
   }
+
+  /// Convert to JSON
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'body': body,
+      'scheduledDate': scheduledDate.toIso8601String(),
+      'repeatInterval': repeatInterval.index,
+      'category': category.index,
+      'priority': priority.index,
+      'visibility': visibility.index,
+      'channelId': channelId,
+      'payload': payload,
+      'soundName': soundName,
+      'iconName': iconName,
+      'groupKey': groupKey,
+      'showWhen': showWhen,
+      'ongoing': ongoing,
+      'autoCancel': autoCancel,
+      'playSound': playSound,
+      'enableVibration': enableVibration,
+      'enableLights': enableLights,
+      'respectSystemSettings': respectSystemSettings,
+      'vibrationPattern': vibrationPattern,
+      'color': color,
+      'actions': actions?.map((a) => a.toJson()).toList(),
+      'additionalData': additionalData,
+      'customSchedulingData': customSchedulingData,
+    };
+  }
+
+  /// Create from JSON
+  factory NotificationData.fromJson(Map<String, dynamic> json) {
+    return NotificationData(
+      id: json['id'] as int,
+      title: json['title'] as String,
+      body: json['body'] as String,
+      scheduledDate: DateTime.parse(json['scheduledDate'] as String),
+      repeatInterval: NotificationRepeatInterval.values[json['repeatInterval'] as int? ?? 0],
+      category: NotificationCategory.values[json['category'] as int? ?? 0],
+      priority: NotificationPriority.values[json['priority'] as int? ?? 2],
+      visibility: NotificationVisibility.values[json['visibility'] as int? ?? 2],
+      channelId: json['channelId'] as String? ?? 'default_channel',
+      payload: json['payload'] as Map<String, dynamic>?,
+      soundName: json['soundName'] as String?,
+      iconName: json['iconName'] as String?,
+      groupKey: json['groupKey'] as String?,
+      showWhen: json['showWhen'] as bool? ?? true,
+      ongoing: json['ongoing'] as bool? ?? false,
+      autoCancel: json['autoCancel'] as bool? ?? true,
+      playSound: json['playSound'] as bool? ?? true,
+      enableVibration: json['enableVibration'] as bool? ?? true,
+      enableLights: json['enableLights'] as bool? ?? false,
+      respectSystemSettings: json['respectSystemSettings'] as bool? ?? true,
+      vibrationPattern: (json['vibrationPattern'] as List?)?.cast<int>(),
+      color: json['color'] as int?,
+      actions: (json['actions'] as List?)
+          ?.map((a) => NotificationAction.fromJson(a as Map<String, dynamic>))
+          .toList(),
+      additionalData: json['additionalData'] as Map<String, dynamic>?,
+      customSchedulingData: json['customSchedulingData'] as Map<String, dynamic>?,
+    );
+  }
 }
 
 /// Notification action
@@ -184,6 +248,28 @@ class NotificationAction {
     this.icon,
     this.additionalData,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'showsUserInterface': showsUserInterface,
+      'cancelNotification': cancelNotification,
+      'icon': icon,
+      'additionalData': additionalData,
+    };
+  }
+
+  factory NotificationAction.fromJson(Map<String, dynamic> json) {
+    return NotificationAction(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      showsUserInterface: json['showsUserInterface'] as bool? ?? true,
+      cancelNotification: json['cancelNotification'] as bool? ?? false,
+      icon: json['icon'] as String?,
+      additionalData: json['additionalData'] as Map<String, dynamic>?,
+    );
+  }
 }
 
 /// Notification channel configuration
