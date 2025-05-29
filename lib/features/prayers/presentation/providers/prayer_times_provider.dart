@@ -1,7 +1,7 @@
 // lib/presentation/blocs/prayers/prayer_times_provider.dart
 import 'package:flutter/material.dart';
 import 'package:adhan/adhan.dart' as adhan;
-import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
+import '../../domain/prayer_times_service.dart';
 import '../../domain/entities/prayer_times.dart';
 import '../../../settings/domain/entities/settings.dart';
 import '../../domain/usecases/get_prayer_times.dart';

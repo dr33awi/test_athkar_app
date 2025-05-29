@@ -8,9 +8,9 @@ import '../../core/infrastructure/services/notifications/notification_service.da
 import '../../core/infrastructure/services/notifications/notification_service_impl.dart';
 import '../../core/infrastructure/services/storage/storage_service.dart';
 import '../../core/infrastructure/services/storage/storage_service_impl.dart';
-import '../../core/infrastructure/services/interfaces/prayer_times_service.dart';
+import '../../features/prayers/domain/prayer_times_service.dart';
 import '../../core/infrastructure/services/implementations/prayer_times_service_impl.dart';
-import '../../core/infrastructure/services/interfaces/qibla_service.dart';
+import '../../features/prayers/qibla_service.dart';
 import '../../core/infrastructure/services/implementations/qibla_service_impl.dart';
 import '../../core/infrastructure/services/device/battery/battery_service.dart';
 import '../../core/infrastructure/services/device/battery/battery_service_impl.dart';

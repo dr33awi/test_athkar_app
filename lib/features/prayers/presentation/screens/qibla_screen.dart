@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../../../../core/infrastructure/services/interfaces/qibla_service.dart';
+import '../../qibla_service.dart';
 import '../providers/prayer_times_provider.dart';
 import '../../../../app/themes/custom_app_bar.dart';
 import '../../../../app/themes/loading_widget.dart';

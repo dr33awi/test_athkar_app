@@ -7,7 +7,7 @@ import '../../../constants/app_constants.dart';
 import '../device/battery/battery_service.dart';
 import '../device/do_not_disturb/do_not_disturb_service.dart';
 import 'notification_service.dart';
-import '../interfaces/prayer_times_service.dart';
+import '../../../../features/prayers/domain/prayer_times_service.dart';
 import '../logging/logger_service.dart';
 import 'notification_payload_handler.dart';
 import 'notification_analytics.dart';

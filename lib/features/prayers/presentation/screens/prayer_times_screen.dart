@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:adhan/adhan.dart' as adhan;
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
-import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
+import '../../domain/prayer_times_service.dart';
 import '../../../settings/domain/entities/settings.dart';
 import '../../domain/entities/prayer_times.dart';
 import '../providers/prayer_times_provider.dart';

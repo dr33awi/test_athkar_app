@@ -1,5 +1,5 @@
 // lib/data/repositories/prayer_times_repository_impl.dart
-import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
+import '../../domain/prayer_times_service.dart';
 import '../../domain/entities/prayer_times.dart';
 import '../../domain/repositories/prayer_times_repository.dart';
 
