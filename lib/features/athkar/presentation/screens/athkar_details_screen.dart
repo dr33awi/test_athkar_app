@@ -1,5 +1,5 @@
 // lib/features/athkar/presentation/screens/athkar_details_screen.dart
-import 'package:athkar_app/features/athkar/athkar_themes/athkar_card.dart';
+import 'package:athkar_app/app/themes/widgets/cards/athkar_card.dart';
 import 'package:athkar_app/features/athkar/athkar_themes/athkar_snackbar.dart';
 import 'package:athkar_app/features/athkar/athkar_themes/completion_message_card.dart';
 import 'package:athkar_app/features/athkar/athkar_themes/empty_state_widget.dart';
