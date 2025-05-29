@@ -1,4 +1,4 @@
-// lib/core/services/notification/models/notification_data.dart
+// lib/core/infrastructure/services/notifications/models/notification_data.dart
 
 /// Generic notification repeat interval
 enum NotificationRepeatInterval {
@@ -18,6 +18,7 @@ enum NotificationPriority {
   normal,
   high,
   max,
+  critical,
 }
 
 /// Notification visibility on lock screen
@@ -37,9 +38,16 @@ enum NotificationCategory {
   progress,
   social,
   error,
+  transport,
   system,
-  update,
-  promotional,
+  service,
+  recommendation,
+  status,
+  alarm,
+  call,
+  email,
+  promo,
+  location,
   custom,
 }
 
@@ -64,10 +72,14 @@ class NotificationData {
   final bool playSound;
   final bool enableVibration;
   final bool enableLights;
+  final bool respectSystemSettings;
   final List<int>? vibrationPattern;
   final int? color;
   final List<NotificationAction>? actions;
-  final Map<String, dynamic>? metadata;
+  final Map<String, dynamic>? additionalData;
+  
+  // Custom scheduling data that features can use
+  final Map<String, dynamic>? customSchedulingData;
 
   NotificationData({
     required this.id,
@@ -89,10 +101,12 @@ class NotificationData {
     this.playSound = true,
     this.enableVibration = true,
     this.enableLights = false,
+    this.respectSystemSettings = true,
     this.vibrationPattern,
     this.color,
     this.actions,
-    this.metadata,
+    this.additionalData,
+    this.customSchedulingData,
   });
 
   /// Create a copy with modified values
@@ -116,10 +130,12 @@ class NotificationData {
     bool? playSound,
     bool? enableVibration,
     bool? enableLights,
+    bool? respectSystemSettings,
     List<int>? vibrationPattern,
     int? color,
     List<NotificationAction>? actions,
-    Map<String, dynamic>? metadata,
+    Map<String, dynamic>? additionalData,
+    Map<String, dynamic>? customSchedulingData,
   }) {
     return NotificationData(
       id: id ?? this.id,
@@ -141,62 +157,14 @@ class NotificationData {
       playSound: playSound ?? this.playSound,
       enableVibration: enableVibration ?? this.enableVibration,
       enableLights: enableLights ?? this.enableLights,
+      respectSystemSettings: respectSystemSettings ?? this.respectSystemSettings,
       vibrationPattern: vibrationPattern ?? this.vibrationPattern,
       color: color ?? this.color,
       actions: actions ?? this.actions,
-      metadata: metadata ?? this.metadata,
+      additionalData: additionalData ?? this.additionalData,
+      customSchedulingData: customSchedulingData ?? this.customSchedulingData,
     );
   }
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'body': body,
-    'scheduledDate': scheduledDate.toIso8601String(),
-    'repeatInterval': repeatInterval.index,
-    'category': category.index,
-    'priority': priority.index,
-    'visibility': visibility.index,
-    'channelId': channelId,
-    'payload': payload,
-    'soundName': soundName,
-    'iconName': iconName,
-    'groupKey': groupKey,
-    'showWhen': showWhen,
-    'ongoing': ongoing,
-    'autoCancel': autoCancel,
-    'playSound': playSound,
-    'enableVibration': enableVibration,
-    'enableLights': enableLights,
-    'vibrationPattern': vibrationPattern,
-    'color': color,
-    'metadata': metadata,
-  };
-
-  factory NotificationData.fromJson(Map<String, dynamic> json) => NotificationData(
-    id: json['id'] as int,
-    title: json['title'] as String,
-    body: json['body'] as String,
-    scheduledDate: DateTime.parse(json['scheduledDate'] as String),
-    repeatInterval: NotificationRepeatInterval.values[json['repeatInterval'] as int],
-    category: NotificationCategory.values[json['category'] as int],
-    priority: NotificationPriority.values[json['priority'] as int],
-    visibility: NotificationVisibility.values[json['visibility'] as int],
-    channelId: json['channelId'] as String? ?? 'default_channel',
-    payload: json['payload'] as Map<String, dynamic>?,
-    soundName: json['soundName'] as String?,
-    iconName: json['iconName'] as String?,
-    groupKey: json['groupKey'] as String?,
-    showWhen: json['showWhen'] as bool? ?? true,
-    ongoing: json['ongoing'] as bool? ?? false,
-    autoCancel: json['autoCancel'] as bool? ?? true,
-    playSound: json['playSound'] as bool? ?? true,
-    enableVibration: json['enableVibration'] as bool? ?? true,
-    enableLights: json['enableLights'] as bool? ?? false,
-    vibrationPattern: (json['vibrationPattern'] as List?)?.cast<int>(),
-    color: json['color'] as int?,
-    metadata: json['metadata'] as Map<String, dynamic>?,
-  );
 }
 
 /// Notification action
@@ -206,7 +174,7 @@ class NotificationAction {
   final bool showsUserInterface;
   final bool cancelNotification;
   final String? icon;
-  final Map<String, dynamic>? extras;
+  final Map<String, dynamic>? additionalData;
 
   NotificationAction({
     required this.id,
@@ -214,7 +182,7 @@ class NotificationAction {
     this.showsUserInterface = true,
     this.cancelNotification = false,
     this.icon,
-    this.extras,
+    this.additionalData,
   });
 }
 
@@ -304,19 +272,41 @@ enum NotificationResponseType {
 
 /// Base notification configuration
 class NotificationConfig {
+  final bool respectSystemSettings;
   final bool enableAnalytics;
   final bool enableRetryOnFailure;
   final int maxRetryAttempts;
   final Duration retryDelay;
   final Map<String, dynamic>? defaultPayload;
-  final NotificationPriority? minimumPriorityForDnd;
+  
+  // System constraint handlers
+  final SystemConstraintHandler? systemConstraintHandler;
 
   NotificationConfig({
+    this.respectSystemSettings = true,
     this.enableAnalytics = true,
     this.enableRetryOnFailure = true,
     this.maxRetryAttempts = 3,
     this.retryDelay = const Duration(seconds: 30),
     this.defaultPayload,
-    this.minimumPriorityForDnd,
+    this.systemConstraintHandler,
   });
+}
+
+/// Abstract handler for system constraints
+abstract class SystemConstraintHandler {
+  /// Check if notification should be sent based on system constraints
+  Future<bool> shouldSendNotification(NotificationData notification);
+  
+  /// Get override priority based on notification data
+  SystemOverridePriority getOverridePriority(NotificationData notification);
+}
+
+/// System override priority levels
+enum SystemOverridePriority {
+  none,
+  low,
+  medium,
+  high,
+  critical,
 }

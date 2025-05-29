@@ -1,7 +1,7 @@
-// lib/core/services/device/do_not_disturb_service.dart
+// lib/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart
 
-/// Generic DND override priorities
-enum DoNotDisturbOverridePriority {
+/// Generic system override priority
+enum SystemOverridePriority {
   none,       // No override
   low,        // Low priority override
   medium,     // Medium priority override
@@ -26,14 +26,20 @@ abstract class DoNotDisturbService {
   Future<void> unregisterDoNotDisturbListener();
   
   /// Check if notification should override DND based on priority
-  Future<bool> shouldOverrideDoNotDisturb(DoNotDisturbOverridePriority priority);
+  Future<bool> shouldOverrideDoNotDisturb(SystemOverridePriority priority);
   
   /// Get current DND policy details (if available)
   Future<Map<String, dynamic>> getDoNotDisturbPolicy();
   
-  /// Set custom override rules
-  Future<void> setOverrideRules(Map<DoNotDisturbOverridePriority, bool> rules);
+  /// Set custom override handler (for feature-specific logic)
+  void setOverrideHandler(DoNotDisturbOverrideHandler? handler);
+}
+
+/// Abstract handler for custom DND override logic
+abstract class DoNotDisturbOverrideHandler {
+  /// Determine if a notification should override DND
+  Future<bool> shouldOverride(Map<String, dynamic>? notificationData);
   
-  /// Get override statistics
-  Future<Map<String, dynamic>> getOverrideStats();
+  /// Get override priority for a notification
+  SystemOverridePriority getOverridePriority(Map<String, dynamic>? notificationData);
 }
