@@ -13,37 +13,37 @@ class PermissionManager {
   }
 
   // Request essential permissions (notification and location)
-  Future<Map<AppPermissionType, bool>> requestEssentialPermissions(BuildContext context) async {
-    Map<AppPermissionType, bool> results = {};
+  Future<Map<AppPermissionType, AppPermissionStatus>> requestEssentialPermissions(BuildContext context) async {
+    Map<AppPermissionType, AppPermissionStatus> results = {};
     
     // Request notification permission
-    final notificationGranted = await _permissionService.requestNotificationPermission();
-    results[AppPermissionType.notification] = notificationGranted;
+    final notificationStatus = await _permissionService.requestNotificationPermission();
+    results[AppPermissionType.notification] = notificationStatus;
     
     // Request location permission
-    final locationGranted = await _permissionService.requestLocationPermission();
-    results[AppPermissionType.location] = locationGranted;
+    final locationStatus = await _permissionService.requestLocationPermission();
+    results[AppPermissionType.location] = locationStatus;
     
     return results;
   }
 
   // Request optional permissions (battery optimization and DND)
-  Future<Map<AppPermissionType, bool>> requestOptionalPermissions(BuildContext context) async {
-    Map<AppPermissionType, bool> results = {};
+  Future<Map<AppPermissionType, AppPermissionStatus>> requestOptionalPermissions(BuildContext context) async {
+    Map<AppPermissionType, AppPermissionStatus> results = {};
     
     // Request battery optimization permission
-    final batteryOptGranted = await _permissionService.requestBatteryOptimizationPermission();
-    results[AppPermissionType.batteryOptimization] = batteryOptGranted;
+    final batteryOptStatus = await _permissionService.requestBatteryOptimizationPermission();
+    results[AppPermissionType.batteryOptimization] = batteryOptStatus;
     
     // Request DND permission
-    final dndGranted = await _permissionService.requestDoNotDisturbPermission();
-    results[AppPermissionType.doNotDisturb] = dndGranted;
+    final dndStatus = await _permissionService.requestDoNotDisturbPermission();
+    results[AppPermissionType.doNotDisturb] = dndStatus;
     
     return results;
   }
 
   // Request location permission specifically
-  Future<bool> requestLocationPermission(BuildContext context) async {
+  Future<AppPermissionStatus> requestLocationPermission(BuildContext context) async {
     return await _permissionService.requestLocationPermission();
   }
   
@@ -67,5 +67,26 @@ class PermissionManager {
     }
     
     await _permissionService.openAppSettings(settingsType);
+  }
+  
+  // Helper methods for checking specific permissions
+  Future<bool> hasLocationPermission() async {
+    final status = await _permissionService.checkPermissionStatus(AppPermissionType.location);
+    return status == AppPermissionStatus.granted;
+  }
+  
+  Future<bool> hasNotificationPermission() async {
+    final status = await _permissionService.checkPermissionStatus(AppPermissionType.notification);
+    return status == AppPermissionStatus.granted;
+  }
+  
+  Future<bool> hasBatteryOptimizationPermission() async {
+    final status = await _permissionService.checkPermissionStatus(AppPermissionType.batteryOptimization);
+    return status == AppPermissionStatus.granted;
+  }
+  
+  Future<bool> hasDoNotDisturbPermission() async {
+    final status = await _permissionService.checkPermissionStatus(AppPermissionType.doNotDisturb);
+    return status == AppPermissionStatus.granted;
   }
 }

@@ -1,483 +1,834 @@
 // lib/core/services/utils/notification_scheduler.dart
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:athkar_app/features/settings/domain/entities/settings_extensions.dart';
+
 import '../../../app/di/service_locator.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/services/interfaces/battery_service.dart';
-import '../../../core/services/interfaces/do_not_disturb_service.dart';
-import '../../../core/services/interfaces/notification_service.dart';
-import '../../../core/services/interfaces/prayer_times_service.dart';
-import '../../../core/services/interfaces/timezone_service.dart';
+import '../interfaces/battery_service.dart';
+import '../interfaces/do_not_disturb_service.dart';
+import '../interfaces/notification_service.dart';
+import '../interfaces/prayer_times_service.dart';
+import '../interfaces/logger_service.dart';
+import './notification_payload_handler.dart';
+import './notification_analytics.dart';
 import '../../../features/settings/domain/entities/settings.dart';
 
-/// مساعد لجدولة الإشعارات المختلفة في التطبيق
+/// مساعد محسّن لجدولة الإشعارات المختلفة في التطبيق
 class NotificationScheduler {
-  final NotificationService _notificationService = getIt<NotificationService>();
-  final BatteryService _batteryService = getIt<BatteryService>();
-  final DoNotDisturbService _doNotDisturbService = getIt<DoNotDisturbService>();
-  final PrayerTimesService _prayerTimesService = getIt<PrayerTimesService>();
-  final TimezoneService _timezoneService = getIt<TimezoneService>();
+  final NotificationService _notificationService;
+  final BatteryService _batteryService;
+  final DoNotDisturbService _doNotDisturbService;
+  final PrayerTimesService _prayerTimesService;
+  final LoggerService _logger;
+  final NotificationAnalytics _analytics;
   
   // تخزين معرفات الإشعارات التي تم جدولتها
   final Set<int> _scheduledNotificationIds = {};
+  final Map<String, List<int>> _notificationIdsByType = {};
+  
+  // متغيرات الحالة
+  bool _isScheduling = false;
+  
+  NotificationScheduler({
+    NotificationService? notificationService,
+    BatteryService? batteryService,
+    DoNotDisturbService? doNotDisturbService,
+    PrayerTimesService? prayerTimesService,
+    LoggerService? logger,
+    NotificationAnalytics? analytics,
+  })  : _notificationService = notificationService ?? getIt<NotificationService>(),
+        _batteryService = batteryService ?? getIt<BatteryService>(),
+        _doNotDisturbService = doNotDisturbService ?? getIt<DoNotDisturbService>(),
+        _prayerTimesService = prayerTimesService ?? getIt<PrayerTimesService>(),
+        _logger = logger ?? getIt<LoggerService>(),
+        _analytics = analytics ?? getIt<NotificationAnalytics>() {
+    _logger.debug(message: 'NotificationScheduler initialized');
+  }
   
   /// جدولة جميع الإشعارات بناءً على الإعدادات
-  Future<void> scheduleAllNotifications(Settings settings) async {
-    if (!settings.enableNotifications) {
-      // إلغاء جميع الإشعارات السابقة
-      await _notificationService.cancelAllNotifications();
-      _scheduledNotificationIds.clear();
-      return;
+  Future<SchedulingResult> scheduleAllNotifications(Settings settings) async {
+    if (_isScheduling) {
+      _logger.warning(message: 'Scheduling already in progress');
+      return SchedulingResult(
+        success: false,
+        message: 'جدولة الإشعارات قيد التنفيذ بالفعل',
+      );
     }
     
-    // جدولة إشعارات الأذكار
-    if (settings.enableAthkarNotifications) {
-      await _scheduleAthkarNotifications(settings);
-    } else {
-      // إلغاء إشعارات الأذكار فقط
-      await _cancelNotificationsByType('athkar');
-    }
+    _isScheduling = true;
+    final stopwatch = Stopwatch()..start();
     
-    // جدولة إشعارات مواقيت الصلاة
-    if (settings.enablePrayerTimesNotifications) {
-      await _schedulePrayerNotifications(settings);
-    } else {
-      // إلغاء إشعارات مواقيت الصلاة فقط
-      await _cancelNotificationsByType('prayer');
+    try {
+      _logger.info(message: 'Starting notification scheduling');
+      
+      if (!settings.enableNotifications) {
+        await _cancelAllNotifications();
+        _logger.info(message: 'All notifications cancelled - notifications disabled');
+        return SchedulingResult(
+          success: true,
+          message: 'تم إلغاء جميع الإشعارات',
+          cancelledCount: _scheduledNotificationIds.length,
+        );
+      }
+      
+      int scheduledCount = 0;
+      int failedCount = 0;
+      final List<String> errors = [];
+      
+      // جدولة إشعارات الأذكار
+      if (settings.enableAthkarNotifications) {
+        final athkarResult = await _scheduleAthkarNotifications(settings);
+        scheduledCount += athkarResult.scheduledCount;
+        failedCount += athkarResult.failedCount;
+        errors.addAll(athkarResult.errors);
+      } else {
+        await _cancelNotificationsByType('athkar');
+      }
+      
+      // جدولة إشعارات مواقيت الصلاة
+      if (settings.enablePrayerTimesNotifications) {
+        final prayerResult = await _schedulePrayerNotifications(settings);
+        scheduledCount += prayerResult.scheduledCount;
+        failedCount += prayerResult.failedCount;
+        errors.addAll(prayerResult.errors);
+      } else {
+        await _cancelNotificationsByType('prayer');
+      }
+      
+      stopwatch.stop();
+      
+      _logger.info(
+        message: 'Notification scheduling completed',
+        data: {
+          'duration_ms': stopwatch.elapsedMilliseconds,
+          'scheduled': scheduledCount,
+          'failed': failedCount,
+        }
+      );
+      
+      _analytics.recordEvent('scheduling_completed', {
+        'scheduled_count': scheduledCount,
+        'failed_count': failedCount,
+        'duration_ms': stopwatch.elapsedMilliseconds,
+      });
+      
+      return SchedulingResult(
+        success: failedCount == 0,
+        message: _buildResultMessage(scheduledCount, failedCount),
+        scheduledCount: scheduledCount,
+        failedCount: failedCount,
+        errors: errors,
+      );
+      
+    } catch (e, s) {
+      _logger.error(
+        message: 'Error during notification scheduling',
+        error: e,
+        stackTrace: s
+      );
+      
+      return SchedulingResult(
+        success: false,
+        message: 'حدث خطأ أثناء جدولة الإشعارات',
+        errors: [e.toString()],
+      );
+    } finally {
+      _isScheduling = false;
     }
   }
   
   /// جدولة إشعارات الأذكار
-  Future<void> _scheduleAthkarNotifications(Settings settings) async {
+  Future<SchedulingTypeResult> _scheduleAthkarNotifications(Settings settings) async {
     if (!settings.showAthkarReminders) {
       await _cancelNotificationsByType('athkar');
-      return;
+      return SchedulingTypeResult();
     }
     
-    await _scheduleMorningAthkarNotification(settings);
-    await _scheduleEveningAthkarNotification(settings);
+    int scheduled = 0;
+    int failed = 0;
+    final errors = <String>[];
+    
+    // جدولة أذكار الصباح
+    try {
+      if (await _scheduleMorningAthkarNotification(settings)) {
+        scheduled++;
+      } else {
+        failed++;
+      }
+    } catch (e) {
+      failed++;
+      errors.add('أذكار الصباح: $e');
+    }
+    
+    // جدولة أذكار المساء
+    try {
+      if (await _scheduleEveningAthkarNotification(settings)) {
+        scheduled++;
+      } else {
+        failed++;
+      }
+    } catch (e) {
+      failed++;
+      errors.add('أذكار المساء: $e');
+    }
+    
+    // جدولة أذكار النوم إذا كانت مفعلة
+    if (settings.enableSleepAthkarNotifications) {
+      try {
+        if (await _scheduleSleepAthkarNotification(settings)) {
+          scheduled++;
+        } else {
+          failed++;
+        }
+      } catch (e) {
+        failed++;
+        errors.add('أذكار النوم: $e');
+      }
+    }
+    
+    return SchedulingTypeResult(
+      scheduledCount: scheduled,
+      failedCount: failed,
+      errors: errors,
+    );
   }
   
   /// جدولة إشعار أذكار الصباح
-  Future<void> _scheduleMorningAthkarNotification(Settings settings) async {
-    final DateTime now = DateTime.now();
-    final int morningHour = settings.morningAthkarTime[0];
-    final int morningMinute = settings.morningAthkarTime[1];
-    
-    DateTime morningTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      morningHour,
-      morningMinute,
+  Future<bool> _scheduleMorningAthkarNotification(Settings settings) async {
+    final notificationTime = _calculateNextNotificationTime(
+      settings.morningAthkarTime[0],
+      settings.morningAthkarTime[1],
     );
     
-    // إذا كان الوقت قد فات اليوم، جدولته ليوم غد
-    if (morningTime.isBefore(now)) {
-      morningTime = morningTime.add(const Duration(days: 1));
-    }
+    final actions = settings.enableActionButtons
+        ? [
+            NotificationAction(id: 'read_now', title: 'قراءة الآن'),
+            NotificationAction(id: 'remind_later', title: 'تذكير لاحقًا'),
+          ]
+        : null;
     
-    // إعداد إجراءات الإشعار
-    final List<NotificationAction> morningActions = [
-      NotificationAction(
-        id: 'read_now',
-        title: 'قراءة الآن',
-      ),
-      NotificationAction(
-        id: 'remind_later',
-        title: 'تذكير لاحقًا',
-      ),
-    ];
+    final payload = NotificationPayloadHandler.buildAthkarPayload(
+      categoryId: 'morning',
+      categoryName: 'أذكار الصباح',
+    );
     
-    // payload يحتوي على معلومات عن الإشعار والشاشة المراد فتحها
-    final Map<String, dynamic> morningPayload = {
-      'type': 'athkar',
-      'category': 'morning',
-      'route': '/athkar-details',
-      'arguments': {
-        'categoryId': 'morning',
-        'categoryName': 'أذكار الصباح',
-      }
-    };
-    
-    final NotificationData morningNotification = NotificationData(
-      id: 1001,
+    final notification = NotificationData(
+      id: AppConstants.morningAthkarNotificationId,
       title: 'أذكار الصباح',
       body: 'حان وقت أذكار الصباح، اضغط هنا لقراءة الأذكار',
-      scheduledDate: morningTime,
+      scheduledDate: notificationTime,
       repeatInterval: NotificationRepeatInterval.daily,
       notificationTime: NotificationTime.morning,
-      priority: settings.enableHighPriorityForPrayers 
-          ? NotificationPriority.high 
-          : NotificationPriority.normal,
+      priority: _getNotificationPriority(settings, 'athkar'),
       respectBatteryOptimizations: settings.respectBatteryOptimizations,
       respectDoNotDisturb: settings.respectDoNotDisturb,
       channelId: AppConstants.athkarNotificationChannelId,
-      soundName: settings.enableSilentMode ? null : settings.notificationSounds['athkar_morning'],
-      payload: morningPayload,
+      soundName: _getNotificationSound(settings, 'athkar_morning'),
+      payload: payload,
+      visibility: NotificationVisibility.public,
     );
     
-    // محاولة جدولة الإشعار مع الإجراءات
-    if (settings.enableActionButtons) {
-      final scheduled = await _notificationService.scheduleNotificationWithActions(
-        morningNotification,
-        morningActions,
+    bool scheduled;
+    if (actions != null) {
+      scheduled = await _notificationService.scheduleNotificationWithActions(
+        notification,
+        actions,
       );
-      
-      if (scheduled) {
-        _scheduledNotificationIds.add(1001);
-      }
     } else {
-      final scheduled = await _notificationService.scheduleNotification(morningNotification);
-      
-      if (scheduled) {
-        _scheduledNotificationIds.add(1001);
-      }
+      scheduled = await _notificationService.scheduleNotification(notification);
     }
+    
+    if (scheduled) {
+      _addScheduledNotification(notification.id, 'athkar');
+    }
+    
+    return scheduled;
   }
   
   /// جدولة إشعار أذكار المساء
-  Future<void> _scheduleEveningAthkarNotification(Settings settings) async {
-    final DateTime now = DateTime.now();
-    final int eveningHour = settings.eveningAthkarTime[0];
-    final int eveningMinute = settings.eveningAthkarTime[1];
-    
-    DateTime eveningTime = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      eveningHour,
-      eveningMinute,
+  Future<bool> _scheduleEveningAthkarNotification(Settings settings) async {
+    final notificationTime = _calculateNextNotificationTime(
+      settings.eveningAthkarTime[0],
+      settings.eveningAthkarTime[1],
     );
     
-    // إذا كان الوقت قد فات اليوم، جدولته ليوم غد
-    if (eveningTime.isBefore(now)) {
-      eveningTime = eveningTime.add(const Duration(days: 1));
-    }
+    final actions = settings.enableActionButtons
+        ? [
+            NotificationAction(id: 'read_now', title: 'قراءة الآن'),
+            NotificationAction(id: 'remind_later', title: 'تذكير لاحقًا'),
+          ]
+        : null;
     
-    // إعداد إجراءات الإشعار
-    final List<NotificationAction> eveningActions = [
-      NotificationAction(
-        id: 'read_now',
-        title: 'قراءة الآن',
-      ),
-      NotificationAction(
-        id: 'remind_later',
-        title: 'تذكير لاحقًا',
-      ),
-    ];
+    final payload = NotificationPayloadHandler.buildAthkarPayload(
+      categoryId: 'evening',
+      categoryName: 'أذكار المساء',
+    );
     
-    // payload يحتوي على معلومات عن الإشعار والشاشة المراد فتحها
-    final Map<String, dynamic> eveningPayload = {
-      'type': 'athkar',
-      'category': 'evening',
-      'route': '/athkar-details',
-      'arguments': {
-        'categoryId': 'evening',
-        'categoryName': 'أذكار المساء',
-      }
-    };
-    
-    final NotificationData eveningNotification = NotificationData(
-      id: 1002,
+    final notification = NotificationData(
+      id: AppConstants.eveningAthkarNotificationId,
       title: 'أذكار المساء',
       body: 'حان وقت أذكار المساء، اضغط هنا لقراءة الأذكار',
-      scheduledDate: eveningTime,
+      scheduledDate: notificationTime,
       repeatInterval: NotificationRepeatInterval.daily,
       notificationTime: NotificationTime.evening,
-      priority: settings.enableHighPriorityForPrayers 
-          ? NotificationPriority.high 
-          : NotificationPriority.normal,
+      priority: _getNotificationPriority(settings, 'athkar'),
       respectBatteryOptimizations: settings.respectBatteryOptimizations,
       respectDoNotDisturb: settings.respectDoNotDisturb,
       channelId: AppConstants.athkarNotificationChannelId,
-      soundName: settings.enableSilentMode ? null : settings.notificationSounds['athkar_evening'],
-      payload: eveningPayload,
+      soundName: _getNotificationSound(settings, 'athkar_evening'),
+      payload: payload,
+      visibility: NotificationVisibility.public,
     );
     
-    if (settings.enableActionButtons) {
-      final scheduled = await _notificationService.scheduleNotificationWithActions(
-        eveningNotification,
-        eveningActions,
+    bool scheduled;
+    if (actions != null) {
+      scheduled = await _notificationService.scheduleNotificationWithActions(
+        notification,
+        actions,
       );
-      
-      if (scheduled) {
-        _scheduledNotificationIds.add(1002);
-      }
     } else {
-      final scheduled = await _notificationService.scheduleNotification(eveningNotification);
-      
-      if (scheduled) {
-        _scheduledNotificationIds.add(1002);
-      }
+      scheduled = await _notificationService.scheduleNotification(notification);
     }
+    
+    if (scheduled) {
+      _addScheduledNotification(notification.id, 'athkar');
+    }
+    
+    return scheduled;
+  }
+  
+  /// جدولة إشعار أذكار النوم
+  Future<bool> _scheduleSleepAthkarNotification(Settings settings) async {
+    final notificationTime = _calculateNextNotificationTime(
+      settings.sleepAthkarTime[0],
+      settings.sleepAthkarTime[1],
+    );
+    
+    final payload = NotificationPayloadHandler.buildAthkarPayload(
+      categoryId: 'sleep',
+      categoryName: 'أذكار النوم',
+    );
+    
+    final notification = NotificationData(
+      id: AppConstants.sleepAthkarNotificationId,
+      title: 'أذكار النوم',
+      body: 'حان وقت أذكار النوم، اضغط هنا لقراءة الأذكار',
+      scheduledDate: notificationTime,
+      repeatInterval: NotificationRepeatInterval.daily,
+      notificationTime: NotificationTime.custom,
+      priority: _getNotificationPriority(settings, 'athkar'),
+      respectBatteryOptimizations: settings.respectBatteryOptimizations,
+      respectDoNotDisturb: settings.respectDoNotDisturb,
+      channelId: AppConstants.athkarNotificationChannelId,
+      soundName: _getNotificationSound(settings, 'athkar_sleep'),
+      payload: payload,
+      visibility: NotificationVisibility.public,
+    );
+    
+    final scheduled = await _notificationService.scheduleNotification(notification);
+    
+    if (scheduled) {
+      _addScheduledNotification(notification.id, 'athkar');
+    }
+    
+    return scheduled;
   }
   
   /// جدولة إشعارات مواقيت الصلاة
-  Future<void> _schedulePrayerNotifications(Settings settings) async {
+  Future<SchedulingTypeResult> _schedulePrayerNotifications(Settings settings) async {
+    int scheduled = 0;
+    int failed = 0;
+    final errors = <String>[];
+    
     try {
-      // الحصول على موقع المستخدم واستخدامه في الحصول على مواقيت الصلاة
-      // ملاحظة: في التطبيق الحقيقي، يجب استخدام موقع المستخدم الفعلي
-      const double latitude = 21.422487; // مكة المكرمة
-      const double longitude = 39.826206;
+      // الحصول على الموقع
+      final location = await _getLocation(settings);
+      if (location == null) {
+        return SchedulingTypeResult(
+          failedCount: 1,
+          errors: ['لا يمكن تحديد الموقع لحساب مواقيت الصلاة'],
+        );
+      }
       
       // معلمات حساب مواقيت الصلاة
       final params = PrayerTimesCalculationParams(
         calculationMethod: _getCalculationMethodFromSettings(settings.calculationMethod),
-        adjustmentMinutes: 0,
+        adjustmentMinutes: settings.prayerTimeAdjustment,
         asrMethodIndex: settings.asrMethod,
       );
       
-      // الحصول على مواقيت الصلاة لليوم الحالي والأيام القادمة
-      await _schedulePrayerTimesForNextDays(settings, latitude, longitude, params, 7);
+      // جدولة الصلوات للأيام القادمة
+      const daysToSchedule = 7;
+      for (int i = 0; i < daysToSchedule; i++) {
+        final dayResult = await _schedulePrayerTimesForDay(
+          settings,
+          location.latitude,
+          location.longitude,
+          params,
+          i,
+        );
+        
+        scheduled += dayResult.scheduledCount;
+        failed += dayResult.failedCount;
+        errors.addAll(dayResult.errors);
+      }
       
     } catch (e) {
-      debugPrint('حدث خطأ أثناء جدولة إشعارات الصلاة: $e');
+      _logger.error(
+        message: 'Error scheduling prayer notifications',
+        error: e,
+      );
+      errors.add('خطأ عام: $e');
+      failed++;
     }
+    
+    return SchedulingTypeResult(
+      scheduledCount: scheduled,
+      failedCount: failed,
+      errors: errors,
+    );
   }
   
-  /// جدولة مواقيت الصلاة لعدة أيام قادمة
-  Future<void> _schedulePrayerTimesForNextDays(
+  /// جدولة مواقيت الصلاة ليوم واحد
+  Future<SchedulingTypeResult> _schedulePrayerTimesForDay(
     Settings settings,
     double latitude,
     double longitude,
     PrayerTimesCalculationParams params,
-    int numberOfDays,
+    int dayOffset,
   ) async {
-    final DateTime now = DateTime.now();
+    int scheduled = 0;
+    int failed = 0;
+    final errors = <String>[];
     
-    for (int i = 0; i < numberOfDays; i++) {
-      final DateTime date = now.add(Duration(days: i));
-      final DateTime dateOnly = DateTime(date.year, date.month, date.day);
+    try {
+      final date = DateTime.now().add(Duration(days: dayOffset));
+      final dateOnly = DateTime(date.year, date.month, date.day);
       
-      final PrayerData prayerTimes = await _prayerTimesService.getPrayerTimes(
+      final prayerTimes = await _prayerTimesService.getPrayerTimes(
         latitude: latitude,
         longitude: longitude,
         date: dateOnly,
         params: params,
       );
       
-      // جدولة الإشعارات لهذا اليوم
-      await _schedulePrayerTimesForDay(settings, prayerTimes, i);
+      // قائمة الصلوات
+      final prayers = [
+        PrayerInfo('الفجر', prayerTimes.fajr, NotificationTime.fajr, 2001),
+        PrayerInfo('الظهر', prayerTimes.dhuhr, NotificationTime.dhuhr, 2002),
+        PrayerInfo('العصر', prayerTimes.asr, NotificationTime.asr, 2003),
+        PrayerInfo('المغرب', prayerTimes.maghrib, NotificationTime.maghrib, 2004),
+        PrayerInfo('العشاء', prayerTimes.isha, NotificationTime.isha, 2005),
+      ];
+      
+      // جدولة كل صلاة
+      for (final prayer in prayers) {
+        if (!_shouldSchedulePrayer(settings, prayer)) continue;
+        
+        try {
+          final baseId = prayer.baseId + (dayOffset * 100);
+          final reminderId = baseId + 100;
+          
+          // جدولة التذكير قبل الصلاة
+          if (settings.enablePrayerReminders) {
+            if (await _schedulePrayerReminder(
+              settings,
+              prayer,
+              baseId: reminderId,
+              dayOffset: dayOffset,
+            )) {
+              scheduled++;
+            } else {
+              failed++;
+            }
+          }
+          
+          // جدولة إشعار وقت الصلاة
+          if (await _schedulePrayerNotification(
+            settings,
+            prayer,
+            baseId: baseId,
+            dayOffset: dayOffset,
+          )) {
+            scheduled++;
+          } else {
+            failed++;
+          }
+          
+        } catch (e) {
+          failed++;
+          errors.add('${prayer.name} (يوم $dayOffset): $e');
+        }
+      }
+      
+    } catch (e) {
+      errors.add('يوم $dayOffset: $e');
+      failed = 10; // 5 صلوات × 2 إشعارات
     }
+    
+    return SchedulingTypeResult(
+      scheduledCount: scheduled,
+      failedCount: failed,
+      errors: errors,
+    );
   }
   
-  /// جدولة إشعارات مواقيت الصلاة ليوم معين
-  Future<void> _schedulePrayerTimesForDay(
+  /// جدولة تذكير قبل الصلاة
+  Future<bool> _schedulePrayerReminder(
     Settings settings,
-    PrayerData prayerTimes,
-    int dayOffset,
-  ) async {
-    // قائمة بالصلوات لجدولة إشعاراتها
-    final prayerInfo = [
-      {
-        'prayer': 'الفجر', 
-        'time': prayerTimes.fajr, 
-        'id': 2001 + (dayOffset * 100), 
-        'reminder_id': 2101 + (dayOffset * 100),
-        'notification_time': NotificationTime.fajr,
-      },
-      {
-        'prayer': 'الظهر', 
-        'time': prayerTimes.dhuhr, 
-        'id': 2002 + (dayOffset * 100), 
-        'reminder_id': 2102 + (dayOffset * 100),
-        'notification_time': NotificationTime.dhuhr,
-      },
-      {
-        'prayer': 'العصر', 
-        'time': prayerTimes.asr, 
-        'id': 2003 + (dayOffset * 100), 
-        'reminder_id': 2103 + (dayOffset * 100),
-        'notification_time': NotificationTime.asr,
-      },
-      {
-        'prayer': 'المغرب', 
-        'time': prayerTimes.maghrib, 
-        'id': 2004 + (dayOffset * 100), 
-        'reminder_id': 2104 + (dayOffset * 100),
-        'notification_time': NotificationTime.maghrib,
-      },
-      {
-        'prayer': 'العشاء', 
-        'time': prayerTimes.isha, 
-        'id': 2005 + (dayOffset * 100), 
-        'reminder_id': 2105 + (dayOffset * 100),
-        'notification_time': NotificationTime.isha,
-      },
-    ];
+    PrayerInfo prayer, {
+    required int baseId,
+    required int dayOffset,
+  }) async {
+    final now = DateTime.now();
+    final reminderMinutes = settings.prayerReminderMinutes;
+    final reminderTime = prayer.time.subtract(Duration(minutes: reminderMinutes));
     
-    // جدولة إشعارات لكل صلاة
-    for (final prayer in prayerInfo) {
-      await _schedulePrayerNotification(
-        prayer['time'] as DateTime,
-        prayer['prayer'] as String,
-        prayer['id'] as int,
-        prayer['notification_time'] as NotificationTime,
-        prayer['reminder_id'] as int,
-        settings,
-        dayOffset,
-      );
-    }
-  }
-  
-  /// جدولة إشعار لصلاة محددة
-  Future<void> _schedulePrayerNotification(
-    DateTime prayerTime,
-    String prayerName,
-    int id,
-    NotificationTime notificationTime,
-    int reminderId,
-    Settings settings,
-    int dayOffset,
-  ) async {
-    final DateTime now = DateTime.now();
-    
-    // تجاهل الصلوات التي مرت بالفعل في هذا اليوم
-    if (dayOffset == 0 && prayerTime.isBefore(now)) {
-      return;
+    // تجاهل التذكيرات التي مرت
+    if (dayOffset == 0 && reminderTime.isBefore(now)) {
+      return false;
     }
     
-    // تعيين تذكير قبل وقت الصلاة بـ الوقت المحدد في الإعدادات
-    final reminderMinutes = AppConstants.prayerNotificationAdvanceMinutes;
-    final DateTime reminderTime = prayerTime.subtract(Duration(minutes: reminderMinutes));
+    final payload = NotificationPayloadHandler.buildPrayerPayload(
+      prayerName: prayer.name,
+      prayerTime: prayer.time,
+      isReminder: true,
+    );
     
-    // تجاهل التذكيرات التي مرت بالفعل
-    if (reminderTime.isBefore(now)) {
-      return;
-    }
-    
-    // إعداد إجراءات الإشعار
-    final List<NotificationAction> prayerActions = [
-      NotificationAction(
-        id: 'view_prayer_times',
-        title: 'عرض المواقيت',
-      ),
-      NotificationAction(
-        id: 'dismiss',
-        title: 'إغلاق',
-        cancelNotification: true,
-      ),
-    ];
-    
-    // payload يحتوي على معلومات عن الإشعار والشاشة المراد فتحها
-    final Map<String, dynamic> prayerPayload = {
-      'type': 'prayer',
-      'prayer_name': prayerName,
-      'route': '/prayer-times',
-    };
-    
-    // جدولة تذكير قبل الصلاة
-    final NotificationData reminderNotification = NotificationData(
-      id: reminderId,
-      title: 'تذكير: صلاة $prayerName',
-      body: 'سيحين وقت صلاة $prayerName بعد $reminderMinutes دقيقة',
+    final notification = NotificationData(
+      id: baseId,
+      title: 'تذكير: صلاة ${prayer.name}',
+      body: 'سيحين وقت صلاة ${prayer.name} بعد $reminderMinutes دقيقة',
       scheduledDate: reminderTime,
-      notificationTime: notificationTime,
-      priority: settings.enableHighPriorityForPrayers
-          ? NotificationPriority.high
-          : NotificationPriority.normal,
+      notificationTime: prayer.notificationTime,
+      priority: _getNotificationPriority(settings, 'prayer_reminder'),
       respectBatteryOptimizations: settings.respectBatteryOptimizations,
-      respectDoNotDisturb: false, // دائماً إظهار تذكير الصلاة حتى في وضع عدم الإزعاج
+      respectDoNotDisturb: false, // تذكيرات الصلاة تتجاوز DND دائماً
       channelId: AppConstants.prayerTimesNotificationChannelId,
-      soundName: settings.enableSilentMode ? null : settings.notificationSounds['prayer'],
-      payload: prayerPayload,
+      soundName: _getNotificationSound(settings, 'prayer_reminder'),
+      payload: payload,
+      visibility: NotificationVisibility.public,
     );
     
-    final scheduledReminder = await _notificationService.scheduleNotification(reminderNotification);
-    if (scheduledReminder) {
-      _scheduledNotificationIds.add(reminderId);
+    final scheduled = await _notificationService.scheduleNotification(notification);
+    
+    if (scheduled) {
+      _addScheduledNotification(notification.id, 'prayer_reminder');
     }
     
-    // جدولة إشعار وقت الصلاة
-    final NotificationData prayerNotification = NotificationData(
-      id: id,
-      title: 'صلاة $prayerName',
-      body: 'حان وقت صلاة $prayerName',
-      scheduledDate: prayerTime,
-      notificationTime: notificationTime,
-      priority: settings.enableHighPriorityForPrayers
-          ? NotificationPriority.high
-          : NotificationPriority.normal,
-      respectBatteryOptimizations: settings.respectBatteryOptimizations,
-      respectDoNotDisturb: false, // دائماً إظهار إشعار الصلاة حتى في وضع عدم الإزعاج
-      channelId: AppConstants.prayerTimesNotificationChannelId,
-      soundName: settings.enableSilentMode ? null : settings.notificationSounds['prayer'],
-      payload: prayerPayload,
+    return scheduled;
+  }
+  
+  /// جدولة إشعار وقت الصلاة
+  Future<bool> _schedulePrayerNotification(
+    Settings settings,
+    PrayerInfo prayer, {
+    required int baseId,
+    required int dayOffset,
+  }) async {
+    final now = DateTime.now();
+    
+    // تجاهل الصلوات التي مرت
+    if (dayOffset == 0 && prayer.time.isBefore(now)) {
+      return false;
+    }
+    
+    final actions = settings.enableActionButtons
+        ? [
+            NotificationAction(id: 'view_times', title: 'عرض المواقيت'),
+            NotificationAction(
+              id: 'dismiss',
+              title: 'إغلاق',
+              cancelNotification: true,
+            ),
+          ]
+        : null;
+    
+    final payload = NotificationPayloadHandler.buildPrayerPayload(
+      prayerName: prayer.name,
+      prayerTime: prayer.time,
+      isReminder: false,
     );
     
-    if (settings.enableActionButtons) {
-      final scheduledPrayer = await _notificationService.scheduleNotificationWithActions(
-        prayerNotification,
-        prayerActions,
+    final notification = NotificationData(
+      id: baseId,
+      title: 'صلاة ${prayer.name}',
+      body: 'حان وقت صلاة ${prayer.name}',
+      scheduledDate: prayer.time,
+      notificationTime: prayer.notificationTime,
+      priority: _getNotificationPriority(settings, 'prayer'),
+      respectBatteryOptimizations: settings.respectBatteryOptimizations,
+      respectDoNotDisturb: false, // إشعارات الصلاة تتجاوز DND دائماً
+      channelId: AppConstants.prayerTimesNotificationChannelId,
+      soundName: _getNotificationSound(settings, 'prayer'),
+      payload: payload,
+      visibility: NotificationVisibility.public,
+    );
+    
+    bool scheduled;
+    if (actions != null) {
+      scheduled = await _notificationService.scheduleNotificationWithActions(
+        notification,
+        actions,
       );
-      
-      if (scheduledPrayer) {
-        _scheduledNotificationIds.add(id);
-      }
     } else {
-      final scheduledPrayer = await _notificationService.scheduleNotification(prayerNotification);
-      
-      if (scheduledPrayer) {
-        _scheduledNotificationIds.add(id);
-      }
+      scheduled = await _notificationService.scheduleNotification(notification);
     }
+    
+    if (scheduled) {
+      _addScheduledNotification(notification.id, 'prayer');
+    }
+    
+    return scheduled;
+  }
+  
+  /// إلغاء جميع الإشعارات
+  Future<void> _cancelAllNotifications() async {
+    await _notificationService.cancelAllNotifications();
+    _scheduledNotificationIds.clear();
+    _notificationIdsByType.clear();
   }
   
   /// إلغاء الإشعارات حسب النوع
   Future<void> _cancelNotificationsByType(String type) async {
-    await _notificationService.cancelNotificationsByTag(type);
-  }
-  
-  /// تحويل رقم طريقة الحساب إلى اسم الطريقة المناسب
-  String _getCalculationMethodFromSettings(int methodIndex) {
-    switch (methodIndex) {
-      case 0:
-        return 'karachi';
-      case 1:
-        return 'north_america';
-      case 2:
-        return 'muslim_world_league';
-      case 3:
-        return 'egyptian';
-      case 4:
-        return 'umm_al_qura';
-      case 5:
-        return 'dubai';
-      case 6:
-        return 'qatar';
-      case 7:
-        return 'kuwait';
-      case 8:
-        return 'singapore';
-      case 9:
-        return 'turkey';
-      case 10:
-        return 'tehran';
-      default:
-        return 'muslim_world_league';
+    final ids = _notificationIdsByType[type] ?? [];
+    if (ids.isNotEmpty) {
+      await _notificationService.cancelNotificationsByIds(ids);
+      _scheduledNotificationIds.removeAll(ids);
+      _notificationIdsByType.remove(type);
     }
   }
   
-  /// التحقق من حالة الإشعارات
-  Future<Map<String, dynamic>> getNotificationStatus() async {
-    final bool canSendNow = await _notificationService.canSendNotificationsNow();
-    final bool hasPermission = await _notificationService.requestPermission();
-    final bool batteryOptimizationEnabled = await _batteryService.isPowerSaveMode();
-    final bool dndEnabled = await _doNotDisturbService.isDoNotDisturbEnabled();
+  /// إضافة معرف إشعار مجدول
+  void _addScheduledNotification(int id, String type) {
+    _scheduledNotificationIds.add(id);
+    _notificationIdsByType[type] ??= [];
+    _notificationIdsByType[type]!.add(id);
+  }
+  
+  /// حساب الوقت التالي للإشعار
+  DateTime _calculateNextNotificationTime(int hour, int minute) {
+    final now = DateTime.now();
+    var notificationTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     
-    return {
-      'can_send_now': canSendNow,
-      'has_permission': hasPermission,
-      'battery_optimization_enabled': batteryOptimizationEnabled,
-      'dnd_enabled': dndEnabled,
-      'scheduled_notifications_count': _scheduledNotificationIds.length,
-    };
+    if (notificationTime.isBefore(now)) {
+      notificationTime = notificationTime.add(const Duration(days: 1));
+    }
+    
+    return notificationTime;
+  }
+  
+  /// الحصول على الموقع
+  Future<Location?> _getLocation(Settings settings) async {
+    // في التطبيق الحقيقي، يجب استخدام موقع المستخدم الفعلي
+    // هنا نستخدم موقع افتراضي للتوضيح
+    return Location(
+      latitude: settings.lastKnownLatitude ?? 21.422487,
+      longitude: settings.lastKnownLongitude ?? 39.826206,
+    );
+  }
+  
+  /// تحديد ما إذا كان يجب جدولة صلاة معينة
+  bool _shouldSchedulePrayer(Settings settings, PrayerInfo prayer) {
+    // يمكن إضافة منطق لتمكين/تعطيل صلوات معينة
+    return true;
+  }
+  
+  /// الحصول على أولوية الإشعار
+  NotificationPriority _getNotificationPriority(Settings settings, String type) {
+    if (type.contains('prayer') && settings.enableHighPriorityForPrayers) {
+      return NotificationPriority.high;
+    }
+    
+    switch (type) {
+      case 'athkar':
+        return settings.athkarNotificationPriority;
+      case 'prayer':
+        return NotificationPriority.critical;
+      case 'prayer_reminder':
+        return NotificationPriority.high;
+      default:
+        return NotificationPriority.normal;
+    }
+  }
+  
+  /// الحصول على صوت الإشعار
+  String? _getNotificationSound(Settings settings, String type) {
+    if (settings.enableSilentMode) return null;
+    
+    return settings.notificationSounds[type] ?? settings.defaultNotificationSound;
+  }
+  
+  /// تحويل رقم طريقة الحساب إلى اسم الطريقة
+  String _getCalculationMethodFromSettings(int methodIndex) {
+    const methods = [
+      'karachi',
+      'north_america',
+      'muslim_world_league',
+      'egyptian',
+      'umm_al_qura',
+      'dubai',
+      'qatar',
+      'kuwait',
+      'singapore',
+      'turkey',
+      'tehran',
+    ];
+    
+    return methodIndex < methods.length 
+        ? methods[methodIndex] 
+        : 'muslim_world_league';
+  }
+  
+  /// بناء رسالة النتيجة
+  String _buildResultMessage(int scheduled, int failed) {
+    if (failed == 0) {
+      return 'تم جدولة $scheduled إشعار بنجاح';
+    } else if (scheduled == 0) {
+      return 'فشلت جدولة جميع الإشعارات ($failed)';
+    } else {
+      return 'تم جدولة $scheduled إشعار، فشل $failed';
+    }
+  }
+  
+  /// الحصول على حالة الإشعارات
+  Future<NotificationStatus> getNotificationStatus() async {
+    final canSendNow = await _notificationService.canSendNotificationsNow();
+    final hasPermission = await _notificationService.requestPermission();
+    final batteryLevel = await _batteryService.getBatteryLevel();
+    final isCharging = await _batteryService.isCharging();
+    final isPowerSaveMode = await _batteryService.isPowerSaveMode();
+    final dndEnabled = await _doNotDisturbService.isDoNotDisturbEnabled();
+    
+    return NotificationStatus(
+      canSendNow: canSendNow,
+      hasPermission: hasPermission,
+      batteryLevel: batteryLevel,
+      isCharging: isCharging,
+      isPowerSaveMode: isPowerSaveMode,
+      dndEnabled: dndEnabled,
+      scheduledCount: _scheduledNotificationIds.length,
+      scheduledByType: Map.from(_notificationIdsByType.map(
+        (k, v) => MapEntry(k, v.length),
+      )),
+      isScheduling: _isScheduling,
+    );
   }
   
   /// إعادة جدولة جميع الإشعارات
-  Future<void> rescheduleAllNotifications(Settings settings) async {
-    await _notificationService.cancelAllNotifications();
-    _scheduledNotificationIds.clear();
-    await scheduleAllNotifications(settings);
+  Future<SchedulingResult> rescheduleAllNotifications(Settings settings) async {
+    _logger.info(message: 'Rescheduling all notifications');
+    
+    await _cancelAllNotifications();
+    return await scheduleAllNotifications(settings);
+  }
+  
+  /// الحصول على إحصائيات الجدولة
+  Map<String, dynamic> getSchedulingStats() {
+    return {
+      'total_scheduled': _scheduledNotificationIds.length,
+      'by_type': Map.from(_notificationIdsByType.map(
+        (k, v) => MapEntry(k, v.length),
+      )),
+      'is_scheduling': _isScheduling,
+      'analytics': _analytics.getStats(),
+    };
+  }
+}
+
+// كلاسات مساعدة
+
+/// معلومات الصلاة
+class PrayerInfo {
+  final String name;
+  final DateTime time;
+  final NotificationTime notificationTime;
+  final int baseId;
+  
+  PrayerInfo(this.name, this.time, this.notificationTime, this.baseId);
+}
+
+/// معلومات الموقع
+class Location {
+  final double latitude;
+  final double longitude;
+  
+  Location({required this.latitude, required this.longitude});
+}
+
+/// نتيجة الجدولة
+class SchedulingResult {
+  final bool success;
+  final String message;
+  final int scheduledCount;
+  final int failedCount;
+  final int cancelledCount;
+  final List<String> errors;
+  
+  SchedulingResult({
+    required this.success,
+    required this.message,
+    this.scheduledCount = 0,
+    this.failedCount = 0,
+    this.cancelledCount = 0,
+    this.errors = const [],
+  });
+}
+
+/// نتيجة جدولة نوع معين
+class SchedulingTypeResult {
+  final int scheduledCount;
+  final int failedCount;
+  final List<String> errors;
+  
+  SchedulingTypeResult({
+    this.scheduledCount = 0,
+    this.failedCount = 0,
+    this.errors = const [],
+  });
+}
+
+/// حالة الإشعارات
+class NotificationStatus {
+  final bool canSendNow;
+  final bool hasPermission;
+  final int batteryLevel;
+  final bool isCharging;
+  final bool isPowerSaveMode;
+  final bool dndEnabled;
+  final int scheduledCount;
+  final Map<String, int> scheduledByType;
+  final bool isScheduling;
+  
+  NotificationStatus({
+    required this.canSendNow,
+    required this.hasPermission,
+    required this.batteryLevel,
+    required this.isCharging,
+    required this.isPowerSaveMode,
+    required this.dndEnabled,
+    required this.scheduledCount,
+    required this.scheduledByType,
+    required this.isScheduling,
+  });
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'can_send_now': canSendNow,
+      'has_permission': hasPermission,
+      'battery_level': batteryLevel,
+      'is_charging': isCharging,
+      'power_save_mode': isPowerSaveMode,
+      'dnd_enabled': dndEnabled,
+      'scheduled_count': scheduledCount,
+      'scheduled_by_type': scheduledByType,
+      'is_scheduling': isScheduling,
+    };
   }
 }

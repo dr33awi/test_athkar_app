@@ -6,8 +6,14 @@ import 'package:permission_handler/permission_handler.dart';
 class PermissionUtil {
   /// Solicita permiso de notificaciones
   static Future<bool> requestNotification(BuildContext context) async {
+    // Verificar si el widget sigue montado antes de usar el context
+    if (!context.mounted) return false;
+    
     final status = await Permission.notification.request();
     if (status.isPermanentlyDenied) {
+      // Verificar nuevamente si el widget sigue montado
+      if (!context.mounted) return false;
+      
       final shouldOpen = await _showOpenSettingsDialog(
         context,
         'إذن الإشعارات',
@@ -23,8 +29,14 @@ class PermissionUtil {
   
   /// Solicita permiso de ubicación
   static Future<bool> requestLocation(BuildContext context) async {
+    // Verificar si el widget sigue montado antes de usar el context
+    if (!context.mounted) return false;
+    
     final status = await Permission.location.request();
     if (status.isPermanentlyDenied) {
+      // Verificar nuevamente si el widget sigue montado
+      if (!context.mounted) return false;
+      
       final shouldOpen = await _showOpenSettingsDialog(
         context,
         'إذن الموقع',
