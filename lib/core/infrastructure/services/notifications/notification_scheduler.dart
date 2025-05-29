@@ -2,16 +2,16 @@
 import 'dart:async';
 import 'package:athkar_app/features/settings/domain/entities/settings_extensions.dart';
 
-import '../../../app/di/service_locator.dart';
-import '../../../core/constants/app_constants.dart';
-import '../interfaces/battery_service.dart';
-import '../interfaces/do_not_disturb_service.dart';
-import '../interfaces/notification_service.dart';
+import '../../../../app/di/service_locator.dart';
+import '../../../constants/app_constants.dart';
+import '../device/battery/battery_service.dart';
+import '../device/do_not_disturb/do_not_disturb_service.dart';
+import 'notification_service.dart';
 import '../interfaces/prayer_times_service.dart';
-import '../interfaces/logger_service.dart';
-import './notification_payload_handler.dart';
-import './notification_analytics.dart';
-import '../../../features/settings/domain/entities/settings.dart';
+import '../logging/logger_service.dart';
+import 'notification_payload_handler.dart';
+import 'notification_analytics.dart';
+import '../../../../features/settings/domain/entities/settings.dart';
 
 /// مساعد محسّن لجدولة الإشعارات المختلفة في التطبيق
 class NotificationScheduler {

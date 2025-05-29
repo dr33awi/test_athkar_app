@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/services/interfaces/prayer_times_service.dart';
+import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
 import '../../../settings/domain/entities/settings.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../providers/prayer_times_provider.dart';

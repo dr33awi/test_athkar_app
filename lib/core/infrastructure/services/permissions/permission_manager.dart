@@ -1,6 +1,6 @@
 // lib/core/services/permission_manager.dart
 import 'package:flutter/material.dart';
-import './interfaces/permission_service.dart';
+import 'permission_service.dart';
 
 class PermissionManager {
   final PermissionService _permissionService;

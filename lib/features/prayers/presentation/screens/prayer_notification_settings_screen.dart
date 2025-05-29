@@ -8,8 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/services/interfaces/notification_service.dart';
-import '../../../../core/services/utils/notification_scheduler.dart';
+import '../../../../core/infrastructure/services/notifications/notification_service.dart';
+import '../../../../core/infrastructure/services/notifications/notification_scheduler.dart';
 import '../../../../app/themes/loading_widget.dart';
 import '../providers/prayer_times_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';

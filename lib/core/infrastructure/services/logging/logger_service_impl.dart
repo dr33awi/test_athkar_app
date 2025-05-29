@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../interfaces/logger_service.dart';
+import 'logger_service.dart';
 
 class LoggerServiceImpl implements LoggerService {
   @override

@@ -2,9 +2,9 @@
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart' as app_settings;
-import '../interfaces/permission_service.dart';
-import '../interfaces/logger_service.dart';
-import '../../../app/di/service_locator.dart';
+import '../permissions/permission_service.dart';
+import '../logging/logger_service.dart';
+import '../../../../app/di/service_locator.dart';
 
 /// تنفيذ خدمة إدارة الأذونات مع تحسينات شاملة
 class PermissionServiceImpl implements PermissionService {

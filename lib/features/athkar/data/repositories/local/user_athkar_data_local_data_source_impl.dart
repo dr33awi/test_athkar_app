@@ -1,6 +1,6 @@
 // lib/features/athkar/data/datasources/local/user_athkar_data_local_data_source_impl.dart
 import 'dart:convert'; // لاستخدامه مع Map<String, int>
-import 'package:athkar_app/core/services/interfaces/storage_service.dart';
+import 'package:athkar_app/core/infrastructure/services/storage/storage_service.dart';
 import 'package:athkar_app/features/athkar/domain/repositories/user_athkar_data_local_data_source.dart';
 import '../../../../../app/di/service_locator.dart' as di; // للوصول إلى StorageService
 

@@ -1,5 +1,5 @@
 // lib/data/models/prayer_times_model.dart
-import '../../../../core/services/interfaces/prayer_times_service.dart';
+import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
 
 class PrayerTimesModel {
   final DateTime fajr;

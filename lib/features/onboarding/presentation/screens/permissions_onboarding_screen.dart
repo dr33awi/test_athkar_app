@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../app/routes/app_router.dart';
-import '../../../../core/services/permission_manager.dart';
-import '../../../../core/services/interfaces/permission_service.dart';
-import '../../../../core/services/interfaces/do_not_disturb_service.dart';
+import '../../../../core/infrastructure/services/permissions/permission_manager.dart';
+import '../../../../core/infrastructure/services/permissions/permission_service.dart';
+import '../../../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 
 class PermissionsOnboardingScreen extends StatefulWidget {

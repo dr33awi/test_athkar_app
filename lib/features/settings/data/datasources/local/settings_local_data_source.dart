@@ -1,7 +1,7 @@
 //lib/settings/data/datasources/local/settings_local_data_source.dart// أو lib/features/settings/data/datasources/settings_local_data_source.dart
 import 'package:athkar_app/features/settings/data/models/settings_model.dart';
 
-import '../../../../../core/services/interfaces/storage_service.dart';
+import '../../../../../core/infrastructure/services/storage/storage_service.dart';
 
 
 abstract class SettingsLocalDataSource {

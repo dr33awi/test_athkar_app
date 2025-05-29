@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../error/exceptions.dart';
-import '../services/interfaces/logger_service.dart';
+import '../infrastructure/services/logging/logger_service.dart';
 
 // سجل عام للأخطاء
 class AppErrorHandler {

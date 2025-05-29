@@ -1,10 +1,10 @@
 // lib/core/services/implementations/battery_service_impl.dart
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
-import '../interfaces/battery_service.dart' as app_battery;
-import '../interfaces/logger_service.dart'; // <--- إضافة: استيراد LoggerService
+import 'battery_service.dart' as app_battery;
+import '../../logging/logger_service.dart'; // <--- إضافة: استيراد LoggerService
 // افترض أن لديك طريقة للحصول على LoggerService، مثلاً عبر get_it
-import '../../../app/di/service_locator.dart'; // <--- إضافة: افترض وجود Service Locator
+import '../../../../../app/di/service_locator.dart'; // <--- إضافة: افترض وجود Service Locator
 
 class BatteryServiceImpl implements app_battery.BatteryService {
   final Battery _battery = Battery();

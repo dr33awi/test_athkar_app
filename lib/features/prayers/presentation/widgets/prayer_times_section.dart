@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:adhan/adhan.dart' as adhan; // استيراد مكتبة أذان مع تحديد مساحة الاسم
 import '../../../../app/routes/app_router.dart';
-import '../../../../core/services/interfaces/prayer_times_service.dart';
+import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
 import '../providers/prayer_times_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../../app/themes/loading_widget.dart';

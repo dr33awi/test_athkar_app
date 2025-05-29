@@ -1,5 +1,5 @@
 // lib/domain/repositories/prayer_times_repository.dart
-import '../../../../core/services/interfaces/prayer_times_service.dart';
+import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
 import '../entities/prayer_times.dart';
 
 abstract class PrayerTimesRepository {

@@ -5,15 +5,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import '../interfaces/notification_service.dart' as app_notification;
-import '../interfaces/battery_service.dart';
-import '../interfaces/do_not_disturb_service.dart';
-import '../interfaces/timezone_service.dart';
-import '../interfaces/logger_service.dart';
-import '../utils/notification_payload_handler.dart';
-import '../utils/notification_analytics.dart';
-import '../utils/notification_retry_manager.dart';
-import '../../../app/di/service_locator.dart';
+import 'notification_service.dart' as app_notification;
+import '../device/battery/battery_service.dart';
+import '../device/do_not_disturb/do_not_disturb_service.dart';
+import '../timezone/timezone_service.dart';
+import '../logging/logger_service.dart';
+import 'notification_payload_handler.dart';
+import 'notification_analytics.dart';
+import 'notification_retry_manager.dart';
+import '../../../../app/di/service_locator.dart';
 
 /// Callback للإشعارات في الخلفية
 @pragma('vm:entry-point')

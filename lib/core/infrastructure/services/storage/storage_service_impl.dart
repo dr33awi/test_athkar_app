@@ -1,7 +1,7 @@
 // lib/core/services/implementations/storage_service_impl.dart
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../interfaces/storage_service.dart';
+import 'storage_service.dart';
 
 class StorageServiceImpl implements StorageService {
   final SharedPreferences _prefs;

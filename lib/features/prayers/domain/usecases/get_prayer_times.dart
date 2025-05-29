@@ -1,7 +1,7 @@
 // lib/domain/usecases/prayers/get_prayer_times.dart
 import '../entities/prayer_times.dart';
 import '../repositories/prayer_times_repository.dart';
-import '../../../../core/services/interfaces/prayer_times_service.dart';
+import '../../../../core/infrastructure/services/interfaces/prayer_times_service.dart';
 
 class GetPrayerTimes {
   final PrayerTimesRepository repository;

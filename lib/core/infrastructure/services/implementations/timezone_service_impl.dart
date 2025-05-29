@@ -3,9 +3,9 @@
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:flutter_native_timezone_latest/flutter_native_timezone_latest.dart';
-import '../interfaces/timezone_service.dart';
-import '../interfaces/logger_service.dart';
-import '../../../app/di/service_locator.dart';
+import '../timezone/timezone_service.dart';
+import '../logging/logger_service.dart';
+import '../../../../app/di/service_locator.dart';
 
 class TimezoneServiceImpl implements TimezoneService {
   final LoggerService _logger;

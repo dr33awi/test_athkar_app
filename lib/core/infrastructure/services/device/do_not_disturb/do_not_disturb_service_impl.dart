@@ -4,7 +4,7 @@ import 'dart:io'; // Platform is used from dart:io
 import 'package:app_settings/app_settings.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart'; // For debugPrint, consider a dedicated logger service
-import '../interfaces/do_not_disturb_service.dart';
+import 'do_not_disturb_service.dart';
 
 class DoNotDisturbServiceImpl implements DoNotDisturbService {
   static const MethodChannel _channel = MethodChannel('com.athkar.app/do_not_disturb');

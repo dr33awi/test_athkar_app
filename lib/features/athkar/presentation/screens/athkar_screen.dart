@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import '../screens/notification_settings_screen.dart';
 
-import '../../../../core/services/utils/notification_scheduler.dart';
+import '../../../../core/infrastructure/services/notifications/notification_scheduler.dart';
 import '../../data/datasources/athkar_service.dart';
 import '../../domain/entities/athkar.dart';
 import '../../../../app/themes/loading_widget.dart';

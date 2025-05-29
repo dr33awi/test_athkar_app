@@ -1,5 +1,5 @@
 // lib/data/datasources/local/settings_local_data_source.dart
-import '../../../../core/services/interfaces/storage_service.dart';
+import '../../../../core/infrastructure/services/storage/storage_service.dart';
 import '../models/settings_model.dart';
 
 abstract class SettingsLocalDataSource {
