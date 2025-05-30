@@ -1,127 +1,67 @@
-// lib/domain/entities/prayer_times.dart
-import 'package:adhan/adhan.dart' as adhan;
+// lib/features/prayers/domain/entities/prayer_time.dart
 
-class PrayerTimes {
-  final DateTime fajr;
-  final DateTime sunrise;
-  final DateTime dhuhr;
-  final DateTime asr;
-  final DateTime maghrib;
-  final DateTime isha;
-  final DateTime date;
+/// Prayer time entity
+class PrayerTime {
+  final String id;
+  final String name;
+  final String englishName;
+  final DateTime time;
+  final bool isNotificationEnabled;
+  final int? notificationOffset; // Minutes before/after prayer time
   
-  PrayerTimes({
-    required this.fajr,
-    required this.sunrise,
-    required this.dhuhr,
-    required this.asr,
-    required this.maghrib,
-    required this.isha,
-    required this.date,
+  PrayerTime({
+    required this.id,
+    required this.name,
+    required this.englishName,
+    required this.time,
+    required this.isNotificationEnabled,
+    this.notificationOffset,
   });
   
-  // تحويل من كائن Adhan PrayerTimes إلى كائن مخصص
-  factory PrayerTimes.fromAdhan(adhan.PrayerTimes prayerTimes) {
-    return PrayerTimes(
-      fajr: prayerTimes.fajr ?? DateTime.now(),
-      sunrise: prayerTimes.sunrise ?? DateTime.now(),
-      dhuhr: prayerTimes.dhuhr ?? DateTime.now(),
-      asr: prayerTimes.asr ?? DateTime.now(),
-      maghrib: prayerTimes.maghrib ?? DateTime.now(),
-      isha: prayerTimes.isha ?? DateTime.now(),
-      date: DateTime.now(),
+  /// Check if prayer time has passed
+  bool get hasPassed => DateTime.now().isAfter(time);
+  
+  /// Get time remaining until prayer
+  Duration get timeRemaining => time.difference(DateTime.now());
+  
+  /// Format time as string (HH:mm)
+  String get formattedTime {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
+  }
+  
+  /// Copy with modifications
+  PrayerTime copyWith({
+    String? id,
+    String? name,
+    String? englishName,
+    DateTime? time,
+    bool? isNotificationEnabled,
+    int? notificationOffset,
+  }) {
+    return PrayerTime(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      englishName: englishName ?? this.englishName,
+      time: time ?? this.time,
+      isNotificationEnabled: isNotificationEnabled ?? this.isNotificationEnabled,
+      notificationOffset: notificationOffset ?? this.notificationOffset,
     );
   }
+}
+
+/// Calculation method for prayer times
+class CalculationMethod {
+  final String id;
+  final String name;
+  final String englishName;
+  final String? description;
   
-  // الحصول على الصلاة الحالية
-  adhan.Prayer getCurrentPrayer() {
-    final now = DateTime.now();
-    final prayers = [
-      adhan.Prayer.fajr,
-      adhan.Prayer.sunrise,
-      adhan.Prayer.dhuhr,
-      adhan.Prayer.asr,
-      adhan.Prayer.maghrib,
-      adhan.Prayer.isha,
-    ];
-    
-    final times = [
-      fajr,
-      sunrise,
-      dhuhr,
-      asr,
-      maghrib,
-      isha,
-    ];
-    
-    // إذا كان الوقت الحالي قبل صلاة الفجر أو بعد العشاء
-    if (now.isBefore(fajr)) {
-      return adhan.Prayer.isha; // العشاء (من اليوم السابق)
-    }
-    
-    if (now.isAfter(isha)) {
-      return adhan.Prayer.isha; // العشاء
-    }
-    
-    // البحث عن أحدث صلاة مرّت
-    for (int i = times.length - 1; i >= 0; i--) {
-      if (now.isAfter(times[i])) {
-        return prayers[i];
-      }
-    }
-    
-    return adhan.Prayer.none;
-  }
-  
-  // الحصول على الصلاة التالية
-  adhan.Prayer getNextPrayer() {
-    final now = DateTime.now();
-    final prayers = [
-      adhan.Prayer.fajr,
-      adhan.Prayer.sunrise,
-      adhan.Prayer.dhuhr,
-      adhan.Prayer.asr,
-      adhan.Prayer.maghrib,
-      adhan.Prayer.isha,
-    ];
-    
-    final times = [
-      fajr,
-      sunrise,
-      dhuhr,
-      asr,
-      maghrib,
-      isha,
-    ];
-    
-    // البحث عن الصلاة القادمة
-    for (int i = 0; i < times.length; i++) {
-      if (now.isBefore(times[i])) {
-        return prayers[i];
-      }
-    }
-    
-    // إذا مرّت جميع الصلوات، نعتبر الفجر من اليوم التالي
-    return adhan.Prayer.fajr;
-  }
-  
-  // الحصول على وقت الصلاة بناءً على نوعها
-  DateTime getTimeForPrayer(adhan.Prayer prayer) {
-    switch (prayer) {
-      case adhan.Prayer.fajr:
-        return fajr;
-      case adhan.Prayer.sunrise:
-        return sunrise;
-      case adhan.Prayer.dhuhr:
-        return dhuhr;
-      case adhan.Prayer.asr:
-        return asr;
-      case adhan.Prayer.maghrib:
-        return maghrib;
-      case adhan.Prayer.isha:
-        return isha;
-      default:
-        return DateTime.now();
-    }
-  }
+  CalculationMethod({
+    required this.id,
+    required this.name,
+    required this.englishName,
+    this.description,
+  });
 }

@@ -5,13 +5,12 @@ import 'dart:io';
 import 'package:battery_plus/battery_plus.dart' as battery_plus;
 import '../../logging/logger_service.dart';
 import '../../storage/storage_service.dart';
-import '../../../../../app/di/service_locator.dart';
 import 'battery_service.dart';
 
 /// Implementation of battery service
 class BatteryServiceImpl implements BatteryService {
   final battery_plus.Battery _battery;
-  final LoggerService _logger;
+  final LoggerService? _logger;
   final StorageService _storage;
   
   static const String _minBatteryLevelKey = 'min_battery_level';
@@ -26,15 +25,15 @@ class BatteryServiceImpl implements BatteryService {
   BatteryServiceImpl({
     battery_plus.Battery? battery,
     LoggerService? logger,
-    StorageService? storage,
+    required StorageService storage,
   })  : _battery = battery ?? battery_plus.Battery(),
-        _logger = logger ?? getIt<LoggerService>(),
-        _storage = storage ?? getIt<StorageService>() {
+        _logger = logger,
+        _storage = storage {
     _initialize();
   }
   
   void _initialize() {
-    _logger.debug(message: '[BatteryService] Initializing...');
+    _logger?.debug(message: '[BatteryService] Initializing...');
     
     // Load saved minimum battery level
     _minimumBatteryLevel = _storage.getInt(_minBatteryLevelKey) ?? _defaultMinBatteryLevel;
@@ -51,7 +50,7 @@ class BatteryServiceImpl implements BatteryService {
   }
   
   void _startMonitoring() {
-    _logger.debug(message: '[BatteryService] Starting battery monitoring');
+    _logger?.debug(message: '[BatteryService] Starting battery monitoring');
     
     // Start with immediate update
     _updateBatteryState();
@@ -63,7 +62,7 @@ class BatteryServiceImpl implements BatteryService {
     
     // Also listen to battery state changes if available
     _batteryStateSubscription = _battery.onBatteryStateChanged.listen((state) {
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Battery state changed',
         data: {'state': state.toString()},
       );
@@ -72,7 +71,7 @@ class BatteryServiceImpl implements BatteryService {
   }
   
   void _stopMonitoring() {
-    _logger.debug(message: '[BatteryService] Stopping battery monitoring');
+    _logger?.debug(message: '[BatteryService] Stopping battery monitoring');
     _pollingTimer?.cancel();
     _batteryStateSubscription?.cancel();
   }
@@ -83,20 +82,20 @@ class BatteryServiceImpl implements BatteryService {
       _lastKnownState = state;
       _batteryStateController?.add(state);
       
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Battery state updated',
         data: state.toJson(),
       );
       
       // Log analytics event for critical battery levels
       if (state.level <= 5 && !state.isCharging) {
-        _logger.logEvent('critical_battery_level', parameters: {
+        _logger?.logEvent('critical_battery_level', parameters: {
           'level': state.level,
           'is_charging': state.isCharging,
         });
       }
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error updating battery state',
         error: e,
       );
@@ -107,13 +106,13 @@ class BatteryServiceImpl implements BatteryService {
   Future<int> getBatteryLevel() async {
     try {
       final level = await _battery.batteryLevel;
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Battery level retrieved',
         data: {'level': level},
       );
       return level;
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error getting battery level',
         error: e,
       );
@@ -128,14 +127,14 @@ class BatteryServiceImpl implements BatteryService {
       final isCharging = state == battery_plus.BatteryState.charging || 
                         state == battery_plus.BatteryState.full;
       
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Charging status retrieved',
         data: {'isCharging': isCharging, 'state': state.toString()},
       );
       
       return isCharging;
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error checking charging status',
         error: e,
       );
@@ -147,13 +146,13 @@ class BatteryServiceImpl implements BatteryService {
   Future<bool> isPowerSaveMode() async {
     try {
       final isInSaveMode = await _battery.isInBatterySaveMode;
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Power save mode status retrieved',
         data: {'isPowerSaveMode': isInSaveMode},
       );
       return isInSaveMode;
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error checking power save mode',
         error: e,
       );
@@ -176,7 +175,7 @@ class BatteryServiceImpl implements BatteryService {
                      (batteryLevel >= _minimumBatteryLevel && !powerSaveMode) ||
                      batteryLevel >= 5;
       
-      _logger.debug(
+      _logger?.debug(
         message: '[BatteryService] Notification permission check',
         data: {
           'canSend': canSend,
@@ -188,7 +187,7 @@ class BatteryServiceImpl implements BatteryService {
       );
       
       if (!canSend) {
-        _logger.logEvent('notification_blocked_battery', parameters: {
+        _logger?.logEvent('notification_blocked_battery', parameters: {
           'battery_level': batteryLevel,
           'minimum_level': _minimumBatteryLevel,
           'power_save_mode': powerSaveMode,
@@ -197,7 +196,7 @@ class BatteryServiceImpl implements BatteryService {
       
       return canSend;
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error checking notification permission',
         error: e,
       );
@@ -208,7 +207,7 @@ class BatteryServiceImpl implements BatteryService {
   @override
   Future<void> setMinimumBatteryLevel(int level) async {
     if (level < 0 || level > 100) {
-      _logger.warning(
+      _logger?.warning(
         message: '[BatteryService] Invalid battery level',
         data: {'level': level},
       );
@@ -218,12 +217,12 @@ class BatteryServiceImpl implements BatteryService {
     _minimumBatteryLevel = level;
     await _storage.setInt(_minBatteryLevelKey, level);
     
-    _logger.info(
+    _logger?.info(
       message: '[BatteryService] Minimum battery level updated',
       data: {'level': level},
     );
     
-    _logger.logEvent('battery_threshold_changed', parameters: {'new_level': level});
+    _logger?.logEvent('battery_threshold_changed', parameters: {'new_level': level});
   }
   
   @override
@@ -263,7 +262,7 @@ class BatteryServiceImpl implements BatteryService {
       // For now, we assume it's related to power save mode
       return await isPowerSaveMode();
     } catch (e) {
-      _logger.error(
+      _logger?.error(
         message: '[BatteryService] Error checking battery optimization',
         error: e,
       );
@@ -273,7 +272,7 @@ class BatteryServiceImpl implements BatteryService {
   
   @override
   Future<void> dispose() async {
-    _logger.debug(message: '[BatteryService] Disposing...');
+    _logger?.debug(message: '[BatteryService] Disposing...');
     
     await _batteryStateSubscription?.cancel();
     _pollingTimer?.cancel();
@@ -283,5 +282,7 @@ class BatteryServiceImpl implements BatteryService {
     _batteryStateSubscription = null;
     _pollingTimer = null;
     _lastKnownState = null;
+    
+    _logger?.info(message: '[BatteryService] Disposed');
   }
 }

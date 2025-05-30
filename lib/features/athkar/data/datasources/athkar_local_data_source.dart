@@ -1,5 +1,7 @@
 // lib/data/datasources/local/athkar_local_data_source.dart
 import 'dart:convert';
+import 'package:athkar_app/core/infrastructure/services/logging/logger_service.dart';
+import 'package:athkar_app/core/infrastructure/services/storage/storage_service.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/entities/athkar.dart';
@@ -128,7 +130,7 @@ class AthkarLocalDataSourceImpl implements AthkarLocalDataSource {
   }
   
   /// المُنشئ العام للصف - يعيد المثيل الوحيد
-  factory AthkarLocalDataSourceImpl() {
+  factory AthkarLocalDataSourceImpl({required StorageService storageService, LoggerService? logger}) {
     return _instance;
   }
   

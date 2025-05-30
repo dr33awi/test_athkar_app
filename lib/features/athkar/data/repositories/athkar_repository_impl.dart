@@ -1,4 +1,5 @@
 // lib/features/athkar/data/repositories/athkar_repository_impl.dart
+import 'package:athkar_app/core/error/error_handler.dart';
 import 'package:flutter/material.dart';
 import '../../domain/entities/athkar.dart';
 import '../../domain/repositories/athkar_repository.dart';
@@ -15,7 +16,7 @@ class AthkarRepositoryImpl implements AthkarRepository {
   /// المُنشئ
   ///
   /// @param localDataSource مصدر البيانات المحلي
-  AthkarRepositoryImpl(this.localDataSource);
+  AthkarRepositoryImpl(this.localDataSource, {required AppErrorHandler errorHandler, required AthkarLocalDataSource localDataSource});
   
   /// تخزين مؤقت للفئات
   final Map<String, List<AthkarCategory>> _categoriesCache = {};

@@ -1,4 +1,8 @@
 // lib/data/repositories/prayer_times_repository_impl.dart
+import 'package:athkar_app/core/error/error_handler.dart';
+import 'package:athkar_app/features/prayers/domain/services/prayer_times_service.dart';
+import 'package:athkar_app/features/prayers/domain/services/qibla_service.dart';
+
 import '../../domain/prayer_times_service.dart';
 import '../../domain/entities/prayer_times.dart';
 import '../../domain/repositories/prayer_times_repository.dart';
@@ -6,7 +10,7 @@ import '../../domain/repositories/prayer_times_repository.dart';
 class PrayerTimesRepositoryImpl implements PrayerTimesRepository {
   final PrayerTimesService _prayerTimesService;
 
-  PrayerTimesRepositoryImpl(this._prayerTimesService);
+  PrayerTimesRepositoryImpl(this._prayerTimesService, {required QiblaService qiblaService, required AppErrorHandler errorHandler, required PrayerTimesService prayerTimesService});
 
   @override
   Future<PrayerTimes> getPrayerTimes({
