@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../app/di/service_locator.dart';
 import '../../../../core/infrastructure/services/notifications/models/notification_data.dart';
-import '../../notification_scheduler.dart';
+import '../../../../core/infrastructure/services/notifications/notification_scheduler.dart';
 import '../../domain/entities/athkar.dart';
 import '../models/athkar_model.dart';
 import '../utils/icon_helper.dart';
