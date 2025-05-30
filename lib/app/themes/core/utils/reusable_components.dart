@@ -36,7 +36,7 @@ class ThemedSectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppDimens.space2),
               decoration: BoxDecoration(
-                color: theme.primaryColor.withAlpha((AppColors.opacity10 * 255).round()),
+                color: theme.primaryColor.opacity(AppColors.opacity10),
                 borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               ),
               child: Icon(
@@ -125,7 +125,7 @@ class ThemedInfoCard extends StatelessWidget {
                 width: AppDimens.avatarLg,
                 height: AppDimens.avatarLg,
                 decoration: BoxDecoration(
-                  color: effectiveIconColor.withAlpha((AppColors.opacity10 * 255).round()),
+                  color: effectiveIconColor.opacity(AppColors.opacity10),
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
                 child: Icon(
@@ -149,7 +149,7 @@ class ThemedInfoCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((AppColors.opacity70 * 255).round()),
+                        color: theme.textTheme.bodySmall?.color?.opacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.opacity(AppColors.opacity70),
                       ),
                     ),
                   ],
@@ -160,7 +160,7 @@ class ThemedInfoCard extends StatelessWidget {
               else if (onTap != null)
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.6 * 255).round()),
+                  color: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
                   size: AppDimens.iconSm,
                 ),
             ],
@@ -254,7 +254,6 @@ class ThemedActionButton extends StatelessWidget {
       }
     }
 
-
     final Widget button = isOutlined
         ? OutlinedButton(
             onPressed: isLoading || onPressed == null ? null : onPressed,
@@ -267,7 +266,6 @@ class ThemedActionButton extends StatelessWidget {
             child: buttonChild,
           );
     
-    // This outer SizedBox might be redundant if minimumSize is correctly handled in the style
     final resolvedMinSize = effectiveStyle?.minimumSize?.resolve({});
     if (isFullWidth && (resolvedMinSize == null || resolvedMinSize.width != double.infinity)) {
        return SizedBox(
@@ -312,7 +310,7 @@ class ThemedListItem extends StatelessWidget {
     Widget? resolvedLeading = leading;
     if (icon != null) {
       resolvedLeading = CircleAvatar(
-        backgroundColor: effectiveIconColor.withAlpha((AppColors.opacity10 * 255).round()),
+        backgroundColor: effectiveIconColor.opacity(AppColors.opacity10),
         foregroundColor: effectiveIconColor,
         child: Icon(icon),
       );
@@ -365,7 +363,7 @@ class ThemedLoadingIndicator extends StatelessWidget {
               Text(
                 message!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((AppColors.opacity70*255).round()),
+                  color: theme.textTheme.bodySmall?.color?.opacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.opacity(AppColors.opacity70),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -396,7 +394,7 @@ class ThemedCircleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bgColor = backgroundColor ?? theme.primaryColor.withAlpha((AppColors.opacity10 * 255).round());
+    final bgColor = backgroundColor ?? theme.primaryColor.opacity(AppColors.opacity10);
     final fgColor = iconColor ?? theme.primaryColor;
 
     return InkWell(
@@ -432,7 +430,7 @@ class ThemedDividerWithText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final Color effectiveDividerColor = theme.dividerTheme.color!; // Assert non-null
+    final Color effectiveDividerColor = theme.dividerTheme.color ?? AppColors.divider(context);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppDimens.space4),
@@ -443,7 +441,7 @@ class ThemedDividerWithText extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppDimens.space3),
             child: Text(
               text,
-              style: textStyle ?? theme.textTheme.bodySmall?.copyWith(color: effectiveDividerColor.withAlpha((0.8 * 255).round())),
+              style: textStyle ?? theme.textTheme.bodySmall?.copyWith(color: effectiveDividerColor.opacity(0.8)),
             ),
           ),
           const Expanded(child: Divider()),
@@ -505,7 +503,7 @@ class ThemedStatCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: AppDimens.iconSm,
-                      color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.6 * 255).round()),
+                      color: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
                     ),
                 ],
               ),
@@ -521,7 +519,7 @@ class ThemedStatCard extends StatelessWidget {
               Text(
                 title,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                   color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.8 * 255).round())
+                   color: theme.textTheme.bodySmall?.color?.opacity(0.8) ?? AppColors.lightTextSecondary.opacity(0.8),
                 ),
               ),
             ],
@@ -560,8 +558,8 @@ class ThemedEmptyMessage extends StatelessWidget {
             ThemedCircleIcon(
               icon: icon,
               size: AppDimens.icon2xl * 1.8,
-              backgroundColor: surfaceContainerHighestColor.withAlpha((AppColors.opacity50 * 255).round()),
-              iconColor: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.6 * 255).round()),
+              backgroundColor: surfaceContainerHighestColor.opacity(AppColors.opacity50),
+              iconColor: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
             ),
             const SizedBox(height: AppDimens.space5),
             Text(
@@ -574,7 +572,7 @@ class ThemedEmptyMessage extends StatelessWidget {
               Text(
                 subtitle!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.8 * 255).round()),
+                  color: theme.textTheme.bodySmall?.color?.opacity(0.8) ?? AppColors.lightTextSecondary.opacity(0.8),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -610,7 +608,7 @@ class ThemedLinearProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final Color effectiveDividerColor = theme.dividerTheme.color!;
+    final Color effectiveDividerColor = theme.dividerTheme.color ?? AppColors.divider(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,7 +635,7 @@ class ThemedLinearProgress extends StatelessWidget {
           child: LinearProgressIndicator(
             value: value,
             minHeight: height,
-            backgroundColor: backgroundColor ?? effectiveDividerColor.withAlpha((AppColors.opacity50 * 255).round()),
+            backgroundColor: backgroundColor ?? effectiveDividerColor.opacity(AppColors.opacity50),
             valueColor: AlwaysStoppedAnimation<Color>(
               valueColor ?? theme.progressIndicatorTheme.color ?? theme.primaryColor,
             ),
@@ -673,10 +671,10 @@ class ThemedAlertCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppDimens.space3),
       decoration: BoxDecoration(
-        color: alertColor.withAlpha((0.15 * 255).round()),
+        color: alertColor.opacity(0.15),
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         border: Border.all(
-          color: alertColor.withAlpha((0.4 * 255).round()),
+          color: alertColor.opacity(0.4),
           width: AppDimens.borderThin,
         ),
       ),
@@ -698,7 +696,7 @@ class ThemedAlertCard extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.close_rounded,
-                color: (theme.textTheme.bodySmall?.color ?? AppColors.lightTextSecondary).withAlpha((0.7 * 255).round()),
+                color: theme.textTheme.bodySmall?.color?.opacity(0.7) ?? AppColors.lightTextSecondary.opacity(0.7),
                 size: AppDimens.iconSm,
               ),
               onPressed: onClose,

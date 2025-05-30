@@ -5,6 +5,7 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
 import '../../constants/app_animations.dart';
+import '../../core/theme_extensions.dart';
 
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
@@ -19,7 +20,7 @@ class AppEmptyState extends StatelessWidget {
   final CrossAxisAlignment alignment;
 
   const AppEmptyState({
-    super.key, // Applied super.key
+    super.key,
     required this.icon,
     required this.title,
     this.subtitle,
@@ -34,8 +35,7 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context); // Removed as it was unused
-    final defaultIconColor = this.iconColor ?? AppColors.textSecondary(context).withAlpha((AppColors.opacity50 * 255).round()); // Corrected withAlpha
+    final defaultIconColor = iconColor ?? AppColors.textSecondary(context).opacity(AppColors.opacity50);
 
     Widget contentWidget = Center(
       child: Padding(
@@ -54,7 +54,7 @@ class AppEmptyState extends StatelessWidget {
             Text(
               title,
               style: AppTypography.h5.copyWith(
-                color: iconColor ?? AppColors.textPrimary(context), // Removed unnecessary 'this.'
+                color: iconColor ?? AppColors.textPrimary(context),
               ),
               textAlign: alignment == CrossAxisAlignment.center
                 ? TextAlign.center
@@ -110,7 +110,7 @@ class AppEmptyState extends StatelessWidget {
                 child: Text(
                   title,
                   style: AppTypography.h5.copyWith(
-                    color: iconColor ?? AppColors.textPrimary(context), // Removed unnecessary 'this.'
+                    color: iconColor ?? AppColors.textPrimary(context),
                   ),
                   textAlign: alignment == CrossAxisAlignment.center
                     ? TextAlign.center
@@ -160,12 +160,6 @@ class AppEmptyState extends StatelessWidget {
     String? subtitle,
     Widget? action,
   }) {
-    if (action == null && subtitle == null) {
-      return AppEmptyState(
-        icon: Icons.inbox_outlined,
-        title: title,
-      );
-    }
     return AppEmptyState(
       icon: Icons.inbox_outlined,
       title: title,
@@ -179,13 +173,6 @@ class AppEmptyState extends StatelessWidget {
     String? subtitle = 'جرب البحث بكلمات مختلفة',
     Widget? action,
   }) {
-    if (action == null) {
-       return AppEmptyState(
-        icon: Icons.search_off,
-        title: title,
-        subtitle: subtitle, // Default string literals are const compatible
-      );
-    }
     return AppEmptyState(
       icon: Icons.search_off,
       title: title,
@@ -199,13 +186,6 @@ class AppEmptyState extends StatelessWidget {
     String? subtitle = 'أضف عناصر إلى المفضلة لتظهر هنا',
     Widget? action,
   }) {
-    if (action == null) {
-      return AppEmptyState(
-        icon: Icons.favorite_border,
-        title: title,
-        subtitle: subtitle,
-      );
-    }
     return AppEmptyState(
       icon: Icons.favorite_border,
       title: title,
@@ -214,21 +194,11 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  static Widget noConnection({ // Line 166 for error
+  static Widget noConnection({
     String title = 'لا يوجد اتصال',
     String? subtitle = 'تحقق من اتصالك بالإنترنت',
     Widget? action,
   }) {
-    if (action == null) {
-      // AppColors.error is const. Defaults for title & subtitle are const.
-      // This should be const.
-      return AppEmptyState(
-        icon: Icons.wifi_off,
-        title: title,
-        subtitle: subtitle,
-        iconColor: AppColors.error,
-      );
-    }
     return AppEmptyState(
       icon: Icons.wifi_off,
       title: title,
@@ -238,18 +208,11 @@ class AppEmptyState extends StatelessWidget {
     );
   }
 
-  static Widget error({ // Line 232 for error (approx.)
+  static Widget error({
     String title = 'حدث خطأ',
     String? subtitle,
     Widget? action,
   }) {
-    if (action == null && subtitle == null) {
-       return AppEmptyState(
-        icon: Icons.error_outline,
-        title: title,
-        iconColor: AppColors.error,
-      );
-    }
     return AppEmptyState(
       icon: Icons.error_outline,
       title: title,
