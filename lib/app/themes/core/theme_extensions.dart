@@ -1,6 +1,5 @@
 // lib/app/themes/core/theme_extensions.dart
 import 'package:flutter/material.dart';
-// import '../app_theme.dart'; // Removed unused import
 import '../constants/app_colors.dart';
 import '../constants/app_dimensions.dart';
 import '../constants/app_typography.dart';
@@ -74,7 +73,11 @@ extension ThemeExtension on BuildContext {
 }
 
 extension ColorExtensionMethods on Color {
-  Color opacity(double opacityValue) => withAlpha((opacityValue * 255).round().clamp(0, 255));
+  /// Create color with opacity using the new withValues method
+  Color withOpacity(double opacity) {
+    assert(opacity >= 0.0 && opacity <= 1.0);
+    return withValues(alpha: opacity);
+  }
 
   Color lighten([double amount = 0.1]) {
     assert(amount >= 0 && amount <= 1);

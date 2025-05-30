@@ -5,7 +5,6 @@ import '../../constants/app_colors.dart';
 import '../../constants/app_dimensions.dart';
 import '../../constants/app_typography.dart';
 import '../../constants/app_animations.dart';
-import '../../core/theme_extensions.dart';
 
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
@@ -35,7 +34,7 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultIconColor = iconColor ?? AppColors.textSecondary(context).opacity(AppColors.opacity50);
+    final defaultIconColor = iconColor ?? AppColors.textSecondary(context).withOpacity(AppColors.opacity50);
 
     Widget contentWidget = Center(
       child: Padding(

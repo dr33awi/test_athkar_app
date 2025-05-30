@@ -36,7 +36,7 @@ class ThemedSectionHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(AppDimens.space2),
               decoration: BoxDecoration(
-                color: theme.primaryColor.opacity(AppColors.opacity10),
+                color: theme.primaryColor.withOpacity(AppColors.opacity10),
                 borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               ),
               child: Icon(
@@ -125,7 +125,7 @@ class ThemedInfoCard extends StatelessWidget {
                 width: AppDimens.avatarLg,
                 height: AppDimens.avatarLg,
                 decoration: BoxDecoration(
-                  color: effectiveIconColor.opacity(AppColors.opacity10),
+                  color: effectiveIconColor.withOpacity(AppColors.opacity10),
                   borderRadius: BorderRadius.circular(AppDimens.radiusMd),
                 ),
                 child: Icon(
@@ -149,7 +149,7 @@ class ThemedInfoCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.textTheme.bodySmall?.color?.opacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.opacity(AppColors.opacity70),
+                        color: theme.textTheme.bodySmall?.color?.withOpacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.withOpacity(AppColors.opacity70),
                       ),
                     ),
                   ],
@@ -160,7 +160,7 @@ class ThemedInfoCard extends StatelessWidget {
               else if (onTap != null)
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.6) ?? AppColors.lightTextSecondary.withOpacity(0.6),
                   size: AppDimens.iconSm,
                 ),
             ],
@@ -310,7 +310,7 @@ class ThemedListItem extends StatelessWidget {
     Widget? resolvedLeading = leading;
     if (icon != null) {
       resolvedLeading = CircleAvatar(
-        backgroundColor: effectiveIconColor.opacity(AppColors.opacity10),
+        backgroundColor: effectiveIconColor.withOpacity(AppColors.opacity10),
         foregroundColor: effectiveIconColor,
         child: Icon(icon),
       );
@@ -363,7 +363,7 @@ class ThemedLoadingIndicator extends StatelessWidget {
               Text(
                 message!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.opacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.opacity(AppColors.opacity70),
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(AppColors.opacity70) ?? AppColors.lightTextSecondary.withOpacity(AppColors.opacity70),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -394,7 +394,7 @@ class ThemedCircleIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bgColor = backgroundColor ?? theme.primaryColor.opacity(AppColors.opacity10);
+    final bgColor = backgroundColor ?? theme.primaryColor.withOpacity(AppColors.opacity10);
     final fgColor = iconColor ?? theme.primaryColor;
 
     return InkWell(
@@ -441,7 +441,7 @@ class ThemedDividerWithText extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: AppDimens.space3),
             child: Text(
               text,
-              style: textStyle ?? theme.textTheme.bodySmall?.copyWith(color: effectiveDividerColor.opacity(0.8)),
+              style: textStyle ?? theme.textTheme.bodySmall?.copyWith(color: effectiveDividerColor.withOpacity(0.8)),
             ),
           ),
           const Expanded(child: Divider()),
@@ -503,7 +503,7 @@ class ThemedStatCard extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: AppDimens.iconSm,
-                      color: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
+                      color: theme.textTheme.bodySmall?.color?.withOpacity(0.6) ?? AppColors.lightTextSecondary.withOpacity(0.6),
                     ),
                 ],
               ),
@@ -519,7 +519,7 @@ class ThemedStatCard extends StatelessWidget {
               Text(
                 title,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                   color: theme.textTheme.bodySmall?.color?.opacity(0.8) ?? AppColors.lightTextSecondary.opacity(0.8),
+                   color: theme.textTheme.bodySmall?.color?.withOpacity(0.8) ?? AppColors.lightTextSecondary.withOpacity(0.8),
                 ),
               ),
             ],
@@ -558,8 +558,8 @@ class ThemedEmptyMessage extends StatelessWidget {
             ThemedCircleIcon(
               icon: icon,
               size: AppDimens.icon2xl * 1.8,
-              backgroundColor: surfaceContainerHighestColor.opacity(AppColors.opacity50),
-              iconColor: theme.textTheme.bodySmall?.color?.opacity(0.6) ?? AppColors.lightTextSecondary.opacity(0.6),
+              backgroundColor: surfaceContainerHighestColor.withOpacity(AppColors.opacity50),
+              iconColor: theme.textTheme.bodySmall?.color?.withOpacity(0.6) ?? AppColors.lightTextSecondary.withOpacity(0.6),
             ),
             const SizedBox(height: AppDimens.space5),
             Text(
@@ -572,7 +572,7 @@ class ThemedEmptyMessage extends StatelessWidget {
               Text(
                 subtitle!,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.textTheme.bodySmall?.color?.opacity(0.8) ?? AppColors.lightTextSecondary.opacity(0.8),
+                  color: theme.textTheme.bodySmall?.color?.withOpacity(0.8) ?? AppColors.lightTextSecondary.withOpacity(0.8),
                   height: 1.5,
                 ),
                 textAlign: TextAlign.center,
@@ -635,7 +635,7 @@ class ThemedLinearProgress extends StatelessWidget {
           child: LinearProgressIndicator(
             value: value,
             minHeight: height,
-            backgroundColor: backgroundColor ?? effectiveDividerColor.opacity(AppColors.opacity50),
+            backgroundColor: backgroundColor ?? effectiveDividerColor.withOpacity(AppColors.opacity50),
             valueColor: AlwaysStoppedAnimation<Color>(
               valueColor ?? theme.progressIndicatorTheme.color ?? theme.primaryColor,
             ),
@@ -671,10 +671,10 @@ class ThemedAlertCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppDimens.space3),
       decoration: BoxDecoration(
-        color: alertColor.opacity(0.15),
+        color: alertColor.withOpacity(0.15),
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
         border: Border.all(
-          color: alertColor.opacity(0.4),
+          color: alertColor.withOpacity(0.4),
           width: AppDimens.borderThin,
         ),
       ),
@@ -696,7 +696,7 @@ class ThemedAlertCard extends StatelessWidget {
             IconButton(
               icon: Icon(
                 Icons.close_rounded,
-                color: theme.textTheme.bodySmall?.color?.opacity(0.7) ?? AppColors.lightTextSecondary.opacity(0.7),
+                color: theme.textTheme.bodySmall?.color?.withOpacity(0.7) ?? AppColors.lightTextSecondary.withOpacity(0.7),
                 size: AppDimens.iconSm,
               ),
               onPressed: onClose,

@@ -168,7 +168,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       ),
       child: Material(
         elevation: widget.showShadow ? (widget.elevation ?? theme.cardTheme.elevation ?? AppDimens.elevation4) : 0,
-        shadowColor: widget.showShadow ? cardPrimaryColor.opacity(AppColors.opacity20) : Colors.transparent,
+        shadowColor: widget.showShadow ? cardPrimaryColor.withOpacity(AppColors.opacity20) : Colors.transparent,
         borderRadius: effectiveBorderRadiusValue,
         color: Colors.transparent,
         clipBehavior: Clip.antiAlias,
@@ -242,9 +242,9 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
       case CardStyle.glassmorphism:
         return BoxDecoration(
           borderRadius: borderRadius,
-          color: cardBgColor.opacity(AppColors.opacity70),
+          color: cardBgColor.withOpacity(AppColors.opacity70),
           border: Border.all(
-            color: (isDark ? Colors.white : cardPrimaryColor).opacity(AppColors.opacity20),
+            color: (isDark ? Colors.white : cardPrimaryColor).withOpacity(AppColors.opacity20),
             width: AppDimens.borderThin,
           ),
         );
@@ -253,7 +253,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
           borderRadius: borderRadius,
           color: cardBgColor,
           border: Border.all(
-            color: cardPrimaryColor.opacity(AppColors.opacity30),
+            color: cardPrimaryColor.withOpacity(AppColors.opacity30),
             width: AppDimens.borderMedium,
           ),
         );
@@ -314,7 +314,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(AppDimens.space2),
             decoration: BoxDecoration(
-              color: cardPrimaryColor.opacity(AppColors.opacity10),
+              color: cardPrimaryColor.withOpacity(AppColors.opacity10),
               borderRadius: BorderRadius.circular(AppDimens.radiusMd),
             ),
             child: Icon(
@@ -390,7 +390,7 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
   Color _getTextColor(BuildContext context, bool isDark, Color cardPrimaryColor, {bool isSecondary = false}) {
     final theme = Theme.of(context);
     if (widget.cardStyle == CardStyle.gradient) {
-      return Colors.white.opacity(isSecondary ? AppColors.opacity70 : 1.0);
+      return Colors.white.withOpacity(isSecondary ? AppColors.opacity70 : 1.0);
     }
     
     Color? customBgColor = widget.backgroundColor;
@@ -450,7 +450,7 @@ class _CardActionButton extends StatelessWidget {
     if (isGradientCard) {
       effectiveTextColor = Colors.white;
     } else {
-      bool isButtonBgLight = ThemeData.estimateBrightnessForColor(buttonColor.opacity(AppColors.opacity10)) == Brightness.light;
+      bool isButtonBgLight = ThemeData.estimateBrightnessForColor(buttonColor.withOpacity(AppColors.opacity10)) == Brightness.light;
       if (isDark) {
         effectiveTextColor = isButtonBgLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
       } else {
@@ -469,8 +469,8 @@ class _CardActionButton extends StatelessWidget {
           action.onPressed();
         },
         borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        splashColor: buttonColor.opacity(AppColors.opacity20),
-        highlightColor: buttonColor.opacity(AppColors.opacity10),
+        splashColor: buttonColor.withOpacity(AppColors.opacity20),
+        highlightColor: buttonColor.withOpacity(AppColors.opacity10),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.space3,
@@ -478,13 +478,13 @@ class _CardActionButton extends StatelessWidget {
           ),
           decoration: BoxDecoration(
             color: isGradientCard
-                ? Colors.white.opacity(AppColors.opacity20)
-                : buttonColor.opacity(AppColors.opacity10),
+                ? Colors.white.withOpacity(AppColors.opacity20)
+                : buttonColor.withOpacity(AppColors.opacity10),
             borderRadius: BorderRadius.circular(AppDimens.radiusMd),
             border: Border.all(
               color: isGradientCard
-                  ? Colors.white.opacity(AppColors.opacity30)
-                  : buttonColor.opacity(AppColors.opacity30),
+                  ? Colors.white.withOpacity(AppColors.opacity30)
+                  : buttonColor.withOpacity(AppColors.opacity30),
               width: AppDimens.borderThin,
             ),
           ),

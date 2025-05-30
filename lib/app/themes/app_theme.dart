@@ -5,7 +5,7 @@ import 'constants/app_colors.dart';
 import 'constants/app_dimensions.dart';
 import 'constants/app_typography.dart';
 import 'constants/app_animations.dart';
-import 'core/theme_extensions.dart';
+import 'core/theme_extensions.dart'; // For ColorExtensionMethods (which includes darken)
 
 /// نظام الثيم الموحد للتطبيق
 /// يدعم الوضع الفاتح والداكن مع تحسينات للغة العربية
@@ -92,7 +92,7 @@ class AppTheme {
         titleTextStyle: AppTypography.h4.copyWith(
           color: textPrimaryColor,
         ),
-        iconTheme: IconThemeData(
+        iconTheme: IconThemeData( // Cannot be const as textPrimaryColor is dynamic
           color: textPrimaryColor,
           size: AppDimens.iconMd,
         ),
@@ -103,7 +103,7 @@ class AppTheme {
           systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardColor,
         elevation: AppDimens.elevationNone,
         margin: EdgeInsets.zero,
@@ -116,8 +116,8 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
           foregroundColor: onPrimaryColor,
-          disabledBackgroundColor: AppColors.disabled.opacity(AppColors.opacity30),
-          disabledForegroundColor: AppColors.disabledText.opacity(AppColors.opacity70),
+          disabledBackgroundColor: AppColors.disabled.withAlpha((AppColors.opacity30 * 255).round()),
+          disabledForegroundColor: AppColors.disabledText.withAlpha((AppColors.opacity70 * 255).round()),
           elevation: AppDimens.elevationNone,
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.space6,
@@ -137,7 +137,7 @@ class AppTheme {
             color: primaryColor,
             width: AppDimens.borderMedium,
           ),
-          disabledForegroundColor: AppColors.disabledText.opacity(AppColors.opacity70),
+          disabledForegroundColor: AppColors.disabledText.withAlpha((AppColors.opacity70 * 255).round()),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.space6,
             vertical: AppDimens.space4,
@@ -152,7 +152,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
-          disabledForegroundColor: AppColors.disabledText.opacity(AppColors.opacity70),
+          disabledForegroundColor: AppColors.disabledText.withAlpha((AppColors.opacity70 * 255).round()),
           padding: const EdgeInsets.symmetric(
             horizontal: AppDimens.space4,
             vertical: AppDimens.space2,
@@ -164,7 +164,7 @@ class AppTheme {
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
-        fillColor: surfaceColor.opacity(isDark ? AppColors.opacity10 : AppColors.opacity50),
+        fillColor: surfaceColor.withAlpha(isDark ? (AppColors.opacity10 * 255).round() : (AppColors.opacity50 * 255).round()),
         filled: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppDimens.space4,
@@ -206,7 +206,7 @@ class AppTheme {
           ),
         ),
         hintStyle: AppTypography.body2.copyWith(
-          color: textSecondaryColor.opacity(AppColors.opacity70),
+          color: textSecondaryColor.withAlpha((AppColors.opacity70 * 255).round()), // Adjusted opacity value slightly
         ),
         labelStyle: AppTypography.body2.copyWith(
           color: textSecondaryColor,
@@ -221,41 +221,41 @@ class AppTheme {
         thickness: AppDimens.borderLight,
         space: AppDimens.space1,
       ),
-      iconTheme: IconThemeData(
+      iconTheme: IconThemeData( // Cannot be const, uses dynamic textPrimaryColor (line 198 area)
         color: textPrimaryColor,
         size: AppDimens.iconMd,
       ),
-      primaryIconTheme: IconThemeData(
+      primaryIconTheme: IconThemeData( // Cannot be const, uses dynamic primaryColor (line 205 area)
         color: primaryColor,
         size: AppDimens.iconMd,
       ),
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: primaryColor,
-        linearTrackColor: dividerColor.opacity(AppColors.opacity50),
-        circularTrackColor: dividerColor.opacity(AppColors.opacity50),
+        linearTrackColor: dividerColor.withAlpha((AppColors.opacity50 * 255).round()),
+        circularTrackColor: dividerColor.withAlpha((AppColors.opacity50 * 255).round()),
       ),
       pageTransitionsTheme: AppAnimations.pageTransitionsTheme,
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: cardColor,
         selectedItemColor: primaryColor,
-        unselectedItemColor: textSecondaryColor.opacity(AppColors.opacity70),
+        unselectedItemColor: textSecondaryColor.withAlpha((AppColors.opacity70 * 255).round()), // Adjusted opacity value
         type: BottomNavigationBarType.fixed,
         elevation: AppDimens.elevation8,
         selectedLabelStyle: AppTypography.label2.copyWith(
           fontWeight: AppTypography.semiBold,
         ),
         unselectedLabelStyle: AppTypography.label2,
-        selectedIconTheme: const IconThemeData(
+        selectedIconTheme: const IconThemeData( // Can be const
           size: AppDimens.iconMd,
         ),
-        unselectedIconTheme: const IconThemeData(
+        unselectedIconTheme: const IconThemeData( // Can be const
           size: AppDimens.iconMd,
         ),
       ),
       chipTheme: ChipThemeData(
         backgroundColor: surfaceColor,
         deleteIconColor: textSecondaryColor,
-        disabledColor: AppColors.disabled.opacity(AppColors.opacity30),
+        disabledColor: AppColors.disabled.withAlpha((AppColors.opacity30 * 255).round()),
         selectedColor: primaryColor,
         secondarySelectedColor: AppColors.accent,
         labelPadding: const EdgeInsets.symmetric(horizontal: AppDimens.space2),
@@ -276,9 +276,9 @@ class AppTheme {
         ),
         brightness: brightness,
       ),
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryColor,
-        unselectedLabelColor: textSecondaryColor.opacity(AppColors.opacity70),
+        unselectedLabelColor: textSecondaryColor.withAlpha((AppColors.opacity70 * 255).round()), // Adjusted opacity
         indicatorSize: TabBarIndicatorSize.label,
         indicator: UnderlineTabIndicator(
           borderSide: BorderSide(
@@ -299,7 +299,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppDimens.radiusLg),
         ),
       ),
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: cardColor,
         titleTextStyle: AppTypography.h5.copyWith(color: textPrimaryColor),
         contentTextStyle: AppTypography.body2.copyWith(color: textSecondaryColor),
@@ -320,16 +320,16 @@ class AppTheme {
         }),
         trackColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
           if (states.contains(WidgetState.selected)) {
-            return primaryColor.opacity(AppColors.opacity50);
+            return primaryColor.withAlpha((AppColors.opacity50 * 255).round());
           }
           if (states.contains(WidgetState.disabled)) {
-            return (isDark ? AppColors.darkSurface : AppColors.lightSurface).opacity(AppColors.opacity50);
+            return (isDark ? AppColors.darkSurface : AppColors.lightSurface).withAlpha((AppColors.opacity50 * 255).round());
           }
-          return (isDark ? AppColors.darkTextSecondary : AppColors.lightTextHint).opacity(AppColors.opacity30);
+          return (isDark ? AppColors.darkTextSecondary : AppColors.lightTextHint).withAlpha((AppColors.opacity30 * 255).round());
         }),
          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
           if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-            return primaryColor.opacity(AppColors.opacity10);
+            return primaryColor.withAlpha((AppColors.opacity10 * 255).round());
           }
           return null;
         }),
@@ -349,7 +349,7 @@ class AppTheme {
           if (states.contains(WidgetState.disabled)) {
             return BorderSide(
               width: AppDimens.borderMedium,
-              color: (isDark ? AppColors.darkTextSecondary : AppColors.lightTextHint).opacity(AppColors.opacity50),
+              color: (isDark ? AppColors.darkTextSecondary : AppColors.lightTextHint).withAlpha((AppColors.opacity50 * 255).round()),
             );
           }
           return BorderSide(
@@ -362,7 +362,7 @@ class AppTheme {
         ),
          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
           if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-            return primaryColor.opacity(AppColors.opacity10);
+            return primaryColor.withAlpha((AppColors.opacity10 * 255).round());
           }
           return null;
         }),
@@ -379,22 +379,22 @@ class AppTheme {
         }),
          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {
           if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-            return primaryColor.opacity(AppColors.opacity10);
+            return primaryColor.withAlpha((AppColors.opacity10 * 255).round());
           }
           return null;
         }),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
-        inactiveTrackColor: primaryColor.opacity(AppColors.opacity30),
+        inactiveTrackColor: primaryColor.withAlpha((AppColors.opacity30 * 255).round()),
         thumbColor: primaryColor,
-        overlayColor: primaryColor.opacity(AppColors.opacity20),
+        overlayColor: primaryColor.withAlpha((AppColors.opacity20 * 255).round()),
         valueIndicatorColor: primaryColor.darken(0.1),
         valueIndicatorTextStyle: AppTypography.caption.copyWith(color: onPrimaryColor),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
-          color: (isDark ? AppColors.darkSurface : AppColors.lightSurface).opacity(AppColors.opacity90),
+          color: (isDark ? AppColors.darkSurface : AppColors.lightSurface).withAlpha((AppColors.opacity90 * 255).round()),
           borderRadius: BorderRadius.circular(AppDimens.radiusSm),
         ),
         textStyle: AppTypography.caption.copyWith(color: textPrimaryColor),
