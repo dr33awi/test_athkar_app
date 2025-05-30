@@ -1,4 +1,5 @@
-// lib/core/infrastructure/services/notifications/notification_payload_handler.dart
+// lib/core/infrastructure/services/notifications/utils/notification_payload_handler.dart
+
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
@@ -10,7 +11,7 @@ class NotificationPayloadHandler {
       return jsonEncode(data);
     } catch (e) {
       if (kDebugMode) {
-        print('Error encoding notification payload: $e');
+        print('[PayloadHandler] Error encoding payload: $e');
       }
       return '{}';
     }
@@ -30,7 +31,7 @@ class NotificationPayloadHandler {
       return {'raw': decoded};
     } catch (e) {
       if (kDebugMode) {
-        print('Error decoding notification payload: $e');
+        print('[PayloadHandler] Error decoding payload: $e');
       }
       return {'raw_payload': payload};
     }
@@ -75,6 +76,8 @@ class NotificationPayloadHandler {
         return double.tryParse(value) as T?;
       } else if (T == bool && value is String) {
         return (value.toLowerCase() == 'true') as T?;
+      } else if (T == DateTime && value is String) {
+        return DateTime.tryParse(value) as T?;
       }
     }
     
@@ -175,6 +178,80 @@ class NotificationPayloadHandler {
       return false;
     }
   }
+  
+  /// Build action payload
+  static String buildActionPayload({
+    required String action,
+    Map<String, dynamic>? data,
+  }) {
+    return encode({
+      'action': action,
+      'timestamp': DateTime.now().toIso8601String(),
+      if (data != null) ...data,
+    });
+  }
+  
+  /// Extract action from payload
+  static String? extractAction(String? payload) {
+    return extractValue<String>(payload, 'action');
+  }
+  
+  /// Build notification metadata payload
+  static String buildMetadataPayload({
+    required String notificationId,
+    required String category,
+    String? groupKey,
+    Map<String, dynamic>? customData,
+  }) {
+    return encode({
+      'notification_id': notificationId,
+      'category': category,
+      if (groupKey != null) 'group_key': groupKey,
+      if (customData != null) 'custom_data': customData,
+      'created_at': DateTime.now().toIso8601String(),
+    });
+  }
+  
+  /// Sanitize payload (remove sensitive data)
+  static String sanitizePayload(String? payload, List<String> sensitiveKeys) {
+    if (payload == null || payload.isEmpty) return '{}';
+    
+    final data = decode(payload);
+    final sanitized = Map<String, dynamic>.from(data);
+    
+    // Remove sensitive keys
+    for (final key in sensitiveKeys) {
+      sanitized.remove(key);
+    }
+    
+    // Recursively sanitize nested maps
+    sanitized.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        sanitized[key] = _sanitizeMap(value, sensitiveKeys);
+      }
+    });
+    
+    return encode(sanitized);
+  }
+  
+  static Map<String, dynamic> _sanitizeMap(
+    Map<String, dynamic> map,
+    List<String> sensitiveKeys,
+  ) {
+    final sanitized = Map<String, dynamic>.from(map);
+    
+    for (final key in sensitiveKeys) {
+      sanitized.remove(key);
+    }
+    
+    sanitized.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        sanitized[key] = _sanitizeMap(value, sensitiveKeys);
+      }
+    });
+    
+    return sanitized;
+  }
 }
 
 /// Navigation route information
@@ -188,6 +265,14 @@ class NavigationRoute {
     this.arguments,
     this.parameters,
   });
+  
+  Map<String, dynamic> toMap() {
+    return {
+      'path': path,
+      if (arguments != null) 'arguments': arguments,
+      if (parameters != null) 'parameters': parameters,
+    };
+  }
 
   @override
   String toString() => 'NavigationRoute(path: $path, arguments: $arguments, parameters: $parameters)';

@@ -1,50 +1,65 @@
-// lib/core/services/interfaces/storage_service.dart
+// lib/core/infrastructure/services/storage/storage_service.dart
+
+/// Abstract storage service interface
+/// Provides local storage functionality for the application
 abstract class StorageService {
-  /// حفظ قيمة نصية
+  /// Save string value
   Future<bool> setString(String key, String value);
   
-  /// الحصول على قيمة نصية
+  /// Get string value
   String? getString(String key);
   
-  /// حفظ قيمة منطقية
+  /// Save boolean value
   Future<bool> setBool(String key, bool value);
   
-  /// الحصول على قيمة منطقية
+  /// Get boolean value
   bool? getBool(String key);
   
-  /// حفظ قيمة عددية صحيحة
+  /// Save integer value
   Future<bool> setInt(String key, int value);
   
-  /// الحصول على قيمة عددية صحيحة
+  /// Get integer value
   int? getInt(String key);
   
-  /// حفظ قيمة عددية عشرية
+  /// Save double value
   Future<bool> setDouble(String key, double value);
   
-  /// الحصول على قيمة عددية عشرية
+  /// Get double value
   double? getDouble(String key);
   
-  /// حفظ قائمة قيم نصية
+  /// Save string list
   Future<bool> setStringList(String key, List<String> value);
   
-  /// الحصول على قائمة قيم نصية
+  /// Get string list
   List<String>? getStringList(String key);
   
-  /// حفظ قاموس (Map) من البيانات
+  /// Save map data
   Future<bool> setMap(String key, Map<String, dynamic> value);
   
-  /// الحصول على قاموس (Map) من البيانات
+  /// Get map data
   Map<String, dynamic>? getMap(String key);
   
-  /// حذف قيمة
+  /// Save object as JSON
+  Future<bool> setObject<T>(String key, T object, Map<String, dynamic> Function(T) toJson);
+  
+  /// Get object from JSON
+  T? getObject<T>(String key, T Function(Map<String, dynamic>) fromJson);
+  
+  /// Remove specific key
   Future<bool> remove(String key);
   
-  /// حذف جميع القيم
+  /// Clear all storage
   Future<bool> clear();
   
-  /// التحقق من وجود مفتاح
+  /// Check if key exists
   bool containsKey(String key);
   
-  /// الحصول على جميع المفاتيح
+  /// Get all keys
   Set<String> getKeys();
+  
+  /// Get storage size (if available)
+  Future<int> getStorageSize();
+  
+  /// Reload storage (refresh from disk)
+  Future<void> reload();
 }

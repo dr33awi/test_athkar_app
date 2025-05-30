@@ -14,7 +14,7 @@ import '../../features/prayers/qibla_service.dart';
 import '../../features/prayers/qibla_service_impl.dart';
 import '../../core/infrastructure/services/device/battery/battery_service.dart';
 import '../../core/infrastructure/services/device/battery/battery_service_impl.dart';
-import '../../core/infrastructure/services/device/battery/do_not_disturb_service.dart';
+import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
 import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
 import '../../core/infrastructure/services/timezone/timezone_service.dart';
 import '../../core/infrastructure/services/timezone/timezone_service_impl.dart';

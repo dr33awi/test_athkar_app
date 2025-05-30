@@ -1,21 +1,23 @@
 // lib/core/infrastructure/services/permissions/permission_service_impl.dart
+
 import 'dart:async';
 import 'dart:io';
-import 'package:athkar_app/core/infrastructure/services/permissions/permission_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart' as app_settings;
 import '../logging/logger_service.dart';
 import '../../../../app/di/service_locator.dart';
+import 'permission_service.dart';
 
-/// Implementation of permission service with comprehensive permission handling
+/// Implementation of permission service
 class PermissionServiceImpl implements PermissionService {
   final LoggerService _logger;
   final Map<AppPermissionType, int> _permissionAttempts = {};
   final Map<AppPermissionType, DateTime> _lastRequestTime = {};
   final Map<AppPermissionType, AppPermissionStatus> _cachedStatuses = {};
   
-  // Cooldown duration between permission requests
+  // Configuration
   static const int _requestCooldownSeconds = 30;
+  static const int _maxAttemptsBeforePermanent = 3;
   
   PermissionServiceImpl({LoggerService? logger})
       : _logger = logger ?? getIt<LoggerService>() {
@@ -24,7 +26,13 @@ class PermissionServiceImpl implements PermissionService {
 
   @override
   Future<AppPermissionStatus> requestPermission(AppPermissionType permission) async {
-    _logger.info(message: 'Requesting permission: ${permission.toString()}');
+    _logger.info(message: 'Requesting permission', data: {'type': permission.toString()});
+    
+    // Check if available on platform
+    if (!isPermissionAvailable(permission)) {
+      _logger.info(message: 'Permission not available on platform', data: {'type': permission.toString()});
+      return AppPermissionStatus.granted;
+    }
     
     // Check cooldown period
     if (!_canRequestPermission(permission)) {
@@ -54,7 +62,7 @@ class PermissionServiceImpl implements PermissionService {
       // Check current status
       final currentStatus = await platformPermission.status;
       if (currentStatus.isGranted) {
-        _logger.info(message: 'Permission already granted: $permission');
+        _logger.info(message: 'Permission already granted', data: {'type': permission.toString()});
         return _updateCachedStatus(permission, AppPermissionStatus.granted);
       }
       
@@ -77,10 +85,12 @@ class PermissionServiceImpl implements PermissionService {
         }
       );
       
-      // Handle permanently denied
-      if (appStatus == AppPermissionStatus.permanentlyDenied) {
-        _logger.warning(message: 'Permission permanently denied: $permission');
-      }
+      // Log analytics event
+_logger.logEvent('permission_requested', parameters: {
+  'type': permission.toString(),
+  'result': appStatus.toString(),
+  'attempt': _permissionAttempts[permission] ?? 1,
+});
       
       return _updateCachedStatus(permission, appStatus);
     } catch (e, s) {
@@ -92,6 +102,24 @@ class PermissionServiceImpl implements PermissionService {
       return AppPermissionStatus.unknown;
     }
   }
+  
+  @override
+  Future<Map<AppPermissionType, AppPermissionStatus>> requestPermissions(
+    List<AppPermissionType> permissions,
+  ) async {
+    _logger.info(
+      message: 'Requesting multiple permissions',
+      data: {'count': permissions.length},
+    );
+    
+    final results = <AppPermissionType, AppPermissionStatus>{};
+    
+    for (final permission in permissions) {
+      results[permission] = await requestPermission(permission);
+    }
+    
+    return results;
+  }
 
   @override
   Future<AppPermissionStatus> checkPermissionStatus(AppPermissionType permission) async {
@@ -99,6 +127,11 @@ class PermissionServiceImpl implements PermissionService {
       message: 'Checking permission status',
       data: {'permission': permission.toString()}
     );
+    
+    // Check if available on platform
+    if (!isPermissionAvailable(permission)) {
+      return AppPermissionStatus.granted;
+    }
     
     try {
       // Special handling for battery optimization
@@ -139,8 +172,13 @@ class PermissionServiceImpl implements PermissionService {
     
     final Map<AppPermissionType, AppPermissionStatus> results = {};
     
-    // Check all permissions in parallel
-    final futures = AppPermissionType.values.map((type) async {
+    // Check all available permissions
+    final availablePermissions = AppPermissionType.values
+        .where((type) => type != AppPermissionType.unknown && isPermissionAvailable(type))
+        .toList();
+    
+    // Check permissions in parallel
+    final futures = availablePermissions.map((type) async {
       final status = await checkPermissionStatus(type);
       return MapEntry(type, status);
     });
@@ -159,45 +197,57 @@ class PermissionServiceImpl implements PermissionService {
   }
 
   @override
-  Future<void> openAppSettings([AppSettingsType? settingsPage]) async {
+  Future<bool> openAppSettings([AppSettingsType? settingsPage]) async {
     _logger.info(
       message: 'Opening app settings',
       data: {'page': settingsPage?.toString() ?? 'default'}
     );
     
     try {
-      switch (settingsPage) {
-        case AppSettingsType.location:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.location
-          );
-          break;
-        case AppSettingsType.notification:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.notification
-          );
-          break;
-        case AppSettingsType.battery:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.batteryOptimization
-          );
-          break;
-        case AppSettingsType.app:
-        case null:
-          await app_settings.AppSettings.openAppSettings();
-          break;
-      }
+      bool opened = false;
+      
+switch (settingsPage) {
+  case AppSettingsType.location:
+    opened = await app_settings.AppSettings.openLocationSettings();
+    break;
+  case AppSettingsType.notification:
+    opened = await app_settings.AppSettings.openNotificationSettings();
+    break;
+  case AppSettingsType.battery:
+    opened = await app_settings.AppSettings.openBatteryOptimizationSettings();
+    break;
+  case AppSettingsType.storage:
+    opened = await app_settings.AppSettings.openInternalStorageSettings();
+    break;
+  case AppSettingsType.privacy:
+    opened = await app_settings.AppSettings.openSecuritySettings();
+    break;
+  case AppSettingsType.accessibility:
+    opened = await app_settings.AppSettings.openAccessibilitySettings();
+    break;
+  case AppSettingsType.app:
+  case null:
+    opened = await app_settings.AppSettings.openAppSettings();
+    break;
+}
       
       // Schedule a recheck after user might return
-      Timer(const Duration(seconds: 3), () async {
-        await checkAllPermissions();
-      });
+      if (opened) {
+        Timer(const Duration(seconds: 3), () async {
+          await checkAllPermissions();
+        });
+      }
+      
+_logger.logEvent('settings_opened', parameters: {'page': settingsPage?.toString() ?? 'app'});
+      
+      return opened;
     } catch (e, s) {
       _logger.error(
         message: 'Error opening app settings',
         error: e,
         stackTrace: s,
       );
+      return false;
     }
   }
 
@@ -213,16 +263,22 @@ class PermissionServiceImpl implements PermissionService {
       final status = await platformPermission.status;
       final shouldShowRationale = await platformPermission.shouldShowRequestRationale;
       
+      // Also check attempt count
+      final attempts = _permissionAttempts[permission] ?? 0;
+      final shouldShowBasedOnAttempts = attempts > 0 && attempts < _maxAttemptsBeforePermanent;
+      
       _logger.debug(
         message: 'Permission rationale check',
         data: {
           'permission': permission.toString(),
           'status': status.toString(),
           'shouldShowRationale': shouldShowRationale,
+          'attempts': attempts,
+          'shouldShowBasedOnAttempts': shouldShowBasedOnAttempts,
         }
       );
       
-      return shouldShowRationale;
+      return shouldShowRationale || shouldShowBasedOnAttempts;
     } catch (e) {
       _logger.warning(
         message: 'Error checking permission rationale',
@@ -230,6 +286,84 @@ class PermissionServiceImpl implements PermissionService {
       );
       return false;
     }
+  }
+  
+  @override
+  Future<bool> isPermissionPermanentlyDenied(AppPermissionType permission) async {
+    final status = await checkPermissionStatus(permission);
+    return status == AppPermissionStatus.permanentlyDenied;
+  }
+  
+  @override
+  String getPermissionDescription(AppPermissionType permission) {
+    switch (permission) {
+      case AppPermissionType.location:
+        return 'Access to your location helps us provide prayer times and Qibla direction for your area.';
+      case AppPermissionType.notification:
+        return 'Notifications allow us to remind you of prayer times and daily Athkar.';
+      case AppPermissionType.doNotDisturb:
+        return 'Do Not Disturb access ensures important reminders can reach you when needed.';
+      case AppPermissionType.batteryOptimization:
+        return 'Battery optimization exemption ensures timely notifications even in power-saving mode.';
+      case AppPermissionType.camera:
+        return 'Camera access is needed to scan QR codes or take photos.';
+      case AppPermissionType.microphone:
+        return 'Microphone access is needed for audio recording features.';
+      case AppPermissionType.storage:
+        return 'Storage access allows saving and accessing your data locally.';
+      case AppPermissionType.contacts:
+        return 'Contacts access helps you share content with your contacts.';
+      case AppPermissionType.calendar:
+        return 'Calendar access allows adding prayer times and events to your calendar.';
+      case AppPermissionType.reminders:
+        return 'Reminders access helps create system reminders for prayers and Athkar.';
+      case AppPermissionType.photos:
+        return 'Photos access allows selecting and saving images.';
+      case AppPermissionType.mediaLibrary:
+        return 'Media library access is needed to save and access media files.';
+      case AppPermissionType.sensors:
+        return 'Sensor access helps determine device orientation for features like Qibla.';
+      case AppPermissionType.bluetooth:
+        return 'Bluetooth access allows connecting to nearby devices.';
+      case AppPermissionType.appTrackingTransparency:
+        return 'This helps us improve the app experience while respecting your privacy.';
+      case AppPermissionType.criticalAlerts:
+        return 'Critical alerts ensure you receive important notifications even in Do Not Disturb mode.';
+      case AppPermissionType.accessMediaLocation:
+        return 'Media location access helps organize photos by location.';
+      case AppPermissionType.activityRecognition:
+        return 'Activity recognition helps provide context-aware reminders.';
+      case AppPermissionType.unknown:
+        return 'This permission helps improve your app experience.';
+    }
+  }
+  
+  @override
+  bool isPermissionAvailable(AppPermissionType permission) {
+    // Platform-specific availability
+    if (Platform.isIOS) {
+      switch (permission) {
+        case AppPermissionType.doNotDisturb:
+        case AppPermissionType.batteryOptimization:
+        case AppPermissionType.accessMediaLocation:
+        case AppPermissionType.activityRecognition:
+          return false;
+        default:
+          return true;
+      }
+    } else if (Platform.isAndroid) {
+      switch (permission) {
+        case AppPermissionType.appTrackingTransparency:
+        case AppPermissionType.criticalAlerts:
+        case AppPermissionType.reminders:
+        case AppPermissionType.mediaLibrary:
+          return false;
+        default:
+          return true;
+      }
+    }
+    
+    return false;
   }
 
   // Private helper methods
@@ -245,6 +379,36 @@ class PermissionServiceImpl implements PermissionService {
         return Platform.isAndroid ? Permission.accessNotificationPolicy : null;
       case AppPermissionType.batteryOptimization:
         return Platform.isAndroid ? Permission.ignoreBatteryOptimizations : null;
+      case AppPermissionType.camera:
+        return Permission.camera;
+      case AppPermissionType.microphone:
+        return Permission.microphone;
+      case AppPermissionType.storage:
+        return Permission.storage;
+      case AppPermissionType.contacts:
+        return Permission.contacts;
+      case AppPermissionType.calendar:
+        return Permission.calendar;
+      case AppPermissionType.reminders:
+        return Platform.isIOS ? Permission.reminders : null;
+      case AppPermissionType.photos:
+        return Permission.photos;
+      case AppPermissionType.mediaLibrary:
+        return Platform.isIOS ? Permission.mediaLibrary : null;
+      case AppPermissionType.sensors:
+        return Permission.sensors;
+      case AppPermissionType.bluetooth:
+        return Permission.bluetooth;
+      case AppPermissionType.appTrackingTransparency:
+        return Platform.isIOS ? Permission.appTrackingTransparency : null;
+      case AppPermissionType.criticalAlerts:
+        return Platform.isIOS ? Permission.criticalAlerts : null;
+      case AppPermissionType.accessMediaLocation:
+        return Platform.isAndroid ? Permission.accessMediaLocation : null;
+      case AppPermissionType.activityRecognition:
+        return Platform.isAndroid ? Permission.activityRecognition : null;
+      case AppPermissionType.unknown:
+        return null;
     }
   }
 
@@ -276,9 +440,7 @@ class PermissionServiceImpl implements PermissionService {
       if (appStatus == AppPermissionStatus.denied || 
           appStatus == AppPermissionStatus.permanentlyDenied) {
         _logger.info(message: 'Opening DND settings for manual permission grant');
-        await app_settings.AppSettings.openAppSettings(
-          type: app_settings.AppSettingsType.notification
-        );
+        await openAppSettings(AppSettingsType.notification);
       }
       
       return _updateCachedStatus(AppPermissionType.doNotDisturb, appStatus);
@@ -310,9 +472,7 @@ class PermissionServiceImpl implements PermissionService {
       
       if (!status.isGranted) {
         _logger.info(message: 'Opening battery optimization settings');
-        await app_settings.AppSettings.openAppSettings(
-          type: app_settings.AppSettingsType.batteryOptimization
-        );
+        await openAppSettings(AppSettingsType.battery);
         
         // Wait and recheck
         await Future.delayed(const Duration(seconds: 3));
@@ -369,6 +529,7 @@ class PermissionServiceImpl implements PermissionService {
     if (status.isPermanentlyDenied) return AppPermissionStatus.permanentlyDenied;
     if (status.isRestricted) return AppPermissionStatus.restricted;
     if (status.isLimited) return AppPermissionStatus.limited;
+    if (status.isProvisional) return AppPermissionStatus.provisional;
     if (status.isDenied) return AppPermissionStatus.denied;
     return AppPermissionStatus.unknown;
   }

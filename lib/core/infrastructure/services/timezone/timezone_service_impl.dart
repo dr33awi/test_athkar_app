@@ -1,10 +1,8 @@
 // lib/core/infrastructure/services/timezone/timezone_service_impl.dart
-
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/timezone.dart';
 import '../logging/logger_service.dart';
 import 'timezone_service.dart';
 
@@ -16,6 +14,10 @@ class TimezoneServiceImpl implements TimezoneService {
   String _currentTimeZoneId = 'UTC';
   tz.Location _currentLocation = tz.UTC;
   
+  // Cache for performance
+  final Map<String, tz.Location> _locationCache = {};
+  final Map<String, String> _displayNameCache = {};
+  
   TimezoneServiceImpl({required LoggerService logger}) : _logger = logger;
   
   @override
@@ -26,6 +28,8 @@ class TimezoneServiceImpl implements TimezoneService {
     }
     
     try {
+      _logger.info(message: 'Initializing timezone database...');
+      
       // Initialize timezone database
       tz.initializeTimeZones();
       
@@ -33,10 +37,23 @@ class TimezoneServiceImpl implements TimezoneService {
       String timeZoneName;
       try {
         timeZoneName = await FlutterTimezone.getLocalTimezone();
+        _logger.debug(
+          message: 'Device timezone detected',
+          data: {'timezone': timeZoneName},
+        );
       } catch (e) {
         _logger.warning(
           message: 'Failed to get local timezone, using UTC',
           data: {'error': e.toString()}
+        );
+        timeZoneName = 'UTC';
+      }
+      
+      // Validate and set timezone
+      if (!timeZoneExists(timeZoneName)) {
+        _logger.warning(
+          message: 'Invalid timezone detected, using UTC',
+          data: {'detected': timeZoneName},
         );
         timeZoneName = 'UTC';
       }
@@ -49,9 +66,17 @@ class TimezoneServiceImpl implements TimezoneService {
       _isInitialized = true;
       
       _logger.info(
-        message: 'Timezones initialized',
-        data: {'local_timezone': timeZoneName}
+        message: 'Timezones initialized successfully',
+        data: {
+          'local_timezone': timeZoneName,
+          'total_timezones': tz.timeZoneDatabase.locations.length,
+        }
       );
+      
+_logger.logEvent('timezone_initialized', parameters: {
+  'timezone': timeZoneName,
+  'device_locale': WidgetsBinding.instance.platformDispatcher.locale.toString(),
+});
     } catch (e, s) {
       _logger.error(
         message: 'Error initializing timezones',
@@ -64,15 +89,30 @@ class TimezoneServiceImpl implements TimezoneService {
       _currentLocation = tz.UTC;
       tz.setLocalLocation(tz.UTC);
       _isInitialized = true;
+      
+      throw Exception('Failed to initialize timezones: $e');
     }
+  }
+  
+  @override
+  tz.Location getCurrentLocation() {
+    _ensureInitialized();
+    return _currentLocation;
   }
   
   @override
   tz.Location? getLocation(String timeZoneId) {
     _ensureInitialized();
     
+    // Check cache first
+    if (_locationCache.containsKey(timeZoneId)) {
+      return _locationCache[timeZoneId];
+    }
+    
     try {
-      return tz.getLocation(timeZoneId);
+      final location = tz.getLocation(timeZoneId);
+      _locationCache[timeZoneId] = location;
+      return location;
     } catch (e) {
       _logger.warning(
         message: 'Timezone not found',
@@ -126,7 +166,7 @@ class TimezoneServiceImpl implements TimezoneService {
         message: 'Cannot set invalid timezone',
         error: 'Timezone not found: $timeZoneId'
       );
-      return;
+      throw ArgumentError('Invalid timezone: $timeZoneId');
     }
     
     _currentTimeZoneId = timeZoneId;
@@ -137,7 +177,11 @@ class TimezoneServiceImpl implements TimezoneService {
       message: 'Default timezone updated',
       data: {'timezone_id': timeZoneId}
     );
-  }
+    
+_logger.logEvent('timezone_changed', parameters: {
+  'new_timezone': timeZoneId,
+  'offset_hours': location.currentTimeZone.offset ~/ 3600000,
+});
   
   @override
   tz.TZDateTime convertBetweenTimeZones(
@@ -146,6 +190,10 @@ class TimezoneServiceImpl implements TimezoneService {
     String toTimeZoneId,
   ) {
     _ensureInitialized();
+    
+    if (fromTimeZoneId == toTimeZoneId) {
+      return dateTime;
+    }
     
     final toLocation = getLocation(toTimeZoneId);
     if (toLocation == null) {
@@ -180,21 +228,66 @@ class TimezoneServiceImpl implements TimezoneService {
     return tz.timeZoneDatabase.locations.containsKey(timeZoneId);
   }
   
-  /// Ensure service is initialized
-  void _ensureInitialized() {
-    if (!_isInitialized) {
-      throw StateError('TimezoneService not initialized. Call initializeTimeZones() first.');
+  @override
+  String getTimeZoneDisplayName(String timeZoneId) {
+    // Check cache
+    if (_displayNameCache.containsKey(timeZoneId)) {
+      return _displayNameCache[timeZoneId]!;
+    }
+    
+    // Generate display name
+    String displayName;
+    
+    if (timeZoneId == 'UTC') {
+      displayName = 'Coordinated Universal Time (UTC)';
+    } else {
+      // Convert timezone ID to display name
+      // e.g., "America/New_York" -> "New York"
+      // e.g., "Asia/Dubai" -> "Dubai"
+      final parts = timeZoneId.split('/');
+      final city = parts.last.replaceAll('_', ' ');
+      
+      // Add region if it provides context
+      if (parts.length > 1 && !city.contains(parts[0])) {
+        final region = _formatRegion(parts[0]);
+        displayName = '$city ($region)';
+      } else {
+        displayName = city;
+      }
+    }
+    
+    _displayNameCache[timeZoneId] = displayName;
+    return displayName;
+  }
+  
+  String _formatRegion(String region) {
+    switch (region) {
+      case 'America':
+        return 'Americas';
+      case 'Asia':
+        return 'Asia';
+      case 'Africa':
+        return 'Africa';
+      case 'Europe':
+        return 'Europe';
+      case 'Australia':
+        return 'Australia';
+      case 'Pacific':
+        return 'Pacific';
+      case 'Indian':
+        return 'Indian Ocean';
+      case 'Atlantic':
+        return 'Atlantic';
+      case 'Arctic':
+        return 'Arctic';
+      case 'Antarctica':
+        return 'Antarctica';
+      default:
+        return region;
     }
   }
   
-  /// Get user-friendly timezone name
-  String getTimeZoneDisplayName(String timeZoneId) {
-    // Convert timezone ID to display name
-    // e.g., "America/New_York" -> "New York"
-    return timeZoneId.split('/').last.replaceAll('_', ' ');
-  }
-  
-  /// Get timezone abbreviation (e.g., EST, PST)
+  @override
   String getTimeZoneAbbreviation(String timeZoneId) {
     final location = getLocation(timeZoneId);
     if (location == null) return '';
@@ -202,10 +295,85 @@ class TimezoneServiceImpl implements TimezoneService {
     final now = tz.TZDateTime.now(location);
     return now.timeZoneName;
   }
-} getCurrentLocation() {
+  
+  @override
+  List<String> getTimeZonesByOffset(Duration offset) {
     _ensureInitialized();
-    return _currentLocation;
+    
+    final offsetMillis = offset.inMilliseconds;
+    final results = <String>[];
+    
+    for (final entry in tz.timeZoneDatabase.locations.entries) {
+      final location = entry.value;
+      final now = tz.TZDateTime.now(location);
+      
+      if (now.timeZoneOffset.inMilliseconds == offsetMillis) {
+        results.add(entry.key);
+      }
+    }
+    
+    results.sort();
+    return results;
   }
   
   @override
-  tz.Location
+  List<String> searchTimeZones(String query) {
+    _ensureInitialized();
+    
+    if (query.isEmpty) return [];
+    
+    final normalizedQuery = query.toLowerCase();
+    final results = <String>[];
+    
+    for (final timeZoneId in tz.timeZoneDatabase.locations.keys) {
+      // Search in timezone ID
+      if (timeZoneId.toLowerCase().contains(normalizedQuery)) {
+        results.add(timeZoneId);
+        continue;
+      }
+      
+      // Search in display name
+      final displayName = getTimeZoneDisplayName(timeZoneId).toLowerCase();
+      if (displayName.contains(normalizedQuery)) {
+        results.add(timeZoneId);
+        continue;
+      }
+      
+      // Search in abbreviation
+      final abbreviation = getTimeZoneAbbreviation(timeZoneId).toLowerCase();
+      if (abbreviation.contains(normalizedQuery)) {
+        results.add(timeZoneId);
+      }
+    }
+    
+    // Sort by relevance (exact matches first)
+    results.sort((a, b) {
+      final aExact = a.toLowerCase() == normalizedQuery;
+      final bExact = b.toLowerCase() == normalizedQuery;
+      
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      
+      return a.compareTo(b);
+    });
+    
+    return results;
+  }
+  
+  /// Ensure service is initialized
+  void _ensureInitialized() {
+    if (!_isInitialized) {
+      throw StateError('TimezoneService not initialized. Call initializeTimeZones() first.');
+    }
+  }
+  
+  /// Get analytics data
+  Map<String, dynamic> getAnalytics() {
+    return {
+      'current_timezone': _currentTimeZoneId,
+      'offset_hours': _currentLocation.currentTimeZone.offset ~/ 3600000,
+      'abbreviation': getTimeZoneAbbreviation(_currentTimeZoneId),
+      'cache_size': _locationCache.length,
+    };
+  }
+}

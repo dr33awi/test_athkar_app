@@ -40,4 +40,16 @@ abstract class TimezoneService {
   
   /// Check if timezone exists
   bool timeZoneExists(String timeZoneId);
+  
+  /// Get user-friendly timezone name
+  String getTimeZoneDisplayName(String timeZoneId);
+  
+  /// Get timezone abbreviation (e.g., EST, PST)
+  String getTimeZoneAbbreviation(String timeZoneId);
+  
+  /// Get timezones by offset
+  List<String> getTimeZonesByOffset(Duration offset);
+  
+  /// Search timezones by name
+  List<String> searchTimeZones(String query);
 }

@@ -1,4 +1,4 @@
-// lib/core/services/notifications/notification_service.dart
+// lib/core/infrastructure/services/notifications/notification_service.dart
 
 import 'models/notification_data.dart';
 
@@ -9,6 +9,7 @@ abstract class NotificationService {
     String? defaultIcon,
     NotificationChannel? defaultChannel,
     List<NotificationChannel>? channels,
+    NotificationConfig? config,
   });
 
   /// Request notification permissions
@@ -22,9 +23,30 @@ abstract class NotificationService {
 
   /// Delete notification channel (Android)
   Future<void> deleteNotificationChannel(String channelId);
+  
+  /// Get all notification channels (Android)
+  Future<List<NotificationChannel>> getNotificationChannels();
 
   /// Show immediate notification
   Future<void> showNotification(NotificationData notification);
+  
+  /// Show progress notification
+  Future<void> showProgressNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int progress,
+    int maxProgress = 100,
+    bool indeterminate = false,
+    String? channelId,
+  });
+  
+  /// Show grouped notifications
+  Future<void> showGroupedNotification({
+    required String groupKey,
+    required List<NotificationData> notifications,
+    required NotificationData summary,
+  });
 
   /// Schedule a notification
   Future<bool> scheduleNotification(NotificationData notification);
@@ -33,6 +55,12 @@ abstract class NotificationService {
   Future<bool> scheduleNotificationInTimeZone(
     NotificationData notification,
     String timeZoneId,
+  );
+  
+  /// Schedule repeating notification
+  Future<bool> scheduleRepeatingNotification(
+    NotificationData notification,
+    Duration interval,
   );
 
   /// Cancel a scheduled notification
@@ -46,6 +74,9 @@ abstract class NotificationService {
 
   /// Cancel notifications by group
   Future<void> cancelNotificationsByGroup(String groupKey);
+  
+  /// Cancel notifications by tag
+  Future<void> cancelNotificationsByTag(String tag);
 
   /// Get pending notifications
   Future<List<PendingNotification>> getPendingNotifications();
@@ -63,9 +94,16 @@ abstract class NotificationService {
   void setNotificationTapHandler(Function(NotificationResponse) handler);
 
   /// Set notification action handler
-  void setNotificationActionHandler(
-    Function(NotificationResponse) handler,
-  );
+  void setNotificationActionHandler(Function(NotificationResponse) handler);
+  
+  /// Set notification received handler (foreground)
+  void setNotificationReceivedHandler(Function(NotificationData) handler);
+  
+  /// Get notification analytics
+  Map<String, dynamic> getAnalytics();
+  
+  /// Configure notification behavior
+  void setConfiguration(NotificationConfig config);
 
   /// Dispose resources
   Future<void> dispose();

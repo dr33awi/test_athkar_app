@@ -1,30 +1,6 @@
-// lib/core/services/interfaces/battery_service.dart
-abstract class BatteryService {
-  /// الحصول على نسبة البطارية الحالية (0-100)
-  Future<int> getBatteryLevel();
-  
-  /// التحقق مما إذا كان الجهاز قيد الشحن
-  Future<bool> isCharging();
-  
-  /// الحصول على حالة توفير الطاقة
-  Future<bool> isPowerSaveMode();
-  
-  /// التحقق من إمكانية إرسال إشعارات بناءً على حالة البطارية
-  /// إذا كانت نسبة البطارية أقل من الحد الأدنى ووضع توفير الطاقة مفعل 
-  /// والجهاز غير متصل بالشاحن، فلا يتم إرسال الإشعارات
-  Future<bool> canSendNotification();
-  
-  /// تعيين الحد الأدنى لمستوى البطارية لإرسال الإشعارات
-  Future<void> setMinimumBatteryLevel(int level);
-  
-  /// تسجيل مراقب لتغييرات حالة البطارية
-  Stream<BatteryState> getBatteryStateStream();
-  
-  /// تنظيف الموارد
-  Future<void> dispose();
-}
+// lib/core/infrastructure/services/device/battery/battery_service.dart
 
-/// تمثيل حالة البطارية
+/// Battery state information
 class BatteryState {
   final int level;
   final bool isCharging;
@@ -35,4 +11,43 @@ class BatteryState {
     required this.isCharging,
     required this.isPowerSaveMode,
   });
+  
+  Map<String, dynamic> toJson() => {
+    'level': level,
+    'isCharging': isCharging,
+    'isPowerSaveMode': isPowerSaveMode,
+  };
+}
+
+/// Battery service interface
+abstract class BatteryService {
+  /// Get current battery level (0-100)
+  Future<int> getBatteryLevel();
+  
+  /// Check if device is charging
+  Future<bool> isCharging();
+  
+  /// Check if power save mode is enabled
+  Future<bool> isPowerSaveMode();
+  
+  /// Check if notifications can be sent based on battery state
+  Future<bool> canSendNotification();
+  
+  /// Set minimum battery level for notifications
+  Future<void> setMinimumBatteryLevel(int level);
+  
+  /// Get minimum battery level for notifications
+  int getMinimumBatteryLevel();
+  
+  /// Get battery state stream
+  Stream<BatteryState> getBatteryStateStream();
+  
+  /// Get current battery state
+  Future<BatteryState> getCurrentBatteryState();
+  
+  /// Check if battery optimization is enabled
+  Future<bool> isBatteryOptimizationEnabled();
+  
+  /// Dispose resources
+  Future<void> dispose();
 }

@@ -1,15 +1,19 @@
 // lib/core/infrastructure/services/notifications/notification_service_impl.dart
+
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:typed_data';
+import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart' as dnd;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Color;
+import 'package:flutter/material.dart' show Color, WidgetsBinding;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
-import 'models/notification_data.dart' hide NotificationResponse, NotificationVisibility;
+import 'models/notification_data.dart' as models;
 import '../device/battery/battery_service.dart';
-import '../device/battery/do_not_disturb_service.dart';
 import '../timezone/timezone_service.dart';
 import '../logging/logger_service.dart';
+import '../storage/storage_service.dart';
 import 'utils/notification_payload_handler.dart';
 import 'utils/notification_analytics.dart';
 import 'utils/notification_retry_manager.dart';
@@ -20,7 +24,7 @@ import 'notification_service.dart';
 @pragma('vm:entry-point')
 void notificationTapBackground(NotificationResponse notificationResponse) {
   if (kDebugMode) {
-    print('Notification tapped in background: ${notificationResponse.id}');
+    print('[NotificationService] Background tap: ${notificationResponse.id}');
   }
 }
 
@@ -28,34 +32,41 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
 class NotificationServiceImpl implements NotificationService {
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin;
   final BatteryService _batteryService;
-  final DoNotDisturbService _doNotDisturbService;
+  final dnd.DoNotDisturbService _doNotDisturbService;
   final TimezoneService _timezoneService;
+  final StorageService _storageService;
   final LoggerService _logger;
   final NotificationAnalytics _analytics;
   final NotificationRetryManager _retryManager;
 
-  // Service settings
-  NotificationConfig _config = NotificationConfig();
+  // Service state
+  models.NotificationConfig _config = models.NotificationConfig();
   bool _isInitialized = false;
   bool _isDisposed = false;
 
   // Callbacks
-  Function(NotificationResponse)? _onNotificationTapped;
-  Function(NotificationResponse)? _onNotificationAction;
+  Function(models.NotificationResponse)? _onNotificationTapped;
+  Function(models.NotificationResponse)? _onNotificationAction;
+  Function(models.NotificationData)? _onNotificationReceived;
   
   // Registered channels
-  final Map<String, NotificationChannel> _registeredChannels = {};
+  final Map<String, models.NotificationChannel> _registeredChannels = {};
+  
+  // Progress notifications tracking
+  final Map<int, Timer> _progressTimers = {};
 
   NotificationServiceImpl(
     this._flutterLocalNotificationsPlugin,
     this._batteryService,
     this._doNotDisturbService,
     this._timezoneService, {
+    StorageService? storageService,
     LoggerService? logger,
     NotificationAnalytics? analytics,
     NotificationRetryManager? retryManager,
-  })  : _logger = logger ?? getIt<LoggerService>(),
-        _analytics = analytics ?? NotificationAnalytics(),
+  })  : _storageService = storageService ?? getIt<StorageService>(),
+        _logger = logger ?? getIt<LoggerService>(),
+        _analytics = analytics ?? NotificationAnalytics(logger: logger ?? getIt<LoggerService>()),
         _retryManager = retryManager ?? NotificationRetryManager() {
     _logger.debug(message: "NotificationServiceImpl constructed");
     
@@ -68,8 +79,9 @@ class NotificationServiceImpl implements NotificationService {
   @override
   Future<void> initialize({
     String? defaultIcon,
-    NotificationChannel? defaultChannel,
-    List<NotificationChannel>? channels,
+    models.NotificationChannel? defaultChannel,
+    List<models.NotificationChannel>? channels,
+    models.NotificationConfig? config,
   }) async {
     if (_isInitialized || _isDisposed) {
       _logger.debug(
@@ -82,6 +94,11 @@ class NotificationServiceImpl implements NotificationService {
     _logger.info(message: "Initializing NotificationService...");
 
     try {
+      // Set configuration
+      if (config != null) {
+        _config = config;
+      }
+
       // Initialize timezones
       await _timezoneService.initializeTimeZones();
       _logger.debug(message: "Timezones initialized for notifications");
@@ -90,26 +107,41 @@ class NotificationServiceImpl implements NotificationService {
       final AndroidInitializationSettings androidInitSettings =
           AndroidInitializationSettings(defaultIcon ?? '@mipmap/ic_launcher');
 
-      // iOS/macOS settings
+      // iOS/macOS settings with all permissions disabled initially
       const DarwinInitializationSettings darwinInitSettings =
           DarwinInitializationSettings(
         requestAlertPermission: false,
         requestBadgePermission: false,
         requestSoundPermission: false,
+        requestCriticalPermission: false,
+        requestProvisionalPermission: false,
+        notificationCategories: [],
       );
 
-      const InitializationSettings initSettings = InitializationSettings(
+      // Linux settings
+      final LinuxInitializationSettings linuxInitSettings =
+          LinuxInitializationSettings(
+        defaultActionName: 'Open notification',
+        defaultIcon: AssetsLinuxIcon(defaultIcon ?? 'icons/app_icon.png'),
+      );
+
+      final InitializationSettings initSettings = InitializationSettings(
         android: androidInitSettings,
         iOS: darwinInitSettings,
         macOS: darwinInitSettings,
+        linux: linuxInitSettings,
       );
 
       // Initialize plugin
-      await _flutterLocalNotificationsPlugin.initialize(
+      final bool? initialized = await _flutterLocalNotificationsPlugin.initialize(
         initSettings,
         onDidReceiveNotificationResponse: _onNotificationResponse,
         onDidReceiveBackgroundNotificationResponse: notificationTapBackground,
       );
+
+      if (initialized != true) {
+        throw Exception('Failed to initialize notifications plugin');
+      }
 
       // Create default channel
       if (defaultChannel != null) {
@@ -128,10 +160,20 @@ class NotificationServiceImpl implements NotificationService {
         await _createDefaultNotificationChannels();
       }
 
+      // Load saved notification preferences
+      await _loadNotificationPreferences();
+
       _isInitialized = true;
       _logger.info(message: "NotificationService initialized successfully");
       
-      _analytics.recordEvent('notification_service_initialized');
+      _analytics.recordEvent('notification_service_initialized', {
+        'channels_count': _registeredChannels.length,
+        'has_custom_config': config != null,
+      });
+      
+      _logger.logEvent('notification_service_ready', parameters: {
+        'channels': _registeredChannels.length,
+      });
     } catch (e, s) {
       _logger.error(
         message: "Error initializing NotificationService",
@@ -147,26 +189,76 @@ class NotificationServiceImpl implements NotificationService {
   Future<void> _createDefaultNotificationChannels() async {
     if (!Platform.isAndroid) return;
 
-    final defaultChannel = NotificationChannel(
+    // Default channel
+    final defaultChannel = models.NotificationChannel(
       id: 'default_channel',
       name: 'Default Notifications',
-      description: 'Default notification channel',
-      importance: NotificationPriority.normal,
+      description: 'Default notification channel for general notifications',
+      importance: models.NotificationPriority.normal,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
     );
 
-    final highPriorityChannel = NotificationChannel(
+    // High priority channel
+    final highPriorityChannel = models.NotificationChannel(
       id: 'high_priority_channel',
       name: 'Important Notifications',
-      description: 'High priority notifications',
-      importance: NotificationPriority.high,
+      description: 'High priority notifications that require immediate attention',
+      importance: models.NotificationPriority.high,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+      showBadge: true,
+    );
+
+    // Reminder channel
+    final reminderChannel = models.NotificationChannel(
+      id: 'reminder_channel',
+      name: 'Reminders',
+      description: 'Scheduled reminders and alerts',
+      importance: models.NotificationPriority.normal,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    // Service channel (for ongoing notifications)
+    final serviceChannel = models.NotificationChannel(
+      id: 'service_channel',
+      name: 'Service Notifications',
+      description: 'Ongoing service notifications',
+      importance: models.NotificationPriority.low,
+      playSound: false,
+      enableVibration: false,
+      showBadge: false,
     );
 
     await createNotificationChannel(defaultChannel);
     await createNotificationChannel(highPriorityChannel);
+    await createNotificationChannel(reminderChannel);
+    await createNotificationChannel(serviceChannel);
+  }
+
+  Future<void> _loadNotificationPreferences() async {
+    try {
+      final prefs = _storageService.getMap('notification_preferences');
+      if (prefs != null) {
+        _logger.debug(
+          message: 'Notification preferences loaded',
+          data: prefs,
+        );
+      }
+    } catch (e) {
+      _logger.warning(
+        message: 'Failed to load notification preferences',
+        data: {'error': e.toString()},
+      );
+    }
   }
 
   @override
-  Future<void> createNotificationChannel(NotificationChannel channel) async {
+  Future<void> createNotificationChannel(models.NotificationChannel channel) async {
     if (!Platform.isAndroid) return;
 
     final androidPlugin = _flutterLocalNotificationsPlugin
@@ -174,26 +266,43 @@ class NotificationServiceImpl implements NotificationService {
     
     if (androidPlugin == null) return;
 
-    final androidChannel = AndroidNotificationChannel(
-      channel.id,
-      channel.name,
-      description: channel.description,
-      importance: _mapPriorityToImportance(channel.importance),
-      playSound: channel.playSound,
-      enableVibration: channel.enableVibration,
-      enableLights: channel.enableLights,
-      showBadge: channel.showBadge,
-      vibrationPattern: channel.vibrationPattern,
-      ledColor: channel.lightColor != null ? Color(channel.lightColor!) : null,
-    );
+    try {
+      final androidChannel = AndroidNotificationChannel(
+        channel.id,
+        channel.name,
+        description: channel.description,
+        importance: _mapPriorityToImportance(channel.importance),
+        playSound: channel.playSound,
+        enableVibration: channel.enableVibration,
+        enableLights: channel.enableLights,
+        showBadge: channel.showBadge,
+        sound: channel.soundName != null
+            ? RawResourceAndroidNotificationSound(channel.soundName!)
+            : null,
+        vibrationPattern: channel.vibrationPattern != null
+            ? Int64List.fromList(channel.vibrationPattern!)
+            : null,
+        ledColor: channel.lightColor != null ? Color(channel.lightColor!) : null,
+      );
 
-    await androidPlugin.createNotificationChannel(androidChannel);
-    _registeredChannels[channel.id] = channel;
-    
-    _logger.debug(
-      message: "Notification channel created",
-      data: {'channelId': channel.id, 'name': channel.name}
-    );
+      await androidPlugin.createNotificationChannel(androidChannel);
+      _registeredChannels[channel.id] = channel;
+      
+      _logger.debug(
+        message: "Notification channel created",
+        data: {'channelId': channel.id, 'name': channel.name}
+      );
+      
+      _analytics.recordEvent('channel_created', {
+        'channel_id': channel.id,
+        'importance': channel.importance.toString(),
+      });
+    } catch (e) {
+      _logger.error(
+        message: 'Failed to create notification channel',
+        error: e,
+      );
+    }
   }
 
   @override
@@ -212,6 +321,11 @@ class NotificationServiceImpl implements NotificationService {
         data: {'channelId': channelId}
       );
     }
+  }
+  
+  @override
+  Future<List<models.NotificationChannel>> getNotificationChannels() async {
+    return _registeredChannels.values.toList();
   }
 
   void _onNotificationResponse(NotificationResponse response) {
@@ -232,7 +346,7 @@ class NotificationServiceImpl implements NotificationService {
     );
 
     // Convert to our response type
-    final notificationResponse = NotificationResponse(
+    final notificationResponse = models.NotificationResponse(
       id: response.id,
       actionId: response.actionId,
       input: response.input,
@@ -240,8 +354,8 @@ class NotificationServiceImpl implements NotificationService {
           ? NotificationPayloadHandler.decode(response.payload!)
           : null,
       type: response.actionId != null 
-          ? NotificationResponseType.selectedNotificationAction
-          : NotificationResponseType.selectedNotification,
+          ? models.NotificationResponseType.selectedNotificationAction
+          : models.NotificationResponseType.selectedNotification,
     );
 
     // Call appropriate handler
@@ -250,6 +364,12 @@ class NotificationServiceImpl implements NotificationService {
     } else if (_onNotificationTapped != null) {
       _onNotificationTapped!(notificationResponse);
     }
+    
+    _logger.logEvent('notification_interacted', parameters: {
+      'id': response.id,
+      'action': response.actionId ?? 'tap',
+      'has_payload': response.payload != null,
+    });
   }
 
   @override
@@ -271,21 +391,33 @@ class NotificationServiceImpl implements NotificationService {
           alert: true,
           badge: true,
           sound: true,
+          provisional: false,
+          critical: false,
         );
       } else if (Platform.isAndroid) {
         final androidImplementation = _flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
         
         if (androidImplementation != null) {
+          // Android 13+ requires explicit permission
           granted = await androidImplementation.requestNotificationsPermission();
         } else {
           granted = true; // Pre-Android 13
         }
+      } else {
+        // Other platforms
+        granted = true;
       }
       
       final isGranted = granted ?? false;
       _logger.info(message: "Notification permission granted: $isGranted");
       _analytics.recordEvent('permission_requested', {'granted': isGranted});
+      
+      if (isGranted) {
+        _logger.logEvent('notification_permission_granted');
+      } else {
+        _logger.logEvent('notification_permission_denied');
+      }
       
       return isGranted;
     } catch (e, s) {
@@ -308,9 +440,14 @@ class NotificationServiceImpl implements NotificationService {
         final androidPlugin = _flutterLocalNotificationsPlugin
             .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
         return await androidPlugin?.areNotificationsEnabled() ?? false;
-      } else if (Platform.isIOS) {
-        // For iOS, check if permission is granted
-        return await requestPermission();
+      } else if (Platform.isIOS || Platform.isMacOS) {
+        // For iOS/macOS, we need to check permission status
+        final iosPlugin = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
+        
+        // Request status without prompting
+        final settings = await iosPlugin?.checkPermissions();
+        return settings?.isEnabled ?? false;
       }
       return true;
     } catch (e) {
@@ -323,7 +460,7 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   @override
-  Future<void> showNotification(NotificationData notification) async {
+  Future<void> showNotification(models.NotificationData notification) async {
     if (!_isInitialized || _isDisposed) {
       _logger.warning(
         message: "Cannot show notification - service not ready",
@@ -336,13 +473,13 @@ class NotificationServiceImpl implements NotificationService {
     if (!await _shouldSendNotification(notification)) {
       _logger.info(
         message: "Notification suppressed by system conditions",
-        data: {'id': notification.id}
+        data: {'id': notification.id, 'title': notification.title}
       );
       return;
     }
 
     try {
-      final notificationDetails = _buildNotificationDetails(notification);
+      final notificationDetails = await _buildNotificationDetails(notification);
       final payload = notification.payload != null 
           ? NotificationPayloadHandler.encode(notification.payload!)
           : null;
@@ -360,9 +497,18 @@ class NotificationServiceImpl implements NotificationService {
         data: {'id': notification.id, 'title': notification.title}
       );
       
-      _analytics.recordEvent('notification_shown', {
+      _analytics.recordNotificationScheduled(
+        notification.id,
+        notification.category.toString(),
+      );
+      
+      // Call received handler if in foreground
+      _onNotificationReceived?.call(notification);
+      
+      _logger.logEvent('notification_shown', parameters: {
         'id': notification.id,
         'category': notification.category.toString(),
+        'priority': notification.priority.toString(),
       });
     } catch (e, s) {
       _logger.error(
@@ -373,22 +519,153 @@ class NotificationServiceImpl implements NotificationService {
       _analytics.recordError('show_notification_failed', e.toString());
     }
   }
+  
+  @override
+  Future<void> showProgressNotification({
+    required int id,
+    required String title,
+    required String body,
+    required int progress,
+    int maxProgress = 100,
+    bool indeterminate = false,
+    String? channelId,
+  }) async {
+    if (!_isInitialized || _isDisposed) return;
+    
+    try {
+      final androidDetails = AndroidNotificationDetails(
+        channelId ?? 'progress_channel',
+        'Progress Notifications',
+        channelDescription: 'Notifications showing progress',
+        importance: Importance.low,
+        priority: Priority.low,
+        onlyAlertOnce: true,
+        showProgress: true,
+        progress: progress,
+        maxProgress: maxProgress,
+        indeterminate: indeterminate,
+      );
+      
+      final details = NotificationDetails(android: androidDetails);
+      
+      await _flutterLocalNotificationsPlugin.show(
+        id,
+        title,
+        body,
+        details,
+      );
+      
+      _logger.debug(
+        message: 'Progress notification shown',
+        data: {
+          'id': id,
+          'progress': '$progress/$maxProgress',
+          'indeterminate': indeterminate,
+        },
+      );
+    } catch (e) {
+      _logger.error(
+        message: 'Error showing progress notification',
+        error: e,
+      );
+    }
+  }
+  
+  @override
+  Future<void> showGroupedNotification({
+    required String groupKey,
+    required List<models.NotificationData> notifications,
+    required models.NotificationData summary,
+  }) async {
+    if (!_isInitialized || _isDisposed) return;
+    
+    try {
+      // Show individual notifications
+      for (final notification in notifications) {
+        await showNotification(
+          notification.copyWith(groupKey: groupKey),
+        );
+      }
+      
+      // Show summary notification
+      await showNotification(
+        summary.copyWith(
+          groupKey: groupKey,
+          additionalData: {
+            'is_group_summary': true,
+            'notifications_count': notifications.length,
+          },
+        ),
+      );
+      
+      _logger.info(
+        message: 'Grouped notifications shown',
+        data: {
+          'group': groupKey,
+          'count': notifications.length,
+        },
+      );
+    } catch (e) {
+      _logger.error(
+        message: 'Error showing grouped notifications',
+        error: e,
+      );
+    }
+  }
 
   @override
-  Future<bool> scheduleNotification(NotificationData notification) async {
+  Future<bool> scheduleNotification(models.NotificationData notification) async {
     return _scheduleNotificationInternal(notification, null);
   }
 
   @override
   Future<bool> scheduleNotificationInTimeZone(
-    NotificationData notification,
+    models.NotificationData notification,
     String timeZoneId,
   ) async {
     return _scheduleNotificationInternal(notification, timeZoneId);
   }
+  
+  @override
+  Future<bool> scheduleRepeatingNotification(
+    models.NotificationData notification,
+    Duration interval,
+  ) async {
+    if (!_isInitialized || _isDisposed) return false;
+    
+    try {
+      // Calculate repeat interval type
+      models.NotificationRepeatInterval repeatInterval;
+      if (interval.inHours == 1) {
+        repeatInterval = models.NotificationRepeatInterval.hourly;
+      } else if (interval.inDays == 1) {
+        repeatInterval = models.NotificationRepeatInterval.daily;
+      } else if (interval.inDays == 7) {
+        repeatInterval = models.NotificationRepeatInterval.weekly;
+      } else {
+        // For custom intervals, we'll use periodic scheduling
+        repeatInterval = models.NotificationRepeatInterval.custom;
+      }
+      
+      final repeatingNotification = notification.copyWith(
+        repeatInterval: repeatInterval,
+        customSchedulingData: {
+          'interval_seconds': interval.inSeconds,
+        },
+      );
+      
+      return await scheduleNotification(repeatingNotification);
+    } catch (e) {
+      _logger.error(
+        message: 'Error scheduling repeating notification',
+        error: e,
+      );
+      return false;
+    }
+  }
 
   Future<bool> _scheduleNotificationInternal(
-    NotificationData notification,
+    models.NotificationData notification,
     String? timeZoneId,
   ) async {
     if (!_isInitialized || _isDisposed) {
@@ -409,6 +686,7 @@ class NotificationServiceImpl implements NotificationService {
       // Queue for retry if enabled
       if (_config.enableRetryOnFailure) {
         await _retryManager.queueForRetry(notification);
+        _analytics.recordNotificationSuppressed('system_conditions');
       }
       
       return false;
@@ -421,11 +699,12 @@ class NotificationServiceImpl implements NotificationService {
         'title': notification.title,
         'scheduled_time': notification.scheduledDate.toIso8601String(),
         'timezone': timeZoneId ?? 'local',
+        'repeat': notification.repeatInterval.toString(),
       }
     );
 
     try {
-      final notificationDetails = _buildNotificationDetails(notification);
+      final notificationDetails = await _buildNotificationDetails(notification);
       final payload = notification.payload != null 
           ? NotificationPayloadHandler.encode(notification.payload!)
           : null;
@@ -456,17 +735,20 @@ class NotificationServiceImpl implements NotificationService {
         );
         
         // Adjust for repeating notifications
-        if (notification.repeatInterval != NotificationRepeatInterval.once) {
+        if (notification.repeatInterval != models.NotificationRepeatInterval.once) {
           scheduledTZDateTime = _getNextValidScheduleTime(
             scheduledTZDateTime,
             notification.repeatInterval,
+            notification.customSchedulingData,
           );
           _logger.info(
             message: "Adjusted schedule time to future",
             data: {'new_time': scheduledTZDateTime.toIso8601String()}
           );
         } else {
-          return false;
+          // Show immediately if in the past and not repeating
+          await showNotification(notification);
+          return true;
         }
       }
 
@@ -479,7 +761,7 @@ class NotificationServiceImpl implements NotificationService {
         notificationDetails,
         androidScheduleMode: _getAndroidScheduleMode(notification),
         payload: payload,
-        matchDateTimeComponents: notification.repeatInterval != NotificationRepeatInterval.once
+        matchDateTimeComponents: notification.repeatInterval != models.NotificationRepeatInterval.once
             ? _mapRepeatIntervalToDateTimeComponents(notification.repeatInterval)
             : null,
       );
@@ -493,6 +775,13 @@ class NotificationServiceImpl implements NotificationService {
         notification.id,
         notification.category.toString(),
       );
+      
+      _logger.logEvent('notification_scheduled', parameters: {
+        'id': notification.id,
+        'category': notification.category.toString(),
+        'repeat': notification.repeatInterval.toString(),
+        'timezone': timeZoneId ?? 'local',
+      });
       
       return true;
     } catch (e, s) {
@@ -513,7 +802,7 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
 
-  NotificationDetails _buildNotificationDetails(NotificationData notification) {
+  Future<NotificationDetails> _buildNotificationDetails(models.NotificationData notification) async {
     // Android details
     AndroidNotificationDetails? androidDetails;
     if (Platform.isAndroid) {
@@ -524,9 +813,19 @@ class NotificationServiceImpl implements NotificationService {
                 action.title,
                 showsUserInterface: action.showsUserInterface,
                 cancelNotification: action.cancelNotification,
-                icon: action.icon,
+                icon: action.icon != null 
+                    ? DrawableResourceAndroidBitmap(action.icon!)
+                    : null,
               ))
           .toList();
+
+      // Handle large icon if provided
+      AndroidBitmap<Object>? largeIcon;
+      if (notification.additionalData?['large_icon'] != null) {
+        largeIcon = await _processLargeIcon(
+          notification.additionalData!['large_icon'],
+        );
+      }
 
       androidDetails = AndroidNotificationDetails(
         notification.channelId,
@@ -542,17 +841,28 @@ class NotificationServiceImpl implements NotificationService {
             : null,
         visibility: _mapVisibility(notification.visibility),
         actions: actions,
-        styleInformation: const BigTextStyleInformation(''),
+        styleInformation: _getStyleInformation(notification),
         groupKey: notification.groupKey,
-        setAsGroupSummary: false,
+        setAsGroupSummary: notification.additionalData?['is_group_summary'] == true,
         ongoing: notification.ongoing,
         autoCancel: notification.autoCancel,
         showWhen: notification.showWhen,
+        when: notification.showWhen ? notification.scheduledDate.millisecondsSinceEpoch : null,
         enableVibration: notification.enableVibration,
-        vibrationPattern: notification.vibrationPattern,
+        vibrationPattern: notification.vibrationPattern != null 
+            ? Int64List.fromList(notification.vibrationPattern!)
+            : null,
         enableLights: notification.enableLights,
         color: notification.color != null ? Color(notification.color!) : null,
+        ledColor: notification.color != null ? Color(notification.color!) : null,
+        ledOnMs: 1000,
+        ledOffMs: 500,
         icon: notification.iconName,
+        largeIcon: largeIcon,
+        tag: notification.additionalData?['tag'] as String?,
+        usesChronometer: notification.additionalData?['uses_chronometer'] as bool? ?? false,
+        showProgress: false,
+        category: _mapCategoryToAndroid(notification.category),
       );
     }
 
@@ -565,7 +875,21 @@ class NotificationServiceImpl implements NotificationService {
         presentSound: notification.playSound,
         sound: notification.soundName,
         threadIdentifier: notification.groupKey ?? notification.channelId,
+        categoryIdentifier: _mapCategoryToiOS(notification.category),
         interruptionLevel: _mapPriorityToInterruptionLevel(notification.priority),
+        attachments: await _processiOSAttachments(notification),
+      );
+    }
+
+    // Linux details
+    LinuxNotificationDetails? linuxDetails;
+    if (Platform.isLinux) {
+      linuxDetails = LinuxNotificationDetails(
+        urgency: _mapPriorityToLinuxUrgency(notification.priority),
+        category: _mapCategoryToLinux(notification.category),
+        sound: notification.playSound 
+            ? ThemeLinuxSound('message-new-instant')
+            : null,
       );
     }
 
@@ -573,10 +897,77 @@ class NotificationServiceImpl implements NotificationService {
       android: androidDetails,
       iOS: darwinDetails,
       macOS: darwinDetails,
+      linux: linuxDetails,
     );
   }
 
-  Future<bool> _shouldSendNotification(NotificationData notification) async {
+  StyleInformation? _getStyleInformation(models.NotificationData notification) {
+    // Big text style for long content
+    if (notification.body.length > 40) {
+      return BigTextStyleInformation(
+        notification.body,
+        contentTitle: notification.title,
+        summaryText: notification.additionalData?['summary'] as String?,
+      );
+    }
+    
+    // Inbox style for multiple lines
+    final lines = notification.additionalData?['lines'] as List<String>?;
+    if (lines != null && lines.isNotEmpty) {
+      return InboxStyleInformation(
+        lines,
+        contentTitle: notification.title,
+        summaryText: '${lines.length} items',
+      );
+    }
+    
+    // Default style
+    return null;
+  }
+
+  Future<AndroidBitmap<Object>?> _processLargeIcon(dynamic iconData) async {
+    try {
+      if (iconData is String) {
+        // Asset path
+        if (iconData.startsWith('assets/')) {
+          return DrawableResourceAndroidBitmap(iconData);
+        }
+        // File path
+        return FilePathAndroidBitmap(iconData);
+      }
+      return null;
+    } catch (e) {
+      _logger.warning(
+        message: 'Failed to process large icon',
+        data: {'error': e.toString()},
+      );
+      return null;
+    }
+  }
+
+  Future<List<DarwinNotificationAttachment>> _processiOSAttachments(
+    models.NotificationData notification,
+  ) async {
+    final attachments = <DarwinNotificationAttachment>[];
+    
+    try {
+      final attachmentPaths = notification.additionalData?['attachments'] as List<String>?;
+      if (attachmentPaths != null) {
+        for (final path in attachmentPaths) {
+          attachments.add(DarwinNotificationAttachment(path));
+        }
+      }
+    } catch (e) {
+      _logger.warning(
+        message: 'Failed to process iOS attachments',
+        data: {'error': e.toString()},
+      );
+    }
+    
+    return attachments;
+  }
+
+  Future<bool> _shouldSendNotification(models.NotificationData notification) async {
     if (_isDisposed) return false;
 
     // Check battery optimization
@@ -643,54 +1034,68 @@ class NotificationServiceImpl implements NotificationService {
     return true;
   }
 
-  SystemOverridePriority _mapToSystemOverridePriority(NotificationPriority priority) {
+  dnd.SystemOverridePriority _mapToSystemOverridePriority(models.NotificationPriority priority) {
     switch (priority) {
-      case NotificationPriority.min:
-      case NotificationPriority.low:
-        return SystemOverridePriority.low;
-      case NotificationPriority.normal:
-        return SystemOverridePriority.medium;
-      case NotificationPriority.high:
-        return SystemOverridePriority.high;
-      case NotificationPriority.max:
-      case NotificationPriority.critical:
-        return SystemOverridePriority.critical;
+      case models.NotificationPriority.min:
+      case models.NotificationPriority.low:
+        return dnd.SystemOverridePriority.low;
+      case models.NotificationPriority.normal:
+        return dnd.SystemOverridePriority.medium;
+      case models.NotificationPriority.high:
+        return dnd.SystemOverridePriority.high;
+      case models.NotificationPriority.max:
+      case models.NotificationPriority.critical:
+        return dnd.SystemOverridePriority.critical;
     }
   }
 
   tz.TZDateTime _getNextValidScheduleTime(
     tz.TZDateTime originalTime,
-    NotificationRepeatInterval interval,
+    models.NotificationRepeatInterval interval,
+    Map<String, dynamic>? customData,
   ) {
     final now = tz.TZDateTime.now(originalTime.location);
     var nextTime = originalTime;
     
     while (nextTime.isBefore(now)) {
       switch (interval) {
-        case NotificationRepeatInterval.once:
+        case models.NotificationRepeatInterval.once:
           // Should not reach here
           return nextTime;
-        case NotificationRepeatInterval.hourly:
+        case models.NotificationRepeatInterval.hourly:
           nextTime = nextTime.add(const Duration(hours: 1));
           break;
-        case NotificationRepeatInterval.daily:
+        case models.NotificationRepeatInterval.daily:
           nextTime = nextTime.add(const Duration(days: 1));
           break;
-        case NotificationRepeatInterval.weekly:
+        case models.NotificationRepeatInterval.weekly:
           nextTime = nextTime.add(const Duration(days: 7));
           break;
-        case NotificationRepeatInterval.monthly:
-          nextTime = tz.TZDateTime(
-            nextTime.location,
-            nextTime.month == 12 ? nextTime.year + 1 : nextTime.year,
-            nextTime.month == 12 ? 1 : nextTime.month + 1,
-            nextTime.day,
-            nextTime.hour,
-            nextTime.minute,
-            nextTime.second,
-          );
+        case models.NotificationRepeatInterval.monthly:
+          // Add one month properly
+          if (nextTime.month == 12) {
+            nextTime = tz.TZDateTime(
+              nextTime.location,
+              nextTime.year + 1,
+              1,
+              nextTime.day,
+              nextTime.hour,
+              nextTime.minute,
+              nextTime.second,
+            );
+          } else {
+            nextTime = tz.TZDateTime(
+              nextTime.location,
+              nextTime.year,
+              nextTime.month + 1,
+              math.min(nextTime.day, _daysInMonth(nextTime.year, nextTime.month + 1)),
+              nextTime.hour,
+              nextTime.minute,
+              nextTime.second,
+            );
+          }
           break;
-        case NotificationRepeatInterval.yearly:
+        case models.NotificationRepeatInterval.yearly:
           nextTime = tz.TZDateTime(
             nextTime.location,
             nextTime.year + 1,
@@ -701,9 +1106,15 @@ class NotificationServiceImpl implements NotificationService {
             nextTime.second,
           );
           break;
-        case NotificationRepeatInterval.custom:
-          // For custom, just add one day as fallback
-          nextTime = nextTime.add(const Duration(days: 1));
+        case models.NotificationRepeatInterval.custom:
+          // Use custom interval if provided
+          final intervalSeconds = customData?['interval_seconds'] as int?;
+          if (intervalSeconds != null) {
+            nextTime = nextTime.add(Duration(seconds: intervalSeconds));
+          } else {
+            // Default to daily
+            nextTime = nextTime.add(const Duration(days: 1));
+          }
           break;
       }
     }
@@ -711,13 +1122,37 @@ class NotificationServiceImpl implements NotificationService {
     return nextTime;
   }
 
+  int _daysInMonth(int year, int month) {
+    if (month == 2) {
+      // February - check for leap year
+      return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? 29 : 28;
+    } else if ([4, 6, 9, 11].contains(month)) {
+      return 30;
+    } else {
+      return 31;
+    }
+  }
+
   @override
   Future<void> cancelNotification(int id) async {
     if (_isDisposed) return;
     
     _logger.debug(message: "Cancelling notification", data: {'id': id});
-    await _flutterLocalNotificationsPlugin.cancel(id);
-    _analytics.recordEvent('notification_cancelled', {'id': id});
+    
+    try {
+      await _flutterLocalNotificationsPlugin.cancel(id);
+      
+      // Cancel any progress timer
+      _progressTimers[id]?.cancel();
+      _progressTimers.remove(id);
+      
+      _analytics.recordEvent('notification_cancelled', {'id': id});
+    } catch (e) {
+      _logger.error(
+        message: 'Error cancelling notification',
+        error: e,
+      );
+    }
   }
 
   @override
@@ -730,7 +1165,7 @@ class NotificationServiceImpl implements NotificationService {
     );
     
     for (final id in ids) {
-      await _flutterLocalNotificationsPlugin.cancel(id);
+      await cancelNotification(id);
     }
     
     _analytics.recordEvent('notifications_cancelled', {'count': ids.length});
@@ -741,8 +1176,24 @@ class NotificationServiceImpl implements NotificationService {
     if (_isDisposed) return;
     
     _logger.debug(message: "Cancelling all notifications");
-    await _flutterLocalNotificationsPlugin.cancelAll();
-    _analytics.recordEvent('all_notifications_cancelled');
+    
+    try {
+      await _flutterLocalNotificationsPlugin.cancelAll();
+      
+      // Cancel all progress timers
+      for (final timer in _progressTimers.values) {
+        timer.cancel();
+      }
+      _progressTimers.clear();
+      
+      _analytics.recordEvent('all_notifications_cancelled');
+      _logger.logEvent('all_notifications_cancelled');
+    } catch (e) {
+      _logger.error(
+        message: 'Error cancelling all notifications',
+        error: e,
+      );
+    }
   }
 
   @override
@@ -754,8 +1205,49 @@ class NotificationServiceImpl implements NotificationService {
       data: {'groupKey': groupKey}
     );
     
-    // Android specific - cancel by group
-    if (Platform.isAndroid) {
+    try {
+      // Android specific - cancel by group
+      if (Platform.isAndroid) {
+        final androidPlugin = _flutterLocalNotificationsPlugin
+            .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+        
+        if (androidPlugin != null) {
+          // Get active notifications
+          final activeNotifications = await androidPlugin.getActiveNotifications();
+          
+          // Filter by group and cancel
+          for (final notification in activeNotifications) {
+            if (notification.groupKey == groupKey && notification.id != null) {
+              await _flutterLocalNotificationsPlugin.cancel(notification.id!);
+            }
+          }
+        }
+      } else {
+        // For iOS, we need to track groups manually
+        _logger.warning(
+          message: "Group cancellation not directly supported on this platform"
+        );
+      }
+      
+      _analytics.recordEvent('notifications_cancelled_by_group', {'group': groupKey});
+    } catch (e) {
+      _logger.error(
+        message: 'Error cancelling notifications by group',
+        error: e,
+      );
+    }
+  }
+  
+  @override
+  Future<void> cancelNotificationsByTag(String tag) async {
+    if (_isDisposed || !Platform.isAndroid) return;
+    
+    _logger.debug(
+      message: "Cancelling notifications by tag",
+      data: {'tag': tag}
+    );
+    
+    try {
       final androidPlugin = _flutterLocalNotificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       
@@ -763,25 +1255,25 @@ class NotificationServiceImpl implements NotificationService {
         // Get active notifications
         final activeNotifications = await androidPlugin.getActiveNotifications();
         
-        // Filter by group and cancel
+        // Filter by tag and cancel
         for (final notification in activeNotifications) {
-          if (notification.groupKey == groupKey) {
+          if (notification.tag == tag && notification.id != null) {
             await _flutterLocalNotificationsPlugin.cancel(notification.id!);
           }
         }
       }
-    } else {
-      // For iOS, we need to track groups manually
-      _logger.warning(
-        message: "Group cancellation not directly supported on this platform"
+      
+      _analytics.recordEvent('notifications_cancelled_by_tag', {'tag': tag});
+    } catch (e) {
+      _logger.error(
+        message: 'Error cancelling notifications by tag',
+        error: e,
       );
     }
-    
-    _analytics.recordEvent('notifications_cancelled_by_group', {'group': groupKey});
   }
 
   @override
-  Future<List<PendingNotification>> getPendingNotifications() async {
+  Future<List<models.PendingNotification>> getPendingNotifications() async {
     if (_isDisposed) return [];
     
     try {
@@ -794,7 +1286,7 @@ class NotificationServiceImpl implements NotificationService {
           payload = NotificationPayloadHandler.decode(notification.payload!);
         }
         
-        return PendingNotification(
+        return models.PendingNotification(
           id: notification.id,
           title: notification.title,
           body: notification.body,
@@ -811,7 +1303,7 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   @override
-  Future<List<ActiveNotification>> getActiveNotifications() async {
+  Future<List<models.ActiveNotification>> getActiveNotifications() async {
     if (_isDisposed || !Platform.isAndroid) return [];
     
     try {
@@ -827,7 +1319,7 @@ class NotificationServiceImpl implements NotificationService {
             payload = NotificationPayloadHandler.decode(notification.payload!);
           }
           
-          return ActiveNotification(
+          return models.ActiveNotification(
             id: notification.id!,
             channelId: notification.channelId,
             title: notification.title,
@@ -856,7 +1348,11 @@ class NotificationServiceImpl implements NotificationService {
         message: "Updating badge count",
         data: {'count': count}
       );
-      // Implementation depends on additional iOS setup
+      
+      // This requires additional native implementation
+      // You might need to use a package like flutter_app_badger
+      
+      _logger.logEvent('badge_updated', parameters: {'count': count});
     } catch (e) {
       _logger.error(
         message: "Error updating badge count",
@@ -871,17 +1367,30 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   @override
-  void setNotificationTapHandler(Function(NotificationResponse) handler) {
+  void setNotificationTapHandler(Function(models.NotificationResponse) handler) {
     _onNotificationTapped = handler;
+    _logger.debug(message: 'Notification tap handler set');
   }
 
   @override
-  void setNotificationActionHandler(Function(NotificationResponse) handler) {
+  void setNotificationActionHandler(Function(models.NotificationResponse) handler) {
     _onNotificationAction = handler;
+    _logger.debug(message: 'Notification action handler set');
+  }
+  
+  @override
+  void setNotificationReceivedHandler(Function(models.NotificationData) handler) {
+    _onNotificationReceived = handler;
+    _logger.debug(message: 'Notification received handler set');
+  }
+  
+  @override
+  Map<String, dynamic> getAnalytics() {
+    return _analytics.getStats();
   }
 
-  /// Set custom configuration
-  void setConfiguration(NotificationConfig config) {
+  @override
+  void setConfiguration(models.NotificationConfig config) {
     _config = config;
     _logger.debug(message: "Notification configuration updated");
   }
@@ -895,98 +1404,178 @@ class NotificationServiceImpl implements NotificationService {
     _isInitialized = false;
     _onNotificationTapped = null;
     _onNotificationAction = null;
+    _onNotificationReceived = null;
     _registeredChannels.clear();
+    
+    // Cancel all progress timers
+    for (final timer in _progressTimers.values) {
+      timer.cancel();
+    }
+    _progressTimers.clear();
     
     // Cleanup resources
     await _retryManager.dispose();
     _analytics.dispose();
+    
+    _logger.info(message: 'NotificationService disposed');
   }
 
   // Helper methods
 
-  AndroidScheduleMode _getAndroidScheduleMode(NotificationData notification) {
-    if (notification.priority == NotificationPriority.critical ||
+  AndroidScheduleMode _getAndroidScheduleMode(models.NotificationData notification) {
+    if (notification.priority == models.NotificationPriority.critical ||
         !notification.respectSystemSettings) {
       return AndroidScheduleMode.exactAllowWhileIdle;
+    } else if (notification.priority == models.NotificationPriority.high) {
+      return AndroidScheduleMode.exact;
     }
-    return AndroidScheduleMode.exact;
+    return AndroidScheduleMode.inexact;
   }
 
   DateTimeComponents? _mapRepeatIntervalToDateTimeComponents(
-    NotificationRepeatInterval interval,
+    models.NotificationRepeatInterval interval,
   ) {
     switch (interval) {
-      case NotificationRepeatInterval.once:
+      case models.NotificationRepeatInterval.once:
         return null;
-      case NotificationRepeatInterval.hourly:
+      case models.NotificationRepeatInterval.hourly:
         return DateTimeComponents.time;
-      case NotificationRepeatInterval.daily:
+      case models.NotificationRepeatInterval.daily:
         return DateTimeComponents.time;
-      case NotificationRepeatInterval.weekly:
+      case models.NotificationRepeatInterval.weekly:
         return DateTimeComponents.dayOfWeekAndTime;
-      case NotificationRepeatInterval.monthly:
+      case models.NotificationRepeatInterval.monthly:
         return DateTimeComponents.dayOfMonthAndTime;
-      case NotificationRepeatInterval.yearly:
-      case NotificationRepeatInterval.custom:
+      case models.NotificationRepeatInterval.yearly:
+      case models.NotificationRepeatInterval.custom:
         return null; // Not directly supported
     }
   }
 
-  Importance _mapPriorityToImportance(NotificationPriority priority) {
+  Importance _mapPriorityToImportance(models.NotificationPriority priority) {
     switch (priority) {
-      case NotificationPriority.min:
+      case models.NotificationPriority.min:
         return Importance.min;
-      case NotificationPriority.low:
+      case models.NotificationPriority.low:
         return Importance.low;
-      case NotificationPriority.normal:
+      case models.NotificationPriority.normal:
         return Importance.defaultImportance;
-      case NotificationPriority.high:
+      case models.NotificationPriority.high:
         return Importance.high;
-      case NotificationPriority.max:
-      case NotificationPriority.critical:
+      case models.NotificationPriority.max:
+      case models.NotificationPriority.critical:
         return Importance.max;
     }
   }
 
-  Priority _mapPriorityToAndroidPriority(NotificationPriority priority) {
+  Priority _mapPriorityToAndroidPriority(models.NotificationPriority priority) {
     switch (priority) {
-      case NotificationPriority.min:
+      case models.NotificationPriority.min:
         return Priority.min;
-      case NotificationPriority.low:
+      case models.NotificationPriority.low:
         return Priority.low;
-      case NotificationPriority.normal:
+      case models.NotificationPriority.normal:
         return Priority.defaultPriority;
-      case NotificationPriority.high:
+      case models.NotificationPriority.high:
         return Priority.high;
-      case NotificationPriority.max:
-      case NotificationPriority.critical:
+      case models.NotificationPriority.max:
+      case models.NotificationPriority.critical:
         return Priority.max;
     }
   }
 
-  NotificationVisibility? _mapVisibility(NotificationVisibility visibility) {
+  NotificationVisibility? _mapVisibility(models.NotificationVisibility visibility) {
     switch (visibility) {
-      case NotificationVisibility.public:
+      case models.NotificationVisibility.public:
         return NotificationVisibility.public;
-      case NotificationVisibility.private:
+      case models.NotificationVisibility.private:
         return NotificationVisibility.private;
-      case NotificationVisibility.secret:
+      case models.NotificationVisibility.secret:
         return NotificationVisibility.secret;
     }
   }
 
-  InterruptionLevel _mapPriorityToInterruptionLevel(NotificationPriority priority) {
+  InterruptionLevel _mapPriorityToInterruptionLevel(models.NotificationPriority priority) {
     switch (priority) {
-      case NotificationPriority.min:
-      case NotificationPriority.low:
+      case models.NotificationPriority.min:
+      case models.NotificationPriority.low:
         return InterruptionLevel.passive;
-      case NotificationPriority.normal:
+      case models.NotificationPriority.normal:
         return InterruptionLevel.active;
-      case NotificationPriority.high:
+      case models.NotificationPriority.high:
         return InterruptionLevel.timeSensitive;
-      case NotificationPriority.max:
-      case NotificationPriority.critical:
+      case models.NotificationPriority.max:
+      case models.NotificationPriority.critical:
         return InterruptionLevel.critical;
+    }
+  }
+  
+  LinuxNotificationUrgency _mapPriorityToLinuxUrgency(models.NotificationPriority priority) {
+    switch (priority) {
+      case models.NotificationPriority.min:
+      case models.NotificationPriority.low:
+        return LinuxNotificationUrgency.low;
+      case models.NotificationPriority.normal:
+        return LinuxNotificationUrgency.normal;
+      case models.NotificationPriority.high:
+      case models.NotificationPriority.max:
+      case models.NotificationPriority.critical:
+        return LinuxNotificationUrgency.critical;
+    }
+  }
+  
+  AndroidNotificationCategory? _mapCategoryToAndroid(models.NotificationCategory category) {
+    switch (category) {
+      case models.NotificationCategory.alarm:
+        return AndroidNotificationCategory.alarm;
+      case models.NotificationCategory.call:
+        return AndroidNotificationCategory.call;
+      case models.NotificationCategory.email:
+        return AndroidNotificationCategory.email;
+      case models.NotificationCategory.error:
+        return AndroidNotificationCategory.error;
+      case models.NotificationCategory.event:
+        return AndroidNotificationCategory.event;
+      case models.NotificationCategory.message:
+        return AndroidNotificationCategory.message;
+      case models.NotificationCategory.progress:
+        return AndroidNotificationCategory.progress;
+      case models.NotificationCategory.promo:
+        return AndroidNotificationCategory.promo;
+      case models.NotificationCategory.recommendation:
+        return AndroidNotificationCategory.recommendation;
+      case models.NotificationCategory.reminder:
+        return AndroidNotificationCategory.reminder;
+      case models.NotificationCategory.service:
+        return AndroidNotificationCategory.service;
+      case models.NotificationCategory.social:
+        return AndroidNotificationCategory.social;
+      case models.NotificationCategory.status:
+        return AndroidNotificationCategory.status;
+      case models.NotificationCategory.system:
+        return AndroidNotificationCategory.system;
+      case models.NotificationCategory.transport:
+        return AndroidNotificationCategory.transport;
+      default:
+        return null;
+    }
+  }
+  
+  String? _mapCategoryToiOS(models.NotificationCategory category) {
+    // iOS uses string identifiers for categories
+    return category.toString().split('.').last;
+  }
+  
+  LinuxNotificationCategory? _mapCategoryToLinux(models.NotificationCategory category) {
+    switch (category) {
+      case models.NotificationCategory.email:
+        return LinuxNotificationCategory.email;
+      case models.NotificationCategory.message:
+        return LinuxNotificationCategory.im;
+      case models.NotificationCategory.system:
+        return LinuxNotificationCategory.device;
+      default:
+        return null;
     }
   }
 }
