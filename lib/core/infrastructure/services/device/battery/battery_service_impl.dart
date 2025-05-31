@@ -20,7 +20,6 @@ class BatteryServiceImpl implements BatteryService {
   StreamSubscription<battery_plus.BatteryState>? _batteryStateSubscription;
   Timer? _pollingTimer;
   int _minimumBatteryLevel = _defaultMinBatteryLevel;
-  BatteryState? _lastKnownState;
   
   BatteryServiceImpl({
     battery_plus.Battery? battery,
@@ -79,7 +78,6 @@ class BatteryServiceImpl implements BatteryService {
   Future<void> _updateBatteryState() async {
     try {
       final state = await getCurrentBatteryState();
-      _lastKnownState = state;
       _batteryStateController?.add(state);
       
       _logger?.debug(
@@ -281,7 +279,6 @@ class BatteryServiceImpl implements BatteryService {
     _batteryStateController = null;
     _batteryStateSubscription = null;
     _pollingTimer = null;
-    _lastKnownState = null;
     
     _logger?.info(message: '[BatteryService] Disposed');
   }

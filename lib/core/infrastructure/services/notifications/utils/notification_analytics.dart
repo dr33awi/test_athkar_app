@@ -182,7 +182,7 @@ class NotificationAnalytics {
       'engagement_rate': _calculateEngagementRate(),
       'success_rate': _calculateSuccessRate(),
       'suppression_rate': totalScheduled > 0 
-          ? (totalSuppressions / totalScheduled * 100).toStringAsFixed(2) + '%'
+          ? '${(totalSuppressions / totalScheduled * 100).toStringAsFixed(2)}%'
           : '0%',
     };
   }
@@ -215,7 +215,7 @@ class NotificationAnalytics {
     if (totalDeliveryAttempts > 0) {
       final successCount = _deliverySuccess.values.fold(0, (a, b) => a + b);
       metrics['delivery_success_rate'] = 
-          (successCount / totalDeliveryAttempts * 100).toStringAsFixed(2) + '%';
+          '${(successCount / totalDeliveryAttempts * 100).toStringAsFixed(2)}%';
     }
     
     return metrics;
@@ -278,7 +278,7 @@ class NotificationAnalytics {
     }
     
     if (scheduled == 0) return '0%';
-    return ((scheduled - errors) / scheduled * 100).toStringAsFixed(2) + '%';
+    return '${((scheduled - errors) / scheduled * 100).toStringAsFixed(2)}%';
   }
   
   /// Calculate error rate
@@ -287,7 +287,7 @@ class NotificationAnalytics {
     final totalErrors = _errorsByType.values.fold(0, (a, b) => a + b);
     
     if (totalScheduled == 0) return '0%';
-    return (totalErrors / totalScheduled * 100).toStringAsFixed(2) + '%';
+    return '${(totalErrors / totalScheduled * 100).toStringAsFixed(2)}%';
   }
 
   /// Get interactions by type

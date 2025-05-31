@@ -60,7 +60,7 @@ class PermissionManager {
     }
     
     // Request location permission
-    if (context != null && showRationale) {
+    if (context != null && context.mounted && showRationale) {
       final shouldProceed = await _showPermissionRationale(
         context,
         AppPermissionType.location,
@@ -124,7 +124,7 @@ class PermissionManager {
     
     // Request DND permission
     if (_permissionService.isPermissionAvailable(AppPermissionType.doNotDisturb)) {
-      if (context != null && showRationale) {
+      if (context != null && context.mounted && showRationale) {
         final shouldProceed = await _showPermissionRationale(
           context,
           AppPermissionType.doNotDisturb,
@@ -245,7 +245,7 @@ class PermissionManager {
   }) async {
     final status = await _permissionService.checkPermissionStatus(type);
     
-    if (status == AppPermissionStatus.denied) {
+    if (status == AppPermissionStatus.denied && context.mounted) {
       // Show denied dialog
       final shouldOpenSettings = await showPermissionDeniedDialog(
         context,
@@ -260,7 +260,7 @@ class PermissionManager {
         // Recheck after returning from settings
         return await _permissionService.checkPermissionStatus(type);
       }
-    } else if (status == AppPermissionStatus.permanentlyDenied) {
+    } else if (status == AppPermissionStatus.permanentlyDenied && context.mounted) {
       // Show permanently denied dialog
       await showPermissionDeniedDialog(
         context,
@@ -539,7 +539,7 @@ class PermissionManager {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).primaryColor.withAlpha(26), // Use withAlpha instead of withOpacity
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

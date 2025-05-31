@@ -1,7 +1,6 @@
 // lib/core/infrastructure/services/notifications/notification_scheduler.dart
 
 import 'dart:async';
-import 'package:athkar_app/core/infrastructure/services/timezone/timezone_service.dart';
 
 import 'models/notification_data.dart';
 import 'models/notification_schedule.dart';
@@ -15,7 +14,6 @@ class NotificationScheduler {
   final NotificationService _notificationService;
   final LoggerService _logger;
   final StorageService _storage;
-  final TimezoneService _timezoneService;
   
   static const String _scheduledNotificationsKey = 'scheduled_notifications';
   final Map<String, List<ScheduledNotification>> _scheduledNotifications = {};
@@ -25,11 +23,9 @@ class NotificationScheduler {
     NotificationService? notificationService,
     LoggerService? logger,
     StorageService? storage,
-    TimezoneService? timezoneService,
   })  : _notificationService = notificationService ?? getIt<NotificationService>(),
         _logger = logger ?? getIt<LoggerService>(),
-        _storage = storage ?? getIt<StorageService>(),
-        _timezoneService = timezoneService ?? getIt<TimezoneService>() {
+        _storage = storage ?? getIt<StorageService>() {
     _loadScheduledNotifications();
   }
   
@@ -310,7 +306,9 @@ class NotificationScheduler {
   Future<void> _scheduleWeekly(ScheduledNotification scheduled) async {
     if (scheduled.schedule.weekDays == null || 
         scheduled.schedule.weekDays!.isEmpty ||
-        scheduled.schedule.timeOfDay == null) return;
+        scheduled.schedule.timeOfDay == null) {
+      return;
+    }
     
     // Schedule for each selected day
     for (final weekDay in scheduled.schedule.weekDays!) {
@@ -331,7 +329,9 @@ class NotificationScheduler {
   
   Future<void> _scheduleCustom(ScheduledNotification scheduled) async {
     if (scheduled.schedule.customDates == null || 
-        scheduled.schedule.customDates!.isEmpty) return;
+        scheduled.schedule.customDates!.isEmpty) {
+      return;
+    }
     
     for (int i = 0; i < scheduled.schedule.customDates!.length; i++) {
       final date = scheduled.schedule.customDates![i];
