@@ -205,12 +205,12 @@ class AppBackButton extends StatelessWidget {
   final String? tooltip;
 
   const AppBackButton({
-    Key? key,
+    super.key,
     this.onPressed,
     this.color,
     this.size,
     this.tooltip,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -241,12 +241,12 @@ class AppMenuButton extends StatelessWidget {
   final String? tooltip;
 
   const AppMenuButton({
-    Key? key,
+    super.key,
     this.onPressed,
     this.color,
     this.size,
     this.tooltip,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -279,14 +279,14 @@ class AppBarAction extends StatelessWidget {
   final Color? badgeColor;
 
   const AppBarAction({
-    Key? key,
+    super.key,
     required this.icon,
     required this.onPressed,
     this.tooltip,
     this.color,
     this.badge,
     this.badgeColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

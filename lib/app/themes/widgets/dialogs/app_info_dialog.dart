@@ -146,10 +146,10 @@ class AppInfoDialog extends StatelessWidget {
               vertical: AppDimens.space2,
             ),
             decoration: BoxDecoration(
-              color: color.withOpacity(AppColors.opacity10),
+              color: color.withValues(alpha: AppColors.opacity10),
               borderRadius: BorderRadius.circular(AppDimens.radiusMd),
               border: Border.all(
-                color: color.withOpacity(AppColors.opacity20),
+                color: color.withValues(alpha: AppColors.opacity20),
                 width: AppDimens.borderThin,
               ),
             ),

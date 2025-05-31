@@ -149,8 +149,7 @@ class AthkarCard extends StatelessWidget {
         if (showCounter)
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(AppColors.opacity20),
-              borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+              color: Colors.black.withValues(alpha: AppColors.opacity20),              borderRadius: BorderRadius.circular(AppDimens.radiusFull),
             ),
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimens.space3,
@@ -205,10 +204,10 @@ class AthkarCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(AppDimens.space5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(AppColors.opacity10),
+        color: Colors.white.withValues(alpha: AppColors.opacity10),
         borderRadius: BorderRadius.circular(AppDimens.radiusLg),
         border: Border.all(
-          color: Colors.white.withOpacity(AppColors.opacity20),
+          color: Colors.white.withValues(alpha: AppColors.opacity20),
           width: AppDimens.borderThin,
         ),
       ),
@@ -221,7 +220,7 @@ class AthkarCard extends StatelessWidget {
             child: Icon(
               Icons.format_quote,
               size: AppDimens.iconSm,
-              color: Colors.white.withOpacity(AppColors.opacity50),
+              color: Colors.white.withValues(alpha: AppColors.opacity50),
             ),
           ),
           
@@ -248,7 +247,7 @@ class AthkarCard extends StatelessWidget {
               child: Icon(
                 Icons.format_quote,
                 size: AppDimens.iconSm,
-                color: Colors.white.withOpacity(AppColors.opacity50),
+                color: Colors.white.withValues(alpha: AppColors.opacity50),
               ),
             ),
           ),
@@ -265,7 +264,7 @@ class AthkarCard extends StatelessWidget {
           vertical: AppDimens.space2,
         ),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(AppColors.opacity20),
+          color: Colors.black.withValues(alpha: AppColors.opacity20),
           borderRadius: BorderRadius.circular(AppDimens.radiusFull),
         ),
         child: Text(

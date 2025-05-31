@@ -115,11 +115,9 @@ class AppCompletionCard extends StatelessWidget {
         width: 80,
         height: 80,
         decoration: BoxDecoration(
-          color: color.withOpacity(AppColors.opacity10),
-          shape: BoxShape.circle,
+            color: color.withValues(alpha: AppColors.opacity10),          shape: BoxShape.circle,
           border: Border.all(
-            color: color.withOpacity(AppColors.opacity30),
-            width: AppDimens.borderMedium,
+            color: color.withValues(alpha: AppColors.opacity30),            width: AppDimens.borderMedium,
           ),
         ),
         child: Icon(
