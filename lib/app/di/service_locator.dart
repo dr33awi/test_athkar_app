@@ -40,8 +40,10 @@ export '../../core/infrastructure/services/notifications/notification_service.da
 export '../../core/infrastructure/services/notifications/notification_scheduler.dart';
 
 // Notification Models
+// Notification Models
 export '../../core/infrastructure/services/notifications/models/notification_data.dart' 
-  hide SystemOverridePriority; // إخفاء لتجنب التعارض
+  hide SystemOverridePriority, NotificationResponse; // إخفاء لتجنب التعارض
+  
 export '../../core/infrastructure/services/notifications/models/notification_schedule.dart';
 
 // Notification Utils

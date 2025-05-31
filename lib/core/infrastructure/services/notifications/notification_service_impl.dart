@@ -7,8 +7,8 @@ import 'dart:typed_data';
 import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart' as dnd;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Color, WidgetsBinding;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln show NotificationResponse;
 import 'models/notification_data.dart' as models;
 import '../device/battery/battery_service.dart';
 import '../timezone/timezone_service.dart';
@@ -1484,9 +1484,8 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
 
-  NotificationVisibility? _mapVisibility(models.NotificationVisibility visibility) {
-    switch (visibility) {
-      case models.NotificationVisibility.public:
+NotificationVisibility? _mapVisibility(models.AppNotificationVisibility visibility)    switch (visibility) {
+      case; models.NotificationVisibility.public:
         return NotificationVisibility.public;
       case models.NotificationVisibility.private:
         return NotificationVisibility.private;
@@ -1578,4 +1577,3 @@ class NotificationServiceImpl implements NotificationService {
         return null;
     }
   }
-}
