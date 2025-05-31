@@ -1,14 +1,14 @@
+
 // lib/core/infrastructure/services/notifications/notification_service_impl.dart
 
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart' as dnd;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Color, WidgetsBinding;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart' as fln show NotificationResponse;
+import 'package:flutter/material.dart' show Color;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'models/notification_data.dart' as models;
 import '../device/battery/battery_service.dart';
 import '../timezone/timezone_service.dart';
@@ -1484,13 +1484,13 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
 
-    NotificationVisibility? _mapVisibility(models.AppNotificationVisibility visibility) {
+  NotificationVisibility? _mapVisibility(models.NotificationVisibility visibility) {
     switch (visibility) {
-      case models.AppNotificationVisibility.public:
+      case models.NotificationVisibility.public:
         return NotificationVisibility.public;
-      case models.AppNotificationVisibility.private:
+      case models.NotificationVisibility.private:
         return NotificationVisibility.private;
-      case models.AppNotificationVisibility.secret:
+      case models.NotificationVisibility.secret:
         return NotificationVisibility.secret;
     }
   }

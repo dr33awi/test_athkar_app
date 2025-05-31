@@ -1,72 +1,14 @@
 // lib/app/di/service_locator.dart
+import 'package:athkar_app/features/notifications/domain/services/notification_scheduler_impl.dart';
+import 'package:athkar_app/features/prayers/domain/services/prayer_times_service_impl.dart';
+import 'package:athkar_app/features/prayers/qibla_service_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:battery_plus/battery_plus.dart';
 
-// 🎯 تصدير GetIt للاستخدام المباشر
-export 'package:get_it/get_it.dart' show GetIt;
-
-// ===== 📦 تصدير جميع الخدمات الأساسية =====
-
-// Logging Service
-export '../../core/infrastructure/services/logging/logger_service.dart';
-export '../../core/infrastructure/services/logging/log_levels.dart';
-
-// Storage Services  
-export '../../core/infrastructure/services/storage/storage_service.dart';
-export '../../core/infrastructure/services/storage/secure_storage_service.dart';
-
-// Configuration Service
-export '../../core/infrastructure/services/configuration/configuration_service.dart' hide ConfigKeys;
-export '../../core/infrastructure/services/configuration/config_keys.dart';
-
-// Timezone Service
-export '../../core/infrastructure/services/timezone/timezone_service.dart';
-
-// Permission Services
-export '../../core/infrastructure/services/permissions/permission_service.dart';
-export '../../core/infrastructure/services/permissions/permission_manager.dart';
-
-// Device Services
-export '../../core/infrastructure/services/device/battery/battery_service.dart';
-export '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
-
-// ===== 🔔 تصدير خدمات الإشعارات =====
-
-// Notification Service
-export '../../core/infrastructure/services/notifications/notification_service.dart';
-export '../../core/infrastructure/services/notifications/notification_scheduler.dart';
-
-// Notification Models
-// Notification Models
-export '../../core/infrastructure/services/notifications/models/notification_data.dart' 
-  hide SystemOverridePriority, NotificationResponse; // إخفاء لتجنب التعارض
-  
-export '../../core/infrastructure/services/notifications/models/notification_schedule.dart';
-
-// Notification Utils
-export '../../core/infrastructure/services/notifications/utils/notification_payload_handler.dart';
-export '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
-export '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
-
-// ===== ❌ تصدير معالجة الأخطاء =====
-
-export '../../core/error/error_handler.dart';
-export '../../core/error/exceptions.dart';
-export '../../core/error/failure.dart';
-
-// ===== 🛠️ تصدير الأدوات المساعدة =====
-
-// Extensions
-export '../../core/infrastructure/services/utils/extensions/string_extensions.dart';
-export '../../core/infrastructure/services/utils/extensions/datetime_extensions.dart';
-
-// Constants
-export '../../core/constants/app_constants.dart';
-
-// ===== Imports المطلوبة للتنفيذ =====
+// Core Services
 import '../../core/infrastructure/services/logging/logger_service.dart';
 import '../../core/infrastructure/services/logging/logger_service_impl.dart';
 import '../../core/infrastructure/services/storage/storage_service.dart';
@@ -84,12 +26,39 @@ import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_
 import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
 import '../../core/infrastructure/services/notifications/notification_service.dart';
 import '../../core/infrastructure/services/notifications/notification_service_impl.dart';
-import '../../core/infrastructure/services/notifications/notification_scheduler.dart';
 import '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
 import '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
 import '../../core/error/error_handler.dart';
 
-// GetIt instance
+// Feature Services
+import '../../features/prayers/domain/services/prayer_times_service.dart';
+import '../../features/prayers/domain/services/qibla_service.dart';
+import '../../features/notifications/domain/services/notification_scheduler.dart';
+
+// Data Sources
+import '../../features/athkar/data/datasources/athkar_local_data_source.dart';
+import '../../features/settings/data/datasources/settings_local_data_source.dart';
+
+// Repositories
+import '../../features/athkar/data/repositories/athkar_repository_impl.dart';
+import '../../features/prayers/data/repositories/prayer_times_repository_impl.dart';
+import '../../features/settings/data/repositories/settings_repository_impl.dart';
+import '../../features/athkar/domain/repositories/athkar_repository.dart';
+import '../../features/prayers/domain/repositories/prayer_times_repository.dart';
+import '../../features/settings/domain/repositories/settings_repository.dart';
+
+// Use Cases
+import '../../features/athkar/domain/usecases/get_athkar_by_category.dart';
+import '../../features/athkar/domain/usecases/get_athkar_categories.dart';
+import '../../features/athkar/domain/usecases/get_athkar_by_id.dart';
+import '../../features/athkar/domain/usecases/save_athkar_favorite.dart';
+import '../../features/athkar/domain/usecases/get_favorite_athkar.dart';
+import '../../features/athkar/domain/usecases/search_athkar.dart';
+import '../../features/prayers/domain/usecases/get_prayer_times.dart';
+import '../../features/prayers/domain/usecases/get_qibla_direction.dart';
+import '../../features/settings/domain/usecases/get_settings.dart';
+import '../../features/settings/domain/usecases/update_settings.dart';
+
 final getIt = GetIt.instance;
 
 /// Service Locator for dependency injection
@@ -137,6 +106,20 @@ class ServiceLocator {
       
       // Load configuration
       await getIt<ConfigurationService>().loadConfiguration();
+      
+      // Data Sources
+      getIt.registerLazySingleton<SettingsLocalDataSource>(
+        () => SettingsLocalDataSourceImpl(getIt<StorageService>()),
+      );
+
+      // Repositories
+      getIt.registerLazySingleton<SettingsRepository>(
+        () => SettingsRepositoryImpl(getIt<SettingsLocalDataSource>()),
+      );
+
+      // Use Cases
+      getIt.registerLazySingleton(() => GetSettings(getIt<SettingsRepository>()));
+      getIt.registerLazySingleton(() => UpdateSettings(getIt<SettingsRepository>()));
 
       _basicServicesInitialized = true;
       _logger!.info(message: 'Basic services initialized successfully');
@@ -229,12 +212,26 @@ class ServiceLocator {
         defaultIcon: config.getString('notification.default_icon'),
       );
       
-      // Notification Scheduler
-      getIt.registerLazySingleton<NotificationScheduler>(
-        () => NotificationScheduler(
-          notificationService: getIt<NotificationService>(),
+      // Feature Services
+      getIt.registerLazySingleton<PrayerTimesService>(
+        () => PrayerTimesServiceImpl(
           logger: _logger,
-          storage: getIt<StorageService>(),
+          storageService: getIt<StorageService>(),
+        ),
+      );
+      
+      getIt.registerLazySingleton<QiblaService>(
+        () => QiblaServiceImpl(
+          logger: _logger,
+          permissionService: getIt<PermissionService>(),
+        ),
+      );
+      
+      getIt.registerLazySingleton<NotificationScheduler>(
+        () => NotificationSchedulerImpl(
+          notificationService: getIt<NotificationService>(),
+          prayerTimesService: getIt<PrayerTimesService>(),
+          logger: _logger,
         ),
       );
       
@@ -243,11 +240,45 @@ class ServiceLocator {
         () => AppErrorHandler(_logger!),
       );
 
+      // Data Sources
+      getIt.registerLazySingleton<AthkarLocalDataSource>(
+        () => AthkarLocalDataSourceImpl(
+          storageService: getIt<StorageService>(),
+          logger: _logger,
+        ),
+      );
+
+      // Repositories
+      getIt.registerLazySingleton<AthkarRepository>(
+        () => AthkarRepositoryImpl(
+          localDataSource: getIt<AthkarLocalDataSource>(),
+          errorHandler: getIt<AppErrorHandler>(),
+        ),
+      );
+      
+      getIt.registerLazySingleton<PrayerTimesRepository>(
+        () => PrayerTimesRepositoryImpl(
+          prayerTimesService: getIt<PrayerTimesService>(),
+          qiblaService: getIt<QiblaService>(),
+          errorHandler: getIt<AppErrorHandler>(),
+        ),
+      );
+
+      // Use Cases
+      getIt.registerLazySingleton(() => GetAthkarByCategory(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => GetAthkarCategories(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => GetAthkarById(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => SaveAthkarFavorite(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => GetFavoriteAthkar(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => SearchAthkar(getIt<AthkarRepository>()));
+      getIt.registerLazySingleton(() => GetPrayerTimes(getIt<PrayerTimesRepository>()));
+      getIt.registerLazySingleton(() => GetQiblaDirection(getIt<PrayerTimesRepository>()));
+
       _fullInitialized = true;
       _logger?.info(message: 'All services initialized successfully');
       
       _logger?.logEvent('app_services_initialized', parameters: {
-        'services_count': _getRegisteredServicesCount(),
+        'services_count': getIt.registrations.length,
       });
       
     } catch (e, s) {
@@ -277,11 +308,15 @@ class ServiceLocator {
       
       // Dispose services that need cleanup
       if (getIt.isRegistered<NotificationScheduler>()) {
-        await getIt<NotificationScheduler>().dispose();
+        await (getIt<NotificationScheduler>() as NotificationSchedulerImpl).dispose();
       }
       
       if (getIt.isRegistered<NotificationService>()) {
         await getIt<NotificationService>().dispose();
+      }
+      
+      if (getIt.isRegistered<QiblaService>()) {
+        getIt<QiblaService>().dispose();
       }
       
       if (getIt.isRegistered<DoNotDisturbService>()) {
@@ -330,34 +365,5 @@ class ServiceLocator {
   /// Get service instance
   T get<T extends Object>() {
     return getIt<T>();
-  }
-  
-  /// Get count of registered services
-  int _getRegisteredServicesCount() {
-    // عد الخدمات المسجلة
-    int count = 0;
-    final types = [
-      LoggerService,
-      StorageService,
-      ConfigurationService,
-      TimezoneService,
-      PermissionService,
-      PermissionManager,
-      BatteryService,
-      DoNotDisturbService,
-      NotificationService,
-      NotificationScheduler,
-      NotificationAnalytics,
-      NotificationRetryManager,
-      AppErrorHandler,
-    ];
-    
-    for (final type in types) {
-      if (getIt.isRegistered(instance: type)) {
-        count++;
-      }
-    }
-    
-    return count;
   }
 }

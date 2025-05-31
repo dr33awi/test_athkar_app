@@ -108,4 +108,3 @@ abstract class NotificationService {
   /// Dispose resources
   Future<void> dispose();
 }
-

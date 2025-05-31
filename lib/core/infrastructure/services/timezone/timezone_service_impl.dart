@@ -20,7 +20,6 @@ class TimezoneServiceImpl implements TimezoneService {
   
   TimezoneServiceImpl({required LoggerService logger}) : _logger = logger;
   
-
   @override
   Future<void> initializeTimeZones() async {
     if (_isInitialized) {
@@ -31,11 +30,8 @@ class TimezoneServiceImpl implements TimezoneService {
     try {
       _logger.info(message: 'Initializing timezone database...');
       
-      // Initialize timezone database FIRST
+      // Initialize timezone database
       tz.initializeTimeZones();
-      
-      // Mark as initialized immediately after tz initialization
-      _isInitialized = true;
       
       // Get device timezone
       String timeZoneName;
@@ -53,7 +49,7 @@ class TimezoneServiceImpl implements TimezoneService {
         timeZoneName = 'UTC';
       }
       
-      // Validate and set timezone (now we can use timeZoneExists)
+      // Validate and set timezone
       if (!timeZoneExists(timeZoneName)) {
         _logger.warning(
           message: 'Invalid timezone detected, using UTC',
