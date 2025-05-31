@@ -1484,12 +1484,13 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
 
-NotificationVisibility? _mapVisibility(models.AppNotificationVisibility visibility)    switch (visibility) {
-      case; models.NotificationVisibility.public:
+    NotificationVisibility? _mapVisibility(models.AppNotificationVisibility visibility) {
+    switch (visibility) {
+      case models.AppNotificationVisibility.public:
         return NotificationVisibility.public;
-      case models.NotificationVisibility.private:
+      case models.AppNotificationVisibility.private:
         return NotificationVisibility.private;
-      case models.NotificationVisibility.secret:
+      case models.AppNotificationVisibility.secret:
         return NotificationVisibility.secret;
     }
   }
@@ -1577,3 +1578,4 @@ NotificationVisibility? _mapVisibility(models.AppNotificationVisibility visibili
         return null;
     }
   }
+}
