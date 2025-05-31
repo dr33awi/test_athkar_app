@@ -395,7 +395,7 @@ _logger.logEvent('settings_opened', parameters: {'page': settingsPage?.toString(
       case AppPermissionType.contacts:
         return Permission.contacts;
       case AppPermissionType.calendar:
-        return Permission.calendar;
+        return Permission.calendarFullAccess;
       case AppPermissionType.reminders:
         return Platform.isIOS ? Permission.reminders : null;
       case AppPermissionType.photos:

@@ -59,8 +59,8 @@ class AthkarApp extends StatelessWidget {
           
           return MaterialApp(
             title: AppConstants.appName,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
+            theme: AppTheme.lightTheme(),
+            darkTheme: AppTheme.darkTheme(),
             themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
             locale: Locale(language),
             supportedLocales: const [
