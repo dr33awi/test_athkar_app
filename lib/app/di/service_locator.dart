@@ -27,6 +27,13 @@ import '../../core/infrastructure/services/notifications/utils/notification_anal
 import '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
 import '../../core/error/error_handler.dart';
 
+import '../../core/infrastructure/services/storage/secure_storage_service.dart';
+
+import '../../core/infrastructure/services/notifications/notification_scheduler.dart';
+
+
+
+
 final getIt = GetIt.instance;
 
 /// Service Locator for dependency injection
@@ -151,6 +158,22 @@ class ServiceLocator {
         () => AppErrorHandler(_logger!),
       );
 
+     // StorageService
+      getIt.registerLazySingleton<SecureStorageService>(
+      () => SecureStorageServiceImpl(
+      regularStorage: getIt<StorageService>(),
+      logger: _logger,
+      ),
+    );
+
+     //NotificationService
+      getIt.registerLazySingleton<NotificationScheduler>(
+      () => NotificationScheduler(
+      notificationService: getIt<NotificationService>(),
+      logger: _logger,
+      storage: getIt<StorageService>(),
+      ),
+    );
       _isInitialized = true;
       _logger?.info(message: 'All services initialized successfully');
       
