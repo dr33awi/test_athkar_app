@@ -26,8 +26,9 @@ class AthkarCard extends StatelessWidget {
   final bool isCompleted;
   final IconData? categoryIcon;
 
+
   const AthkarCard({
-    Key? key,
+    super.key,
     required this.content,
     this.source,
     this.currentCount = 0,
@@ -43,7 +44,7 @@ class AthkarCard extends StatelessWidget {
     this.showCounter = true,
     this.isCompleted = false,
     this.categoryIcon,
-  }) : super(key: key);
+  });
 
   void _handleCopy(BuildContext context) {
     String textToCopy = content;

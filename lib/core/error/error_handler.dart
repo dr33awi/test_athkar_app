@@ -263,9 +263,12 @@ class Result<T> {
     R Function(Failure) onFailure,
     R Function(T) onSuccess,
   ) {
-    if (isFailure) {
+    if (failure != null) {
       return onFailure(failure!);
+    } else if (data != null) {
+      return onSuccess(data as T);
+    } else {
+      throw StateError('Result must have either data or failure');
     }
-    return onSuccess(data!);
   }
 }

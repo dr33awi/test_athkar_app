@@ -21,7 +21,7 @@ class AppCompletionCard extends StatelessWidget {
   final bool animate;
 
   const AppCompletionCard({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     this.subMessage,
@@ -31,7 +31,7 @@ class AppCompletionCard extends StatelessWidget {
     this.customIcon,
     this.margin,
     this.animate = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

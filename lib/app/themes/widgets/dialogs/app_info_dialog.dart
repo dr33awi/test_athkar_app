@@ -18,7 +18,7 @@ class AppInfoDialog extends StatelessWidget {
   final bool barrierDismissible;
 
   const AppInfoDialog({
-    Key? key,
+    super.key,
     required this.title,
     this.content,
     this.subtitle,
@@ -28,7 +28,7 @@ class AppInfoDialog extends StatelessWidget {
     this.actions,
     this.customContent,
     this.barrierDismissible = true,
-  }) : super(key: key);
+  });
 
   /// عرض الحوار
   static Future<T?> show<T>({

@@ -33,11 +33,8 @@ Future<void> main() async {
     // تهيئة جميع الخدمات
     await _initAllServices();
     
-    // التحقق من أول تشغيل للتطبيق
-    final storageService = getIt<StorageService>();
-    final isFirstRun = storageService.getBool('isFirstRun') ?? true;
-    
     // Get saved preferences
+    final storageService = getIt<StorageService>();
     final isDarkMode = storageService.getBool('isDarkMode') ?? false;
     final language = storageService.getString('language') ?? AppConstants.defaultLanguage;
     
@@ -48,11 +45,6 @@ Future<void> main() async {
     );
     
     runApp(app);
-    
-    // حفظ حالة أول تشغيل
-    if (isFirstRun) {
-      await storageService.setBool('isFirstRun', false);
-    }
     
     // طلب أذونات الإشعارات عند بدء التطبيق
     await _requestNotificationPermissions();

@@ -29,7 +29,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final ShapeBorder? shape;
 
   const CustomAppBar({
-    Key? key,
+    super.key,
     this.title,
     this.titleWidget,
     this.actions,
@@ -49,7 +49,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.flexibleSpace,
     this.leadingWidth,
     this.shape,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => Size.fromHeight(

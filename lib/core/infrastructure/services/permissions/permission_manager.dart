@@ -175,6 +175,7 @@ class PermissionManager {
       
       if (shouldShowRationale) {
         final proceed = await _showPermissionRationale(
+          // ignore: use_build_context_synchronously
           context,
           type,
           title: _getPermissionTitle(type),
@@ -204,7 +205,14 @@ class PermissionManager {
     final shouldShowRationale = await _permissionService.shouldShowPermissionRationale(type);
     
     if (shouldShowRationale || _shouldForceRationale(type)) {
+      // Check if context is still mounted before showing dialog
+      // ignore: use_build_context_synchronously
+      if (!context.mounted) {
+        return AppPermissionStatus.unknown;
+      }
+      
       // Show rationale dialog
+      // ignore: use_build_context_synchronously
       final proceed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -245,6 +253,7 @@ class PermissionManager {
   }) async {
     final status = await _permissionService.checkPermissionStatus(type);
     
+    // ignore: use_build_context_synchronously
     if (status == AppPermissionStatus.denied && context.mounted) {
       // Show denied dialog
       final shouldOpenSettings = await showPermissionDeniedDialog(
@@ -262,6 +271,7 @@ class PermissionManager {
       }
     } else if (status == AppPermissionStatus.permanentlyDenied && context.mounted) {
       // Show permanently denied dialog
+      // ignore: use_build_context_synchronously
       await showPermissionDeniedDialog(
         context,
         title: 'Permission Required',
@@ -433,6 +443,11 @@ class PermissionManager {
     String? settingsButtonText,
     String? cancelButtonText,
   }) async {
+    // Check if context is still mounted
+    if (!context.mounted) {
+      return false;
+    }
+    
     return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -519,7 +534,13 @@ class PermissionManager {
     required String title,
     required String message,
   }) async {
+    // Check if context is still mounted
+    if (!context.mounted) {
+      return false;
+    }
+    
     return await showDialog<bool>(
+      // ignore: use_build_context_synchronously
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
@@ -539,7 +560,7 @@ class PermissionManager {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withAlpha(26), // Use withAlpha instead of withOpacity
+                color: Theme.of(context).primaryColor.withAlpha(26),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(

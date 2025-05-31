@@ -34,8 +34,7 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final defaultIconColor = iconColor ?? AppColors.textSecondary(context).withOpacity(AppColors.opacity50);
-
+    final defaultIconColor = iconColor ?? AppColors.textSecondary(context).withValues(alpha: AppColors.opacity50);
     Widget contentWidget = Center(
       child: Padding(
         padding: padding ?? const EdgeInsets.all(AppDimens.space5),
