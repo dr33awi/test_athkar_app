@@ -22,7 +22,7 @@ enum NotificationPriority {
 }
 
 /// Notification visibility on lock screen
-enum NotificationVisibility {
+enum AppNotificationVisibility {
   public,
   secret,
   private,
@@ -60,7 +60,7 @@ class NotificationData {
   final NotificationRepeatInterval repeatInterval;
   final NotificationCategory category;
   final NotificationPriority priority;
-  final NotificationVisibility visibility;
+  final AppNotificationVisibility visibility;
   final String channelId;
   final Map<String, dynamic>? payload;
   final String? soundName;
@@ -89,7 +89,7 @@ class NotificationData {
     this.repeatInterval = NotificationRepeatInterval.once,
     this.category = NotificationCategory.general,
     this.priority = NotificationPriority.normal,
-    this.visibility = NotificationVisibility.private,
+    this.visibility = AppNotificationVisibility.private,
     this.channelId = 'default_channel',
     this.payload,
     this.soundName,
@@ -118,7 +118,7 @@ class NotificationData {
     NotificationRepeatInterval? repeatInterval,
     NotificationCategory? category,
     NotificationPriority? priority,
-    NotificationVisibility? visibility,
+    AppNotificationVisibility? visibility,
     String? channelId,
     Map<String, dynamic>? payload,
     String? soundName,
@@ -207,7 +207,7 @@ class NotificationData {
       repeatInterval: NotificationRepeatInterval.values[json['repeatInterval'] as int? ?? 0],
       category: NotificationCategory.values[json['category'] as int? ?? 0],
       priority: NotificationPriority.values[json['priority'] as int? ?? 2],
-      visibility: NotificationVisibility.values[json['visibility'] as int? ?? 2],
+      visibility: AppNotificationVisibility.values[json['visibility'] as int? ?? 2],
       channelId: json['channelId'] as String? ?? 'default_channel',
       payload: json['payload'] as Map<String, dynamic>?,
       soundName: json['soundName'] as String?,

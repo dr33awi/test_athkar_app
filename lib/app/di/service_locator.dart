@@ -5,7 +5,66 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:battery_plus/battery_plus.dart';
 
-// Core Services
+// 🎯 تصدير GetIt للاستخدام المباشر
+export 'package:get_it/get_it.dart' show GetIt;
+
+// ===== 📦 تصدير جميع الخدمات الأساسية =====
+
+// Logging Service
+export '../../core/infrastructure/services/logging/logger_service.dart';
+export '../../core/infrastructure/services/logging/log_levels.dart';
+
+// Storage Services  
+export '../../core/infrastructure/services/storage/storage_service.dart';
+export '../../core/infrastructure/services/storage/secure_storage_service.dart';
+
+// Configuration Service
+export '../../core/infrastructure/services/configuration/configuration_service.dart' hide ConfigKeys;
+export '../../core/infrastructure/services/configuration/config_keys.dart';
+
+// Timezone Service
+export '../../core/infrastructure/services/timezone/timezone_service.dart';
+
+// Permission Services
+export '../../core/infrastructure/services/permissions/permission_service.dart';
+export '../../core/infrastructure/services/permissions/permission_manager.dart';
+
+// Device Services
+export '../../core/infrastructure/services/device/battery/battery_service.dart';
+export '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
+
+// ===== 🔔 تصدير خدمات الإشعارات =====
+
+// Notification Service
+export '../../core/infrastructure/services/notifications/notification_service.dart';
+export '../../core/infrastructure/services/notifications/notification_scheduler.dart';
+
+// Notification Models
+export '../../core/infrastructure/services/notifications/models/notification_data.dart' 
+  hide SystemOverridePriority; // إخفاء لتجنب التعارض
+export '../../core/infrastructure/services/notifications/models/notification_schedule.dart';
+
+// Notification Utils
+export '../../core/infrastructure/services/notifications/utils/notification_payload_handler.dart';
+export '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
+export '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
+
+// ===== ❌ تصدير معالجة الأخطاء =====
+
+export '../../core/error/error_handler.dart';
+export '../../core/error/exceptions.dart';
+export '../../core/error/failure.dart';
+
+// ===== 🛠️ تصدير الأدوات المساعدة =====
+
+// Extensions
+export '../../core/infrastructure/services/utils/extensions/string_extensions.dart';
+export '../../core/infrastructure/services/utils/extensions/datetime_extensions.dart';
+
+// Constants
+export '../../core/constants/app_constants.dart';
+
+// ===== Imports المطلوبة للتنفيذ =====
 import '../../core/infrastructure/services/logging/logger_service.dart';
 import '../../core/infrastructure/services/logging/logger_service_impl.dart';
 import '../../core/infrastructure/services/storage/storage_service.dart';
@@ -23,10 +82,12 @@ import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_
 import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
 import '../../core/infrastructure/services/notifications/notification_service.dart';
 import '../../core/infrastructure/services/notifications/notification_service_impl.dart';
+import '../../core/infrastructure/services/notifications/notification_scheduler.dart';
 import '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
 import '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
 import '../../core/error/error_handler.dart';
 
+// GetIt instance
 final getIt = GetIt.instance;
 
 /// Service Locator for dependency injection
@@ -166,6 +227,15 @@ class ServiceLocator {
         defaultIcon: config.getString('notification.default_icon'),
       );
       
+      // Notification Scheduler
+      getIt.registerLazySingleton<NotificationScheduler>(
+        () => NotificationScheduler(
+          notificationService: getIt<NotificationService>(),
+          logger: _logger,
+          storage: getIt<StorageService>(),
+        ),
+      );
+      
       // Error Handler
       getIt.registerLazySingleton<AppErrorHandler>(
         () => AppErrorHandler(_logger!),
@@ -175,7 +245,7 @@ class ServiceLocator {
       _logger?.info(message: 'All services initialized successfully');
       
       _logger?.logEvent('app_services_initialized', parameters: {
-        'services_count': getIt.registrations.length,
+        'services_count': _getRegisteredServicesCount(),
       });
       
     } catch (e, s) {
@@ -204,6 +274,10 @@ class ServiceLocator {
       _logger?.info(message: 'Disposing services...');
       
       // Dispose services that need cleanup
+      if (getIt.isRegistered<NotificationScheduler>()) {
+        await getIt<NotificationScheduler>().dispose();
+      }
+      
       if (getIt.isRegistered<NotificationService>()) {
         await getIt<NotificationService>().dispose();
       }
@@ -255,8 +329,33 @@ class ServiceLocator {
   T get<T extends Object>() {
     return getIt<T>();
   }
-}
-
-extension on GetIt {
-  get registrations => null;
+  
+  /// Get count of registered services
+  int _getRegisteredServicesCount() {
+    // عد الخدمات المسجلة
+    int count = 0;
+    final types = [
+      LoggerService,
+      StorageService,
+      ConfigurationService,
+      TimezoneService,
+      PermissionService,
+      PermissionManager,
+      BatteryService,
+      DoNotDisturbService,
+      NotificationService,
+      NotificationScheduler,
+      NotificationAnalytics,
+      NotificationRetryManager,
+      AppErrorHandler,
+    ];
+    
+    for (final type in types) {
+      if (getIt.isRegistered(instance: type)) {
+        count++;
+      }
+    }
+    
+    return count;
+  }
 }

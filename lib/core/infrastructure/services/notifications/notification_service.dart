@@ -91,10 +91,10 @@ abstract class NotificationService {
   Future<void> clearBadge();
 
   /// Set notification tap handler
-  void setNotificationTapHandler(Function(NotificationResponse) handler);
+  void setNotificationTapHandler(Function(AppNotificationResponse) handler);
 
   /// Set notification action handler
-  void setNotificationActionHandler(Function(NotificationResponse) handler);
+  void setNotificationActionHandler(Function(AppNotificationResponse) handler);
   
   /// Set notification received handler (foreground)
   void setNotificationReceivedHandler(Function(NotificationData) handler);
@@ -108,3 +108,4 @@ abstract class NotificationService {
   /// Dispose resources
   Future<void> dispose();
 }
+

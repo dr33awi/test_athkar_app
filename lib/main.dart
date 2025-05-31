@@ -7,7 +7,6 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'app/di/service_locator.dart';
 import 'app/app.dart';
 import 'core/infrastructure/services/notifications/notification_service.dart';
-import 'core/infrastructure/services/timezone/timezone_service.dart';
 import 'core/infrastructure/services/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
 
@@ -76,10 +75,6 @@ Future<void> main() async {
 /// تهيئة جميع الخدمات
 Future<void> _initAllServices() async {
   await ServiceLocator().init();
-  
-  // التأكد من تهيئة التوقيت
-  final timezoneService = getIt<TimezoneService>();
-  await timezoneService.initializeTimeZones();
   
   debugPrint('جميع الخدمات تم تهيئتها بنجاح');
 }
