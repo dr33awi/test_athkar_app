@@ -1,7 +1,4 @@
 // lib/app/di/service_locator.dart
-import 'package:athkar_app/features/notifications/domain/services/notification_scheduler_impl.dart';
-import 'package:athkar_app/features/prayers/domain/services/prayer_times_service_impl.dart';
-import 'package:athkar_app/features/prayers/qibla_service_impl.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get_it/get_it.dart';
@@ -29,35 +26,6 @@ import '../../core/infrastructure/services/notifications/notification_service_im
 import '../../core/infrastructure/services/notifications/utils/notification_analytics.dart';
 import '../../core/infrastructure/services/notifications/utils/notification_retry_manager.dart';
 import '../../core/error/error_handler.dart';
-
-// Feature Services
-import '../../features/prayers/domain/services/prayer_times_service.dart';
-import '../../features/prayers/domain/services/qibla_service.dart';
-import '../../features/notifications/domain/services/notification_scheduler.dart';
-
-// Data Sources
-import '../../features/athkar/data/datasources/athkar_local_data_source.dart';
-import '../../features/settings/data/datasources/settings_local_data_source.dart';
-
-// Repositories
-import '../../features/athkar/data/repositories/athkar_repository_impl.dart';
-import '../../features/prayers/data/repositories/prayer_times_repository_impl.dart';
-import '../../features/settings/data/repositories/settings_repository_impl.dart';
-import '../../features/athkar/domain/repositories/athkar_repository.dart';
-import '../../features/prayers/domain/repositories/prayer_times_repository.dart';
-import '../../features/settings/domain/repositories/settings_repository.dart';
-
-// Use Cases
-import '../../features/athkar/domain/usecases/get_athkar_by_category.dart';
-import '../../features/athkar/domain/usecases/get_athkar_categories.dart';
-import '../../features/athkar/domain/usecases/get_athkar_by_id.dart';
-import '../../features/athkar/domain/usecases/save_athkar_favorite.dart';
-import '../../features/athkar/domain/usecases/get_favorite_athkar.dart';
-import '../../features/athkar/domain/usecases/search_athkar.dart';
-import '../../features/prayers/domain/usecases/get_prayer_times.dart';
-import '../../features/prayers/domain/usecases/get_qibla_direction.dart';
-import '../../features/settings/domain/usecases/get_settings.dart';
-import '../../features/settings/domain/usecases/update_settings.dart';
 
 final getIt = GetIt.instance;
 
@@ -106,20 +74,6 @@ class ServiceLocator {
       
       // Load configuration
       await getIt<ConfigurationService>().loadConfiguration();
-      
-      // Data Sources
-      getIt.registerLazySingleton<SettingsLocalDataSource>(
-        () => SettingsLocalDataSourceImpl(getIt<StorageService>()),
-      );
-
-      // Repositories
-      getIt.registerLazySingleton<SettingsRepository>(
-        () => SettingsRepositoryImpl(getIt<SettingsLocalDataSource>()),
-      );
-
-      // Use Cases
-      getIt.registerLazySingleton(() => GetSettings(getIt<SettingsRepository>()));
-      getIt.registerLazySingleton(() => UpdateSettings(getIt<SettingsRepository>()));
 
       _basicServicesInitialized = true;
       _logger!.info(message: 'Basic services initialized successfully');
@@ -212,67 +166,10 @@ class ServiceLocator {
         defaultIcon: config.getString('notification.default_icon'),
       );
       
-      // Feature Services
-      getIt.registerLazySingleton<PrayerTimesService>(
-        () => PrayerTimesServiceImpl(
-          logger: _logger,
-          storageService: getIt<StorageService>(),
-        ),
-      );
-      
-      getIt.registerLazySingleton<QiblaService>(
-        () => QiblaServiceImpl(
-          logger: _logger,
-          permissionService: getIt<PermissionService>(),
-        ),
-      );
-      
-      getIt.registerLazySingleton<NotificationScheduler>(
-        () => NotificationSchedulerImpl(
-          notificationService: getIt<NotificationService>(),
-          prayerTimesService: getIt<PrayerTimesService>(),
-          logger: _logger,
-        ),
-      );
-      
       // Error Handler
       getIt.registerLazySingleton<AppErrorHandler>(
         () => AppErrorHandler(_logger!),
       );
-
-      // Data Sources
-      getIt.registerLazySingleton<AthkarLocalDataSource>(
-        () => AthkarLocalDataSourceImpl(
-          storageService: getIt<StorageService>(),
-          logger: _logger,
-        ),
-      );
-
-      // Repositories
-      getIt.registerLazySingleton<AthkarRepository>(
-        () => AthkarRepositoryImpl(
-          localDataSource: getIt<AthkarLocalDataSource>(),
-          errorHandler: getIt<AppErrorHandler>(),
-        ),
-      );
-      
-      getIt.registerLazySingleton<PrayerTimesRepository>(
-        () => PrayerTimesRepositoryImpl(
-          prayerTimesService: getIt<PrayerTimesService>(),
-          qiblaService: getIt<QiblaService>(),
-          errorHandler: getIt<AppErrorHandler>(),
-        ),
-      );
-
-      // Use Cases
-      getIt.registerLazySingleton(() => GetAthkarByCategory(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => GetAthkarCategories(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => GetAthkarById(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => SaveAthkarFavorite(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => GetFavoriteAthkar(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => SearchAthkar(getIt<AthkarRepository>()));
-      getIt.registerLazySingleton(() => GetPrayerTimes(getIt<PrayerTimesRepository>()));
-      getIt.registerLazySingleton(() => GetQiblaDirection(getIt<PrayerTimesRepository>()));
 
       _fullInitialized = true;
       _logger?.info(message: 'All services initialized successfully');
@@ -307,16 +204,8 @@ class ServiceLocator {
       _logger?.info(message: 'Disposing services...');
       
       // Dispose services that need cleanup
-      if (getIt.isRegistered<NotificationScheduler>()) {
-        await (getIt<NotificationScheduler>() as NotificationSchedulerImpl).dispose();
-      }
-      
       if (getIt.isRegistered<NotificationService>()) {
         await getIt<NotificationService>().dispose();
-      }
-      
-      if (getIt.isRegistered<QiblaService>()) {
-        getIt<QiblaService>().dispose();
       }
       
       if (getIt.isRegistered<DoNotDisturbService>()) {
@@ -366,4 +255,8 @@ class ServiceLocator {
   T get<T extends Object>() {
     return getIt<T>();
   }
+}
+
+extension on GetIt {
+  get registrations => null;
 }
