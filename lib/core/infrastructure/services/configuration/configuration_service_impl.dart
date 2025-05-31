@@ -303,20 +303,29 @@ class ConfigurationServiceImpl implements ConfigurationService {
     });
   }
   
-  Map<String, dynamic> _deepMerge(Map<String, dynamic> target, Map<String, dynamic> source) {
-    final result = Map<String, dynamic>.from(target);
+Map<String, dynamic> _deepMerge(Map<dynamic, dynamic> target, Map<dynamic, dynamic> source) {
+    final result = <String, dynamic>{};
     
+    // Copy target values
+    target.forEach((key, value) {
+      result[key.toString()] = value;
+    });
+    
+    // Merge source values
     source.forEach((key, value) {
-      if (value is Map && result[key] is Map) {
-        result[key] = _deepMerge(result[key] as Map<String, dynamic>, value as Map<String, dynamic>);
+      final stringKey = key.toString();
+      if (value is Map && result[stringKey] is Map) {
+        result[stringKey] = _deepMerge(
+          result[stringKey] as Map<dynamic, dynamic>, 
+          value as Map<dynamic, dynamic>
+        );
       } else {
-        result[key] = value;
+        result[stringKey] = value;
       }
     });
     
     return result;
   }
-  
   void _loadDefaultConfiguration() {
     _config.clear();
     _config.addAll({
