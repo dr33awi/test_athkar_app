@@ -1,7 +1,6 @@
 // lib/core/infrastructure/services/notifications/utils/notification_analytics.dart
 
 import 'dart:collection';
-import 'package:flutter/foundation.dart';
 import '../../logging/logger_service.dart';
 
 /// System for tracking notification analytics and user interactions

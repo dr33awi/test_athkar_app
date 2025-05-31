@@ -296,7 +296,7 @@ class ConfigurationServiceImpl implements ConfigurationService {
     newConfig.forEach((key, value) {
       if (value is Map && _config[key] is Map) {
         // Recursively merge maps
-        _config[key] = _deepMerge(_config[key] as Map, value as Map);
+        _config[key] = _deepMerge(_config[key] as Map, value);
       } else {
         _config[key] = value;
       }
@@ -314,10 +314,11 @@ Map<String, dynamic> _deepMerge(Map<dynamic, dynamic> target, Map<dynamic, dynam
     // Merge source values
     source.forEach((key, value) {
       final stringKey = key.toString();
+
       if (value is Map && result[stringKey] is Map) {
         result[stringKey] = _deepMerge(
-          result[stringKey] as Map<dynamic, dynamic>, 
-          value as Map<dynamic, dynamic>
+          result[stringKey] as Map, 
+          value
         );
       } else {
         result[stringKey] = value;

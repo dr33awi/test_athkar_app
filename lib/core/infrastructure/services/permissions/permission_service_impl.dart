@@ -208,26 +208,33 @@ _logger.logEvent('permission_requested', parameters: {
       
 switch (settingsPage) {
   case AppSettingsType.location:
-    opened = await app_settings.AppSettings.openLocationSettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.location);
+    opened = true;
     break;
   case AppSettingsType.notification:
-    opened = await app_settings.AppSettings.openNotificationSettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.notification);
+    opened = true;
     break;
   case AppSettingsType.battery:
-    opened = await app_settings.AppSettings.openBatteryOptimizationSettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.batteryOptimization);
+    opened = true;
     break;
   case AppSettingsType.storage:
-    opened = await app_settings.AppSettings.openInternalStorageSettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.internalStorage);
+    opened = true;
     break;
   case AppSettingsType.privacy:
-    opened = await app_settings.AppSettings.openSecuritySettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.security);
+    opened = true;
     break;
   case AppSettingsType.accessibility:
-    opened = await app_settings.AppSettings.openAccessibilitySettings();
+    await app_settings.AppSettings.openAppSettings(type: app_settings.AppSettingsType.accessibility);
+    opened = true;
     break;
   case AppSettingsType.app:
   case null:
-    opened = await app_settings.AppSettings.openAppSettings();
+    await app_settings.AppSettings.openAppSettings();
+    opened = true;
     break;
 }
       

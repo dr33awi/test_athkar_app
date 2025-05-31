@@ -1,13 +1,13 @@
 // lib/core/infrastructure/services/notifications/notification_scheduler.dart
 
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:athkar_app/core/infrastructure/services/timezone/timezone_service.dart';
+
 import 'models/notification_data.dart';
 import 'models/notification_schedule.dart';
 import 'notification_service.dart';
 import '../logging/logger_service.dart';
 import '../storage/storage_service.dart';
-import '../timezone/timezone_service.dart';
 import '../../../../app/di/service_locator.dart';
 
 /// Generic notification scheduler that can be used by any feature

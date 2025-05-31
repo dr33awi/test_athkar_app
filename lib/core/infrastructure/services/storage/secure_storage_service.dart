@@ -71,27 +71,11 @@ class SecureStorageServiceImpl implements SecureStorageService {
   static const String _credentialsKey = '${_keyPrefix}credentials';
   static const String _tokenKey = '${_keyPrefix}token';
   
-  // Android options for secure storage
-  static const AndroidOptions _androidOptions = AndroidOptions(
-    encryptedSharedPreferences: true,
-    sharedPreferencesName: 'secure_prefs',
-    preferencesKeyPrefix: 'secure_',
-  );
-  
-  // iOS options for secure storage
-  static const IOSOptions _iosOptions = IOSOptions(
-    accessibility: KeychainAccessibility.first_unlock_this_device,
-    accountName: 'athkar_secure_storage',
-  );
-  
   SecureStorageServiceImpl({
     FlutterSecureStorage? secureStorage,
     required StorageService regularStorage,
     LoggerService? logger,
-  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(
-          aOptions: _androidOptions,
-          iOptions: _iosOptions,
-        ),
+  })  : _secureStorage = secureStorage ?? const FlutterSecureStorage(),
         _regularStorage = regularStorage,
         _logger = logger;
   
@@ -102,8 +86,6 @@ class SecureStorageServiceImpl implements SecureStorageService {
       await _secureStorage.write(
         key: prefixedKey,
         value: value,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
       
       _logger?.debug(
@@ -127,8 +109,6 @@ class SecureStorageServiceImpl implements SecureStorageService {
       final prefixedKey = _getPrefixedKey(key);
       return await _secureStorage.read(
         key: prefixedKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
     } catch (e) {
       _logger?.error(
@@ -277,8 +257,6 @@ class SecureStorageServiceImpl implements SecureStorageService {
       final prefixedKey = _getPrefixedKey(key);
       await _secureStorage.delete(
         key: prefixedKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
       
       _logger?.debug(
@@ -299,10 +277,7 @@ class SecureStorageServiceImpl implements SecureStorageService {
   @override
   Future<bool> clearSecure() async {
     try {
-      await _secureStorage.deleteAll(
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
-      );
+      await _secureStorage.deleteAll();
       
       _logger?.info(message: 'Secure storage cleared');
       return true;
@@ -321,8 +296,6 @@ class SecureStorageServiceImpl implements SecureStorageService {
       final prefixedKey = _getPrefixedKey(key);
       return await _secureStorage.containsKey(
         key: prefixedKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
     } catch (e) {
       _logger?.error(
@@ -336,10 +309,7 @@ class SecureStorageServiceImpl implements SecureStorageService {
   @override
   Future<Set<String>> getSecureKeys() async {
     try {
-      final allKeys = await _secureStorage.readAll(
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
-      );
+      final allKeys = await _secureStorage.readAll();
       
       return allKeys.keys
           .where((key) => key.startsWith(_keyPrefix))
@@ -364,20 +334,14 @@ class SecureStorageServiceImpl implements SecureStorageService {
       await _secureStorage.write(
         key: testKey,
         value: testValue,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
       
       final readValue = await _secureStorage.read(
         key: testKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
       
       await _secureStorage.delete(
         key: testKey,
-        aOptions: _androidOptions,
-        iOptions: _iosOptions,
       );
       
       return readValue == testValue;

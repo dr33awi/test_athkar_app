@@ -73,10 +73,10 @@ class TimezoneServiceImpl implements TimezoneService {
         }
       );
       
-_logger.logEvent('timezone_initialized', parameters: {
-  'timezone': timeZoneName,
-  'device_locale': WidgetsBinding.instance.platformDispatcher.locale.toString(),
-});
+      _logger.logEvent('timezone_initialized', parameters: {
+        'timezone': timeZoneName,
+        'device_locale': WidgetsBinding.instance.platformDispatcher.locale.toString(),
+      });
     } catch (e, s) {
       _logger.error(
         message: 'Error initializing timezones',
@@ -178,10 +178,11 @@ _logger.logEvent('timezone_initialized', parameters: {
       data: {'timezone_id': timeZoneId}
     );
     
-_logger.logEvent('timezone_changed', parameters: {
-  'new_timezone': timeZoneId,
-  'offset_hours': location.currentTimeZone.offset ~/ 3600000,
-});
+    _logger.logEvent('timezone_changed', parameters: {
+      'new_timezone': timeZoneId,
+      'offset_hours': location.currentTimeZone.offset ~/ 3600000,
+    });
+  }
   
   @override
   tz.TZDateTime convertBetweenTimeZones(
