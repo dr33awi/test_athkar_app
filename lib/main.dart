@@ -50,7 +50,7 @@ Future<void> main() async {
     await _requestNotificationPermissions();
     
   } catch (e, s) {
-    debugPrint('Error al iniciar la aplicación: $e');
+    debugPrint('خطأ في تشغيل التطبيق: $e');
     debugPrint('Stack trace: $s');
     runApp(
       MaterialApp(
