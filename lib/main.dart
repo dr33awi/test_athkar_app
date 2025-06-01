@@ -6,6 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/di/service_locator.dart';
 import 'app/app.dart';
+import 'app/routes/app_router.dart';
 import 'core/infrastructure/services/notifications/notification_service.dart';
 import 'core/infrastructure/services/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
@@ -66,9 +67,18 @@ Future<void> main() async {
 
 /// تهيئة جميع الخدمات
 Future<void> _initAllServices() async {
-  await ServiceLocator().init();
-  
-  debugPrint('جميع الخدمات تم تهيئتها بنجاح');
+  try {
+    // تهيئة الخدمات الأساسية أولاً
+    await ServiceLocator().initEssentialServices();
+    debugPrint('الخدمات الأساسية تم تهيئتها بنجاح');
+    
+    // محاولة تهيئة باقي الخدمات
+    await ServiceLocator().initRemainingServices();
+    debugPrint('جميع الخدمات تم تهيئتها بنجاح');
+  } catch (e) {
+    debugPrint('خطأ في تهيئة الخدمات: $e');
+    // التطبيق سيستمر مع الخدمات الأساسية على الأقل
+  }
 }
 
 /// إعداد خدمة التنقل
@@ -79,11 +89,16 @@ void _setupNavigationService() {
 /// طلب أذونات الإشعارات
 Future<void> _requestNotificationPermissions() async {
   try {
-    final notificationService = getIt<NotificationService>();
-    final hasPermission = await notificationService.requestPermission();
-    debugPrint('Permiso de notificaciones: $hasPermission');
+    // التحقق من وجود خدمة الإشعارات أولاً
+    if (getIt.isRegistered<NotificationService>()) {
+      final notificationService = getIt<NotificationService>();
+      final hasPermission = await notificationService.requestPermission();
+      debugPrint('حالة إذن الإشعارات: $hasPermission');
+    } else {
+      debugPrint('خدمة الإشعارات غير متوفرة');
+    }
   } catch (e) {
-    debugPrint('Error requesting notification permissions: $e');
+    debugPrint('خطأ في طلب أذونات الإشعارات: $e');
   }
 }
 

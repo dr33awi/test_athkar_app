@@ -1,10 +1,16 @@
 // lib/app/routes/app_router.dart
 import 'package:flutter/material.dart';
+import '../../features/home/presentation/screens/home_screen.dart';
 
 class AppRouter {
-  // Route الرئيسي فقط
+  // Routes
   static const String initialRoute = '/';
   static const String home = '/';
+  static const String prayerTimes = '/prayer-times';
+  static const String athkar = '/athkar';
+  static const String favorites = '/favorites';
+  static const String settingsRoute = '/settings';
+  static const String quoteDetails = '/quote-details';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final routeName = settings.name;
@@ -15,9 +21,55 @@ class AppRouter {
       case home:
         return MaterialPageRoute(
           settings: settings,
+          builder: (_) => const HomeScreen(),
+        );
+      
+      case prayerTimes:
+        return MaterialPageRoute(
+          settings: settings,
           builder: (_) => const Scaffold(
             body: Center(
-              child: Text('الصفحة الرئيسية'),
+              child: Text('صفحة مواقيت الصلاة'),
+            ),
+          ),
+        );
+        
+      case athkar:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('صفحة الأذكار'),
+            ),
+          ),
+        );
+        
+      case favorites:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('صفحة المفضلة'),
+            ),
+          ),
+        );
+        
+      case settingsRoute:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('صفحة الإعدادات'),
+            ),
+          ),
+        );
+        
+      case quoteDetails:
+        return MaterialPageRoute(
+          settings: settings,
+          builder: (_) => const Scaffold(
+            body: Center(
+              child: Text('تفاصيل الاقتباس'),
             ),
           ),
         );

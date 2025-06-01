@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 // استيراد الثيمات
 import 'themes/app_theme.dart';
 import '../core/constants/app_constants.dart';
+import 'routes/app_router.dart';
+import '../main.dart'; // لاستخدام NavigationService
 
 class AthkarApp extends StatelessWidget {
   final bool isDarkMode;
@@ -33,17 +35,11 @@ class AthkarApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Athkar App'),
-        ),
-        body: const Center(
-          child: Text(
-            'مرحبا بك في تطبيق الأذكار',
-            style: TextStyle(fontSize: 24),
-          ),
-        ),
-      ),
+      // إضافة navigatorKey
+      navigatorKey: NavigationService.navigatorKey,
+      // استخدام AppRouter
+      initialRoute: AppRouter.initialRoute,
+      onGenerateRoute: AppRouter.onGenerateRoute,
     );
   }
 }
