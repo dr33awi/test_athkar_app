@@ -17,7 +17,7 @@ import '../../core/infrastructure/services/configuration/configuration_service_i
 import '../../core/infrastructure/services/permissions/permission_service.dart';
 import '../../core/infrastructure/services/permissions/permission_service_impl.dart';
 import '../../core/infrastructure/services/permissions/permission_manager.dart';
-import '../../core/infrastructure/services/device/battery/battery_service.dart'; // No alias needed
+import '../../core/infrastructure/services/device/battery/battery_service.dart';
 import '../../core/infrastructure/services/device/battery/battery_service_impl.dart';
 import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart';
 import '../../core/infrastructure/services/device/do_not_disturb/do_not_disturb_service_impl.dart';
@@ -202,13 +202,8 @@ class ServiceLocator {
           
           // Initialize notification service with error handling
           try {
-            // final config = getIt<ConfigurationService>(); // Not needed for this test line
-            // String? defaultIcon = config.getString('notification.default_icon'); // Original line
-
-            // **** START MODIFICATION FOR TEST ****
             String? defaultIcon = null; // Temporarily force to null for testing
             _logger?.info(message: "TEMPORARY TEST: defaultIcon in NotificationService.initialize() is forced to null.");
-            // **** END MODIFICATION FOR TEST ****
                         
             await getIt<NotificationService>().initialize(
               defaultIcon: defaultIcon,
@@ -220,7 +215,7 @@ class ServiceLocator {
       } catch (e) {
         _logger?.error(
           message: 'Error initializing notification services dependencies',
-          error: e.toString(),
+          error: e,
         );
       }
       
@@ -257,12 +252,15 @@ class ServiceLocator {
       }
       
       _logger?.info(message: 'All remaining services initialized');
-      _logger?.logEvent('app_services_initialized');
+      
+      if (_logger != null) {
+        _logger!.logEvent('app_services_initialized');
+      }
       
     } catch (e, s) {
       _logger?.error(
         message: 'Error initializing remaining services',
-        error: e.toString(), 
+        error: e,
         stackTrace: s,
       );
     }

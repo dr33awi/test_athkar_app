@@ -1,11 +1,11 @@
 // lib/core/infrastructure/services/notifications/notification_service_impl.dart
 
 import 'dart:async';
-import 'dart:io'; // ستحتاج هذا للتحقق من المنصة
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:athkar_app/core/infrastructure/services/device/do_not_disturb/do_not_disturb_service.dart' as dnd;
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Color; // تأكد من وجود هذا الاستيراد إذا كنت تستخدم Color
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'models/notification_data.dart' as models;
@@ -16,7 +16,7 @@ import '../storage/storage_service.dart';
 import 'utils/notification_payload_handler.dart';
 import 'utils/notification_analytics.dart';
 import 'utils/notification_retry_manager.dart';
-import '../../../../app/di/service_locator.dart'; // تأكد من صحة هذا المسار
+import '../../../../app/di/service_locator.dart';
 import 'notification_service.dart';
 
 /// Callback for background notifications
@@ -114,10 +114,8 @@ class NotificationServiceImpl implements NotificationService {
         android: androidInitSettings,
         iOS: darwinInitSettings,
         macOS: darwinInitSettings, 
-        // linux: null, // تم إلغاء دعم Linux بناءً على طلبك السابق
       );
       _logger.debug(message: "InitializationSettings created for Android & iOS.");
-
 
       final bool? initialized = await _flutterLocalNotificationsPlugin.initialize(
         initSettings,
@@ -170,31 +168,40 @@ class NotificationServiceImpl implements NotificationService {
   }
 
   Future<void> _createDefaultNotificationChannels() async {
-    if (!Platform.isAndroid) return; // هذه القنوات خاصة بـ Android
+    if (!Platform.isAndroid) return;
 
     final defaultChannel = models.NotificationChannel(
-      id: 'default_channel', name: 'Default Notifications',
+      id: 'default_channel', 
+      name: 'Default Notifications',
       description: 'Default notification channel for general notifications',
-      importance: models.NotificationPriority.normal, playSound: true,
-      enableVibration: true, showBadge: true,
+      importance: models.NotificationPriority.normal, 
+      enableVibration: true, 
+      showBadge: true,
     );
     final highPriorityChannel = models.NotificationChannel(
-      id: 'high_priority_channel', name: 'Important Notifications',
+      id: 'high_priority_channel', 
+      name: 'Important Notifications',
       description: 'High priority notifications that require immediate attention',
-      importance: models.NotificationPriority.high, playSound: true,
-      enableVibration: true, enableLights: true, showBadge: true,
+      importance: models.NotificationPriority.high, 
+      enableVibration: true, 
+      enableLights: true, 
+      showBadge: true,
     );
     final reminderChannel = models.NotificationChannel(
-      id: 'reminder_channel', name: 'Reminders',
+      id: 'reminder_channel', 
+      name: 'Reminders',
       description: 'Scheduled reminders and alerts',
-      importance: models.NotificationPriority.normal, playSound: true,
-      enableVibration: true, showBadge: true,
+      importance: models.NotificationPriority.normal, 
+      enableVibration: true, 
+      showBadge: true,
     );
     final serviceChannel = models.NotificationChannel(
-      id: 'service_channel', name: 'Service Notifications',
+      id: 'service_channel', 
+      name: 'Service Notifications',
       description: 'Ongoing service notifications',
-      importance: models.NotificationPriority.low, playSound: false,
-      enableVibration: false, showBadge: false,
+      importance: models.NotificationPriority.low, 
+      enableVibration: false, 
+      showBadge: false,
     );
 
     await createNotificationChannel(defaultChannel);
@@ -231,11 +238,15 @@ class NotificationServiceImpl implements NotificationService {
 
     try {
       final androidChannel = AndroidNotificationChannel(
-        channel.id, channel.name, description: channel.description,
+        channel.id, 
+        channel.name, 
+        description: channel.description,
         importance: _mapPriorityToImportance(channel.importance),
-        playSound: channel.playSound, enableVibration: channel.enableVibration,
-        enableLights: channel.enableLights, showBadge: channel.showBadge,
-        sound: channel.soundName != null ? RawResourceAndroidNotificationSound(channel.soundName!) : null,
+        playSound: false, // تم تعطيل الصوت دائماً
+        enableVibration: channel.enableVibration,
+        enableLights: channel.enableLights, 
+        showBadge: channel.showBadge,
+        // تم إزالة sound parameter
         vibrationPattern: channel.vibrationPattern != null ? Int64List.fromList(channel.vibrationPattern!) : null,
         ledColor: channel.lightColor != null ? Color(channel.lightColor!) : null,
       );
@@ -298,10 +309,10 @@ class NotificationServiceImpl implements NotificationService {
       bool? granted = false;
       if (Platform.isIOS || Platform.isMacOS) {
         final plugin = _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
-        granted = await plugin?.requestPermissions(alert: true, badge: true, sound: true, provisional: false, critical: false);
+        granted = await plugin?.requestPermissions(alert: true, badge: true, sound: false, provisional: false, critical: false); // تم تعطيل sound
       } else if (Platform.isAndroid) {
         final androidImplementation = _flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-        granted = await androidImplementation?.requestNotificationsPermission() ?? true; // افترض true إذا كان null لتجنب كسر التدفق في إصدارات أقدم
+        granted = await androidImplementation?.requestNotificationsPermission() ?? true;
       } else {
         _logger.info(message: "Notification permission request on unsupported platform. Denying by default.");
         granted = false; 
@@ -383,6 +394,7 @@ class NotificationServiceImpl implements NotificationService {
         channelDescription: 'Notifications showing progress', importance: Importance.low,
         priority: Priority.low, onlyAlertOnce: true, showProgress: true,
         progress: progress, maxProgress: maxProgress, indeterminate: indeterminate,
+        playSound: false, // تم تعطيل الصوت
       );
       final details = NotificationDetails(android: androidDetails);
       await _flutterLocalNotificationsPlugin.show(id, title, body, details);
@@ -493,17 +505,15 @@ class NotificationServiceImpl implements NotificationService {
         }
       }
 
-      // **** START MODIFICATION for androidScheduleMode ****
       await _flutterLocalNotificationsPlugin.zonedSchedule(
         notification.id, notification.title, notification.body,
         scheduledTZDateTime, notificationDetails,
-        androidScheduleMode: _getAndroidScheduleMode(notification), // تم التعديل هنا
+        androidScheduleMode: _getAndroidScheduleMode(notification),
         payload: payload,
         matchDateTimeComponents: notification.repeatInterval != models.NotificationRepeatInterval.once
             ? _mapRepeatIntervalToDateTimeComponents(notification.repeatInterval)
             : null,
       );
-      // **** END MODIFICATION for androidScheduleMode ****
 
       _logger.info(message: "Notification scheduled successfully", data: {'id': notification.id});
       _analytics.recordNotificationScheduled(notification.id, notification.category.toString());
@@ -522,7 +532,6 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
 
-  // **** START MODIFICATION: _getAndroidScheduleMode returns non-nullable ****
   AndroidScheduleMode _getAndroidScheduleMode(models.NotificationData notification) {
     if (!Platform.isAndroid) {
       _logger.debug(message: "_getAndroidScheduleMode called on non-Android. Returning default inexact.");
@@ -535,7 +544,6 @@ class NotificationServiceImpl implements NotificationService {
     }
     return AndroidScheduleMode.inexact;
   }
-  // **** END MODIFICATION: _getAndroidScheduleMode ****
 
   Future<NotificationDetails> _buildNotificationDetails(models.NotificationData notification) async {
     AndroidNotificationDetails? androidDetails;
@@ -555,8 +563,8 @@ class NotificationServiceImpl implements NotificationService {
         channelDescription: channel?.description,
         importance: _mapPriorityToImportance(notification.priority),
         priority: _mapPriorityToAndroidPriority(notification.priority),
-        playSound: notification.playSound && notification.soundName != null,
-        sound: notification.soundName != null ? RawResourceAndroidNotificationSound(notification.soundName!.replaceAll(RegExp(r'\.(mp3|wav)$'), '')) : null,
+        playSound: false, // تم تعطيل الصوت دائماً
+        // تم إزالة sound parameter
         visibility: _mapVisibility(notification.visibility), actions: actions,
         styleInformation: _getStyleInformation(notification), groupKey: notification.groupKey,
         setAsGroupSummary: notification.additionalData?['is_group_summary'] == true,
@@ -575,8 +583,11 @@ class NotificationServiceImpl implements NotificationService {
     DarwinNotificationDetails? darwinDetails;
     if (Platform.isIOS || Platform.isMacOS) {
       darwinDetails = DarwinNotificationDetails(
-        presentAlert: true, presentBadge: true, presentSound: notification.playSound,
-        sound: notification.soundName, threadIdentifier: notification.groupKey ?? notification.channelId,
+        presentAlert: true, 
+        presentBadge: true, 
+        presentSound: false, // تم تعطيل الصوت
+        // تم إزالة sound parameter
+        threadIdentifier: notification.groupKey ?? notification.channelId,
         categoryIdentifier: _mapCategoryToiOS(notification.category),
         interruptionLevel: _mapPriorityToInterruptionLevel(notification.priority),
         attachments: await _processiOSAttachments(notification),
@@ -945,28 +956,23 @@ class NotificationServiceImpl implements NotificationService {
     }
   }
   
-  AndroidNotificationCategory? _mapCategoryToAndroid(models.NotificationCategory category) {
-    if (!Platform.isAndroid) return null;
-    switch (category) {
-      case models.NotificationCategory.alarm: return AndroidNotificationCategory.alarm;
-      case models.NotificationCategory.call: return AndroidNotificationCategory.call;
-      // ... (أكمل باقي الحالات كما في الكود الأصلي) ...
-      case models.NotificationCategory.email: return AndroidNotificationCategory.email;
-      case models.NotificationCategory.error: return AndroidNotificationCategory.error;
-      case models.NotificationCategory.event: return AndroidNotificationCategory.event;
-      case models.NotificationCategory.message: return AndroidNotificationCategory.message;
-      case models.NotificationCategory.progress: return AndroidNotificationCategory.progress;
-      case models.NotificationCategory.promo: return AndroidNotificationCategory.promo;
-      case models.NotificationCategory.recommendation: return AndroidNotificationCategory.recommendation;
-      case models.NotificationCategory.reminder: return AndroidNotificationCategory.reminder;
-      case models.NotificationCategory.service: return AndroidNotificationCategory.service;
-      case models.NotificationCategory.social: return AndroidNotificationCategory.social;
-      case models.NotificationCategory.status: return AndroidNotificationCategory.status;
-      case models.NotificationCategory.system: return AndroidNotificationCategory.system;
-      case models.NotificationCategory.transport: return AndroidNotificationCategory.transport;
-      default: return null;
-    }
+AndroidNotificationCategory? _mapCategoryToAndroid(models.NotificationCategory category) {
+  if (!Platform.isAndroid) return null;
+  switch (category) {
+    case models.NotificationCategory.general:
+      return AndroidNotificationCategory.event; // استخدام event للعامة
+    case models.NotificationCategory.reminder:
+      return AndroidNotificationCategory.reminder;
+    case models.NotificationCategory.alarm:
+      return AndroidNotificationCategory.alarm;
+    case models.NotificationCategory.event:
+      return AndroidNotificationCategory.event;
+    case models.NotificationCategory.status:
+      return AndroidNotificationCategory.status;
+    case models.NotificationCategory.custom:
+      return AndroidNotificationCategory.service; // استخدام service للمخصص
   }
+}
   
   String? _mapCategoryToiOS(models.NotificationCategory category) {
     if (!Platform.isIOS && !Platform.isMacOS) return null;

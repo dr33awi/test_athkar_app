@@ -28,27 +28,14 @@ enum NotificationVisibility {
   private,
 }
 
-/// Generic notification category
+/// فئات الإشعارات لتطبيق الأذكار
 enum NotificationCategory {
-  general,
-  reminder,
-  alert,
-  message,
-  event,
-  progress,
-  social,
-  error,
-  transport,
-  system,
-  service,
-  recommendation,
-  status,
-  alarm,
-  call,
-  email,
-  promo,
-  location,
-  custom,
+  general,   // إشعارات عامة (تحديثات، نصائح)
+  reminder,  // تذكيرات الأذكار اليومية
+  alarm,     // منبهات الصلاة
+  event,     // المناسبات الدينية (رمضان، العيد، إلخ)
+  status,    // حالة التقدم في الأذكار
+  custom,    // إشعارات مخصصة حسب الحاجة
 }
 
 /// Generic notification data model
