@@ -1,5 +1,6 @@
 // lib/app/themes/constants/app_typography.dart
 import 'package:flutter/material.dart';
+import 'app_dimensions.dart';
 
 /// نظام أنماط النصوص الموحد
 /// مُحسَّن للغة العربية مع دعم كامل لـ RTL
@@ -10,6 +11,7 @@ class AppTypography {
   static const String fontFamilyArabic = 'Cairo';
   static const String fontFamilyEnglish = 'Inter';
   static const String fontFamilyMono = 'Courier New';
+  static const String fontFamilyQuran = 'Amiri';
 
   // الخط الافتراضي هو العربي
   static const String fontFamily = fontFamilyArabic;
@@ -173,7 +175,7 @@ class AppTypography {
     fontSize: 22,
     fontWeight: regular,
     height: 2.0,
-    fontFamily: 'Amiri', // خط خاص للقرآن
+    fontFamily: fontFamilyQuran,
   );
 
   static const TextStyle athkar = TextStyle(
@@ -197,8 +199,37 @@ class AppTypography {
     fontFamily: fontFamilyMono,
   );
 
+  // ===== أنماط إضافية =====
+  static const TextStyle quote = TextStyle(
+    fontSize: 18,
+    fontWeight: regular,
+    height: 1.8,
+    fontStyle: FontStyle.italic,
+    fontFamily: fontFamily,
+  );
+
+  static const TextStyle numeric = TextStyle(
+    fontSize: 20,
+    fontWeight: bold,
+    height: 1.2,
+    fontFamily: fontFamilyEnglish,
+  );
+
+  static const TextStyle link = TextStyle(
+    fontSize: 16,
+    fontWeight: regular,
+    height: 1.5,
+    decoration: TextDecoration.underline,
+    fontFamily: fontFamily,
+  );
+
   // ===== دوال مساعدة =====
-  static TextTheme createTextTheme({required Color color, Color? secondaryColor}) {
+  
+  /// إنشاء TextTheme مخصص
+  static TextTheme createTextTheme({
+    required Color color,
+    Color? secondaryColor,
+  }) {
     final Color effectiveSecondaryColor = secondaryColor ?? color.withAlpha((0.7 * 255).round());
     return TextTheme(
       displayLarge: display1.copyWith(color: color),
@@ -219,19 +250,105 @@ class AppTypography {
     );
   }
 
+  /// نمط النص المتجاوب
   static TextStyle responsive(
     BuildContext context, {
     required TextStyle mobile,
     TextStyle? tablet,
     TextStyle? desktop,
+    TextStyle? wideScreen,
   }) {
-    final width = MediaQuery.sizeOf(context).width;
-    if (width >= 1024 && desktop != null) return desktop;
-    if (width >= 600 && tablet != null) return tablet;
-    return mobile;
+    final deviceType = AppDimens.getDeviceType(context);
+    
+    switch (deviceType) {
+      case DeviceType.mobile:
+        return mobile;
+      case DeviceType.tablet:
+        return tablet ?? mobile;
+      case DeviceType.desktop:
+        return desktop ?? tablet ?? mobile;
+      case DeviceType.wideScreen:
+        return wideScreen ?? desktop ?? tablet ?? mobile;
+    }
   }
 
+  /// تطبيق ارتفاع مخصص للنص العربي
   static TextStyle withArabicHeight(TextStyle style) {
     return style.copyWith(height: (style.height ?? 1.0) * 1.15);
+  }
+
+  /// الحصول على نمط نص مخصص حسب الوزن
+  static TextStyle getStyleByWeight(
+    double fontSize,
+    FontWeight weight, {
+    double? height,
+    double? letterSpacing,
+    String? fontFamily,
+  }) {
+    return TextStyle(
+      fontSize: fontSize,
+      fontWeight: weight,
+      height: height ?? 1.5,
+      letterSpacing: letterSpacing,
+      fontFamily: fontFamily ?? AppTypography.fontFamily,
+    );
+  }
+
+  /// تطبيق تأثيرات على النص
+  static TextStyle applyEffects(
+    TextStyle style, {
+    List<Shadow>? shadows,
+    TextDecoration? decoration,
+    Color? decorationColor,
+    TextDecorationStyle? decorationStyle,
+    double? decorationThickness,
+  }) {
+    return style.copyWith(
+      shadows: shadows,
+      decoration: decoration,
+      decorationColor: decorationColor,
+      decorationStyle: decorationStyle,
+      decorationThickness: decorationThickness,
+    );
+  }
+
+  /// الحصول على حجم الخط المتجاوب
+  static double responsiveFontSize(
+    BuildContext context,
+    double baseSize, {
+    double? minSize,
+    double? maxSize,
+  }) {
+    final width = MediaQuery.sizeOf(context).width;
+    final scaleFactor = width / 375; // iPhone 8 width as base
+    
+    double scaledSize = baseSize * scaleFactor;
+    
+    if (minSize != null && scaledSize < minSize) {
+      scaledSize = minSize;
+    }
+    
+    if (maxSize != null && scaledSize > maxSize) {
+      scaledSize = maxSize;
+    }
+    
+    return scaledSize;
+  }
+
+  /// إنشاء نمط نص متدرج
+  static ShaderMask gradientText({
+    required Widget child,
+    required List<Color> colors,
+    AlignmentGeometry begin = Alignment.topLeft,
+    AlignmentGeometry end = Alignment.bottomRight,
+  }) {
+    return ShaderMask(
+      shaderCallback: (bounds) => LinearGradient(
+        colors: colors,
+        begin: begin,
+        end: end,
+      ).createShader(bounds),
+      child: child,
+    );
   }
 }

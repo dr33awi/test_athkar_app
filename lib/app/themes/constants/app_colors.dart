@@ -55,60 +55,125 @@ class AppColors {
   static const Color disabledText = Color(0xFF9E9E9E);
   static const Color transparent = Colors.transparent;
 
-  // ===== قيم الشفافية (للاستخدام مع withAlpha) =====
-  static const double opacity5 = 0.05;   // (0.05 * 255).round() = 13
-  static const double opacity10 = 0.10;  // (0.10 * 255).round() = 26
-  static const double opacity20 = 0.20;  // (0.20 * 255).round() = 51
-  static const double opacity30 = 0.30;  // (0.30 * 255).round() = 77
-  static const double opacity50 = 0.50;  // (0.50 * 255).round() = 128
-  static const double opacity70 = 0.70;  // (0.70 * 255).round() = 179
-  static const double opacity90 = 0.90;  // (0.90 * 255).round() = 230
+  // ===== قيم الشفافية =====
+  static const double opacity5 = 0.05;
+  static const double opacity10 = 0.10;
+  static const double opacity20 = 0.20;
+  static const double opacity30 = 0.30;
+  static const double opacity50 = 0.50;
+  static const double opacity70 = 0.70;
+  static const double opacity90 = 0.90;
+  
+  // قيم Alpha المحسوبة مسبقاً لتحسين الأداء
+  static const int alpha5 = 13;    // (0.05 * 255).round()
+  static const int alpha10 = 26;   // (0.10 * 255).round()
+  static const int alpha20 = 51;   // (0.20 * 255).round()
+  static const int alpha30 = 77;   // (0.30 * 255).round()
+  static const int alpha50 = 128;  // (0.50 * 255).round()
+  static const int alpha70 = 179;  // (0.70 * 255).round()
+  static const int alpha90 = 230;  // (0.90 * 255).round()
 
-  // ===== دوال مساعدة =====
+  // ===== مخططات الألوان الجاهزة =====
+  static const ColorScheme lightColorScheme = ColorScheme(
+    brightness: Brightness.light,
+    primary: primary,
+    onPrimary: Colors.white,
+    secondary: accent,
+    onSecondary: Colors.white,
+    error: error,
+    onError: Colors.white,
+    surface: lightSurface,
+    onSurface: lightTextPrimary,
+    surfaceContainerHighest: lightCard,
+    onSurfaceVariant: lightTextSecondary,
+    outline: lightDivider,
+  );
 
+  static const ColorScheme darkColorScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary: primaryLight,
+    onPrimary: darkTextPrimary,
+    secondary: accent,
+    onSecondary: darkTextPrimary,
+    error: error,
+    onError: darkTextPrimary,
+    surface: darkSurface,
+    onSurface: darkTextPrimary,
+    surfaceContainerHighest: darkCard,
+    onSurfaceVariant: darkTextSecondary,
+    outline: darkDivider,
+  );
+
+  // ===== دوال مساعدة محسّنة =====
+  
+  /// الحصول على اللون المناسب حسب السطوع مع cache
+  static final Map<String, Color> _colorCache = {};
+  
   static Color background(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'bg_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkBackground
         : lightBackground;
   }
 
   static Color surface(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'surface_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkSurface
         : lightSurface;
   }
 
   static Color card(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'card_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkCard
         : lightCard;
   }
 
   static Color textPrimary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'text1_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkTextPrimary
         : lightTextPrimary;
   }
 
   static Color textSecondary(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'text2_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkTextSecondary
         : lightTextSecondary;
   }
 
   static Color divider(BuildContext context) {
-    return Theme.of(context).brightness == Brightness.dark
+    final cacheKey = 'divider_${Theme.of(context).brightness}';
+    return _colorCache[cacheKey] ??= Theme.of(context).brightness == Brightness.dark
         ? darkDivider
         : lightDivider;
   }
 
-  /// إنشاء لون بشفافية محددة
-  static Color colorWithAlpha(Color color, double opacity) {
-    final double clampedOpacity = opacity.clamp(0.0, 1.0);
-    return color.withAlpha((clampedOpacity * 255).round());
+  /// إنشاء لون بشفافية محددة - محسّن للأداء
+  static Color withOpacity(Color color, double opacity) {
+    assert(opacity >= 0.0 && opacity <= 1.0);
+    
+    // استخدام القيم المحسوبة مسبقاً
+    if (opacity == opacity5) return color.withAlpha(alpha5);
+    if (opacity == opacity10) return color.withAlpha(alpha10);
+    if (opacity == opacity20) return color.withAlpha(alpha20);
+    if (opacity == opacity30) return color.withAlpha(alpha30);
+    if (opacity == opacity50) return color.withAlpha(alpha50);
+    if (opacity == opacity70) return color.withAlpha(alpha70);
+    if (opacity == opacity90) return color.withAlpha(alpha90);
+    
+    // للقيم الأخرى
+    return color.withAlpha((opacity * 255).round());
   }
 
   static bool isDark(BuildContext context) {
     return Theme.of(context).brightness == Brightness.dark;
+  }
+  
+  // ===== تنظيف cache عند تغيير الثيم =====
+  static void clearCache() {
+    _colorCache.clear();
   }
 }

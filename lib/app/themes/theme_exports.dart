@@ -21,9 +21,11 @@ export 'app_theme.dart';
 // ===== الثوابت =====
 export 'constants/app_colors.dart';
 export 'constants/app_dimensions.dart';
-export 'constants/app_typography.dart'; // This export is correct
+export 'constants/app_typography.dart';
 export 'constants/app_animations.dart';
-
+export 'constants/app_shadows.dart';
+export 'constants/app_icons.dart';
+export 'constants/app_gradients.dart';
 // ===== الأدوات الأساسية =====
 export 'core/theme_extensions.dart';
 export 'core/utils/arabic_helper.dart';
