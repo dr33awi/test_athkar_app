@@ -25,7 +25,6 @@ void notificationTapBackground(NotificationResponse notificationResponse) {
   if (kDebugMode) {
     print('[NotificationService] Background tap: ${notificationResponse.id}');
   }
-  // TODO: Implement background_handler for notifications (e.g. open specific screen)
 }
 
 /// Implementation of notification service

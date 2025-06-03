@@ -61,7 +61,7 @@ class DoNotDisturbServiceImpl implements DoNotDisturbService {
     _lastKnownDndState = isEnabled;
     _dndChangeListener?.call(isEnabled);
     
-_logger.logEvent('dnd_state_changed', parameters: {'enabled': isEnabled});
+    _logger.logEvent('dnd_state_changed', parameters: {'enabled': isEnabled});
   }
   
   @override
@@ -90,7 +90,6 @@ _logger.logEvent('dnd_state_changed', parameters: {'enabled': isEnabled});
         }
       } else if (Platform.isIOS) {
         // iOS doesn't provide direct DND access
-        // We can only check if critical alerts are allowed
         return false;
       }
       
@@ -125,7 +124,7 @@ _logger.logEvent('dnd_state_changed', parameters: {'enabled': isEnabled});
         data: {'granted': isGranted},
       );
       
-_logger.logEvent('dnd_permission_requested', parameters: {'granted': isGranted});
+      _logger.logEvent('dnd_permission_requested', parameters: {'granted': isGranted});
       
       return isGranted;
     } catch (e) {
@@ -252,15 +251,13 @@ _logger.logEvent('dnd_permission_requested', parameters: {'granted': isGranted})
   
   @override
   Future<bool> canShowCriticalAlerts() async {
-    if (Platform.isIOS) {
-      // Check if critical alerts permission is granted
-      final status = await _permissionService.checkPermissionStatus(
-        AppPermissionType.criticalAlerts
-      );
-      return status == AppPermissionStatus.granted;
-    } else if (Platform.isAndroid) {
-      // Android always allows critical notifications with proper channel
+    // Since criticalAlerts permission is removed, always return true for Android
+    if (Platform.isAndroid) {
+      // Android allows critical notifications with proper channel
       return true;
+    } else if (Platform.isIOS) {
+      // iOS doesn't have critical alerts permission in our implementation
+      return false;
     }
     
     return false;

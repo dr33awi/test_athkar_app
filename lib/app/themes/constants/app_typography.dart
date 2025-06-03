@@ -121,6 +121,8 @@ class AppTypography {
     fontFamily: fontFamily,
   );
 
+  static get buttonSmall => null;
+
   // إنشاء TextTheme
   static TextTheme createTextTheme({
     required Color color,

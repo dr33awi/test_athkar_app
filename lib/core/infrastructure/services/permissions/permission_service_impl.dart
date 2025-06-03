@@ -1,15 +1,21 @@
 // lib/core/infrastructure/services/permissions/permission_service_impl.dart
 
-import 'dart:async';
 import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
-import 'package:app_settings/app_settings.dart' as app_settings;
+import 'package:permission_handler/permission_handler.dart' as handler;
 import '../logging/logger_service.dart';
 import 'permission_service.dart';
 
-/// تنفيذ خدمة الأذونات المبسطة لتطبيق الأذكار
+/// تنفيذ خدمة الأذونات المحسنة لتطبيق الأذكار
 class PermissionServiceImpl implements PermissionService {
   final LoggerService _logger;
+  
+  static const Map<AppPermissionType, String> _permissionDescriptions = {
+    AppPermissionType.location: 'موقعك لحساب أوقات الصلاة بدقة',
+    AppPermissionType.notification: 'الإشعارات لتذكيرك بالأذكار',
+    AppPermissionType.doNotDisturb: 'عدم الإزعاج لتخصيص أوقات التذكير',
+    AppPermissionType.batteryOptimization: 'تحسين البطارية لضمان عمل التطبيق',
+    AppPermissionType.unknown: 'إذن غير معروف',
+  };
   
   PermissionServiceImpl({required LoggerService logger}) : _logger = logger;
 
@@ -17,52 +23,85 @@ class PermissionServiceImpl implements PermissionService {
   Future<AppPermissionStatus> requestPermission(AppPermissionType permission) async {
     _logger.info(message: 'طلب إذن', data: {'type': permission.toString()});
     
-    if (!isPermissionAvailable(permission)) {
-      _logger.info(message: 'الإذن غير متوفر على هذه المنصة');
-      return AppPermissionStatus.granted;
+    final nativePermission = _mapToNativePermission(permission);
+    if (nativePermission == null) {
+      _logger.warning(message: 'نوع الإذن غير مدعوم', data: {'type': permission.toString()});
+      return AppPermissionStatus.unknown;
     }
-    
+
     try {
-      final platformPermission = _getPlatformPermission(permission);
-      if (platformPermission == null) {
-        return AppPermissionStatus.unknown;
+      // معالجة خاصة لأذونات الموقع
+      if (permission == AppPermissionType.location) {
+        // التحقق من خدمات الموقع
+        final serviceStatus = await handler.Permission.locationWhenInUse.serviceStatus;
+        if (!serviceStatus.isEnabled) {
+          _logger.warning(message: 'خدمات الموقع غير مفعلة');
+          return AppPermissionStatus.denied;
+        }
       }
+
+      final status = await nativePermission.request();
+      final appStatus = _mapFromNativeStatus(status);
       
-      final status = await platformPermission.request();
-      return _mapToPermissionStatus(status);
+      _logger.info(
+        message: 'نتيجة طلب الإذن', 
+        data: {
+          'type': permission.toString(),
+          'status': appStatus.toString()
+        }
+      );
+      
+      return appStatus;
     } catch (e) {
       _logger.error(message: 'خطأ في طلب الإذن', error: e);
       return AppPermissionStatus.unknown;
     }
   }
-  
+
   @override
   Future<Map<AppPermissionType, AppPermissionStatus>> requestPermissions(
     List<AppPermissionType> permissions,
   ) async {
+    _logger.info(
+      message: 'طلب أذونات متعددة', 
+      data: {'permissions': permissions.map((p) => p.toString()).toList()}
+    );
+    
     final results = <AppPermissionType, AppPermissionStatus>{};
     
     for (final permission in permissions) {
       results[permission] = await requestPermission(permission);
     }
     
+    _logger.info(
+      message: 'نتائج طلب الأذونات', 
+      data: results.map((k, v) => MapEntry(k.toString(), v.toString()))
+    );
+    
     return results;
   }
 
   @override
   Future<AppPermissionStatus> checkPermissionStatus(AppPermissionType permission) async {
-    if (!isPermissionAvailable(permission)) {
-      return AppPermissionStatus.granted;
+    final nativePermission = _mapToNativePermission(permission);
+    if (nativePermission == null) {
+      _logger.warning(message: 'نوع الإذن غير مدعوم للفحص', data: {'type': permission.toString()});
+      return AppPermissionStatus.unknown;
     }
-    
+
     try {
-      final platformPermission = _getPlatformPermission(permission);
-      if (platformPermission == null) {
-        return AppPermissionStatus.unknown;
-      }
+      final status = await nativePermission.status;
+      final appStatus = _mapFromNativeStatus(status);
       
-      final status = await platformPermission.status;
-      return _mapToPermissionStatus(status);
+      _logger.debug(
+        message: 'حالة الإذن', 
+        data: {
+          'type': permission.toString(),
+          'status': appStatus.toString()
+        }
+      );
+      
+      return appStatus;
     } catch (e) {
       _logger.error(message: 'خطأ في فحص حالة الإذن', error: e);
       return AppPermissionStatus.unknown;
@@ -71,95 +110,213 @@ class PermissionServiceImpl implements PermissionService {
 
   @override
   Future<Map<AppPermissionType, AppPermissionStatus>> checkAllPermissions() async {
-    final Map<AppPermissionType, AppPermissionStatus> results = {};
+    final permissions = AppPermissionType.values
+        .where((p) => p != AppPermissionType.unknown)
+        .toList();
     
-    for (final type in AppPermissionType.values) {
-      if (isPermissionAvailable(type)) {
-        results[type] = await checkPermissionStatus(type);
-      }
+    _logger.info(message: 'فحص جميع الأذونات');
+    
+    final results = <AppPermissionType, AppPermissionStatus>{};
+    for (final permission in permissions) {
+      results[permission] = await checkPermissionStatus(permission);
     }
+    
+    _logger.info(
+      message: 'نتائج فحص جميع الأذونات', 
+      data: results.map((k, v) => MapEntry(k.toString(), v.toString()))
+    );
     
     return results;
   }
 
   @override
   Future<bool> openAppSettings([AppSettingsType? settingsPage]) async {
+    _logger.info(
+      message: 'فتح الإعدادات', 
+      data: {'settingsPage': settingsPage?.toString() ?? 'app'}
+    );
+    
     try {
+      if (settingsPage == null) {
+        return await handler.openAppSettings();
+      }
+
+      // معالجة خاصة لصفحات الإعدادات المحددة
       switch (settingsPage) {
         case AppSettingsType.location:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.location
-          );
-          return true;
+          if (Platform.isIOS) {
+            return await handler.openAppSettings();
+          }
+          return await handler.openAppSettings();
+        
         case AppSettingsType.notification:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.notification
-          );
-          return true;
+          if (Platform.isAndroid) {
+            return await handler.openAppSettings();
+          }
+          return await handler.openAppSettings();
+        
         case AppSettingsType.battery:
-          await app_settings.AppSettings.openAppSettings(
-            type: app_settings.AppSettingsType.batteryOptimization
-          );
-          return true;
-        case AppSettingsType.app:
-        case null:
-          await app_settings.AppSettings.openAppSettings();
-          return true;
+          if (Platform.isAndroid) {
+            return await handler.openAppSettings();
+          }
+          _logger.warning(message: 'إعدادات البطارية غير متوفرة على iOS');
+          return false;
+        
+        default:
+          return await handler.openAppSettings();
       }
     } catch (e) {
       _logger.error(message: 'خطأ في فتح الإعدادات', error: e);
       return false;
     }
   }
-  
+
+  @override
+  Future<bool> shouldShowPermissionRationale(AppPermissionType permission) async {
+    if (!Platform.isAndroid) {
+      _logger.debug(message: 'shouldShowPermissionRationale متوفر فقط على Android');
+      return false;
+    }
+    
+    final nativePermission = _mapToNativePermission(permission);
+    if (nativePermission == null) return false;
+    
+    try {
+      final status = await nativePermission.status;
+      final shouldShow = status.isDenied && !status.isPermanentlyDenied;
+      
+      _logger.debug(
+        message: 'shouldShowPermissionRationale', 
+        data: {
+          'type': permission.toString(),
+          'shouldShow': shouldShow
+        }
+      );
+      
+      return shouldShow;
+    } catch (e) {
+      _logger.error(message: 'خطأ في فحص shouldShowPermissionRationale', error: e);
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> isPermissionPermanentlyDenied(AppPermissionType permission) async {
+    final nativePermission = _mapToNativePermission(permission);
+    if (nativePermission == null) return false;
+    
+    try {
+      final status = await nativePermission.status;
+      final isPermanentlyDenied = status.isPermanentlyDenied;
+      
+      _logger.debug(
+        message: 'فحص الرفض الدائم', 
+        data: {
+          'type': permission.toString(),
+          'isPermanentlyDenied': isPermanentlyDenied
+        }
+      );
+      
+      return isPermanentlyDenied;
+    } catch (e) {
+      _logger.error(message: 'خطأ في فحص الرفض الدائم', error: e);
+      return false;
+    }
+  }
+
   @override
   String getPermissionDescription(AppPermissionType permission) {
-    switch (permission) {
-      case AppPermissionType.location:
-        return 'نحتاج إلى موقعك لعرض مواقيت الصلاة واتجاه القبلة بدقة.';
-      case AppPermissionType.notification:
-        return 'نحتاج إلى إذن الإشعارات لتذكيرك بالأذكار ومواقيت الصلاة.';
-      case AppPermissionType.doNotDisturb:
-        return 'نحتاج هذا الإذن لضمان وصول التذكيرات المهمة حتى في وضع عدم الإزعاج.';
-      case AppPermissionType.batteryOptimization:
-        return 'نحتاج إلى تعطيل تحسين البطارية لضمان عمل التذكيرات في الوقت المحدد.';
-    }
+    return _permissionDescriptions[permission] ?? _permissionDescriptions[AppPermissionType.unknown]!;
   }
-  
+
   @override
   bool isPermissionAvailable(AppPermissionType permission) {
-    if (Platform.isIOS) {
-      switch (permission) {
-        case AppPermissionType.doNotDisturb:
-        case AppPermissionType.batteryOptimization:
-          return false;
-        default:
-          return true;
-      }
-    } else if (Platform.isAndroid) {
-      return true;
-    }
-    return false;
-  }
-
-  Permission? _getPlatformPermission(AppPermissionType type) {
-    switch (type) {
+    switch (permission) {
       case AppPermissionType.location:
-        return Permission.location;
+        return true;
+      
       case AppPermissionType.notification:
-        return Permission.notification;
+        return true;
+      
       case AppPermissionType.doNotDisturb:
-        return Platform.isAndroid ? Permission.accessNotificationPolicy : null;
+        return Platform.isAndroid;
+      
       case AppPermissionType.batteryOptimization:
-        return Platform.isAndroid ? Permission.ignoreBatteryOptimizations : null;
+        return Platform.isAndroid;
+      
+      case AppPermissionType.unknown:
+        return false;
     }
   }
 
-  AppPermissionStatus _mapToPermissionStatus(PermissionStatus status) {
-    if (status.isGranted) return AppPermissionStatus.granted;
-    if (status.isPermanentlyDenied) return AppPermissionStatus.permanentlyDenied;
-    if (status.isRestricted) return AppPermissionStatus.restricted;
-    if (status.isDenied) return AppPermissionStatus.denied;
-    return AppPermissionStatus.unknown;
+  // تحويل من أنواع الأذونات الخاصة بنا إلى أذونات المكتبة
+  handler.Permission? _mapToNativePermission(AppPermissionType permission) {
+    switch (permission) {
+      case AppPermissionType.location:
+        return handler.Permission.locationWhenInUse;
+      
+      case AppPermissionType.notification:
+        return handler.Permission.notification;
+      
+      case AppPermissionType.doNotDisturb:
+        return Platform.isAndroid ? handler.Permission.accessNotificationPolicy : null;
+      
+      case AppPermissionType.batteryOptimization:
+        return Platform.isAndroid ? handler.Permission.ignoreBatteryOptimizations : null;
+      
+      case AppPermissionType.unknown:
+        return null;
+    }
+  }
+
+  // تحويل من حالات المكتبة إلى حالاتنا
+  AppPermissionStatus _mapFromNativeStatus(handler.PermissionStatus status) {
+    if (status.isGranted) {
+      return AppPermissionStatus.granted;
+    } else if (status.isDenied) {
+      return AppPermissionStatus.denied;
+    } else if (status.isPermanentlyDenied) {
+      return AppPermissionStatus.permanentlyDenied;
+    } else if (status.isRestricted) {
+      return AppPermissionStatus.restricted;
+    } else if (status.isLimited) {
+      return AppPermissionStatus.limited;
+    } else if (status.isProvisional) {
+      return AppPermissionStatus.provisional;
+    } else {
+      return AppPermissionStatus.unknown;
+    }
+  }
+
+  // دالة مساعدة للحصول على الأيقونة المناسبة للإذن
+  String getPermissionIcon(AppPermissionType permission) {
+    switch (permission) {
+      case AppPermissionType.location:
+        return '📍';
+      case AppPermissionType.notification:
+        return '🔔';
+      case AppPermissionType.doNotDisturb:
+        return '🔕';
+      case AppPermissionType.batteryOptimization:
+        return '🔋';
+      case AppPermissionType.unknown:
+        return '❓';
+    }
+  }
+
+  // دالة مساعدة للحصول على اسم الإذن
+  String getPermissionName(AppPermissionType permission) {
+    switch (permission) {
+      case AppPermissionType.location:
+        return 'الموقع';
+      case AppPermissionType.notification:
+        return 'الإشعارات';
+      case AppPermissionType.doNotDisturb:
+        return 'عدم الإزعاج';
+      case AppPermissionType.batteryOptimization:
+        return 'تحسين البطارية';
+      case AppPermissionType.unknown:
+        return 'غير معروف';
+    }
   }
 }
