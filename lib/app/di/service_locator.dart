@@ -66,9 +66,13 @@ class ServiceLocator {
       await getIt<TimezoneService>().initializeTimeZones();
       
       // Permission Service
-      getIt.registerLazySingleton<PermissionService>(
-        () => PermissionServiceImpl(logger: _logger!),
-      );
+        getIt.registerLazySingleton<PermissionService>(
+        () => PermissionServiceImpl(
+        logger: getIt<LoggerService>(),
+        storage: getIt<StorageService>(),
+        context: null, // يمكن تمرير context من UI عند الحاجة
+      ),
+    );
       
       // Battery Service (اختياري)
       getIt.registerLazySingleton<Battery>(() => Battery());
