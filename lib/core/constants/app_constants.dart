@@ -1,5 +1,8 @@
 // lib/core/constants/app_constants.dart
 
+import '../infrastructure/services/notifications/notification_service.dart';
+import '../../app/themes/theme_constants.dart';
+
 /// ثوابت التطبيق الخاصة بتطبيق الأذكار
 class AppConstants {
   AppConstants._();
@@ -24,23 +27,23 @@ class AppConstants {
   static const String athkarProgressKey = '${storagePrefix}athkar_progress';
   static const String lastReadKey = '${storagePrefix}last_read';
   
-  // قنوات الإشعارات
-  static const String athkarNotificationChannel = 'athkar_channel';
-  static const String prayerNotificationChannel = 'prayer_channel';
+  // قنوات الإشعارات - استخدم من ThemeConstants
+  static const String athkarNotificationChannel = ThemeConstants.athkarNotificationChannel;
+  static const String prayerNotificationChannel = ThemeConstants.prayerNotificationChannel;
   
-  // ثوابت الوقت
-  static const Duration defaultCacheDuration = Duration(hours: 24);
-  static const Duration splashDuration = Duration(seconds: 2);
-  static const Duration debounceDelay = Duration(milliseconds: 500);
+  // ثوابت الوقت - استخدم من ThemeConstants
+  static const Duration defaultCacheDuration = ThemeConstants.defaultCacheDuration;
+  static const Duration splashDuration = ThemeConstants.splashDuration;
+  static const Duration debounceDelay = ThemeConstants.debounceDelay;
   
-  // إعدادات البطارية
-  static const int defaultMinBatteryLevel = 15;
-  static const int criticalBatteryLevel = 5;
+  // إعدادات البطارية - استخدم من ThemeConstants
+  static const int defaultMinBatteryLevel = ThemeConstants.defaultMinBatteryLevel;
+  static const int criticalBatteryLevel = ThemeConstants.criticalBatteryLevel;
   
-  // ثوابت واجهة المستخدم
-  static const Duration defaultAnimationDuration = Duration(milliseconds: 300);
-  static const double defaultBorderRadius = 8.0;
-  static const double defaultPadding = 16.0;
+  // ثوابت واجهة المستخدم - استخدم من ThemeConstants
+  static const Duration defaultAnimationDuration = ThemeConstants.durationNormal;
+  static const double defaultBorderRadius = ThemeConstants.radiusMd;
+  static const double defaultPadding = ThemeConstants.space4;
   
   // الصفحات
   static const int defaultPageSize = 20;

@@ -103,6 +103,8 @@ class ThemeConstants {
   static const double breakpointTablet = 1024.0;
   static const double breakpointDesktop = 1440.0;
   static const double breakpointWide = 1920.0;
+  
+  // ===== أحجام الأيقونات =====
   static const double iconXs = 16.0;
   static const double iconSm = 20.0;
   static const double iconMd = 24.0;
@@ -203,7 +205,6 @@ class ThemeConstants {
     end: Alignment.bottomCenter,
   );
 
-
   // ===== الظلال الجاهزة =====
   static List<BoxShadow> shadowSm = [
     BoxShadow(
@@ -257,6 +258,25 @@ class ThemeConstants {
   static const IconData iconCopy = Icons.content_copy;
   static const IconData iconSettings = Icons.settings;
   static const IconData iconNotifications = Icons.notifications;
+
+  // ===== Avatar Sizes (من reusable_components) =====
+  static const double avatarSm = 32.0;
+  static const double avatarMd = 40.0;
+  static const double avatarLg = 56.0;
+  static const double avatarXl = 64.0;
+
+  // ===== ثوابت الإشعارات (من app_constants) =====
+  static const String athkarNotificationChannel = 'athkar_channel';
+  static const String prayerNotificationChannel = 'prayer_channel';
+  
+  // ===== ثوابت الوقت =====
+  static const Duration defaultCacheDuration = Duration(hours: 24);
+  static const Duration splashDuration = Duration(seconds: 2);
+  static const Duration debounceDelay = Duration(milliseconds: 500);
+  
+  // ===== إعدادات البطارية =====
+  static const int defaultMinBatteryLevel = 15;
+  static const int criticalBatteryLevel = 5;
 
   // ===== دوال مساعدة =====
   
