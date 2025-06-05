@@ -117,11 +117,11 @@ class AppTextStyles {
   );
 
   // ===== إنشاء TextTheme للتطبيق =====
-  static TextTheme createTextTheme({
+static TextTheme createTextTheme({
     required Color color,
     Color? secondaryColor,
   }) {
-    final Color effectiveSecondaryColor = secondaryColor ?? color.withOpacity(0.7);
+    final Color effectiveSecondaryColor = secondaryColor ?? color.withValues(alpha: 0.7);
     
     return TextTheme(
       // Display styles

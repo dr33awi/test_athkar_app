@@ -93,7 +93,7 @@ class AppTheme {
       ),
       
       // Card Theme
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: cardColor,
         elevation: ThemeConstants.elevationNone,
         margin: EdgeInsets.zero,
@@ -144,8 +144,8 @@ class AppTheme {
       
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: primaryColor,
-        linearTrackColor: dividerColor.withOpacity(ThemeConstants.opacity50),
-        circularTrackColor: dividerColor.withOpacity(ThemeConstants.opacity50),
+        linearTrackColor: dividerColor.withValues(alpha: ThemeConstants.opacity50),
+        circularTrackColor: dividerColor.withValues(alpha: ThemeConstants.opacity50),
       ),
       
       // Page Transitions
@@ -175,7 +175,7 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: surfaceColor,
         deleteIconColor: textSecondaryColor,
-        disabledColor: ThemeConstants.lightTextHint.withOpacity(ThemeConstants.opacity30),
+        disabledColor: ThemeConstants.lightTextHint.withValues(alpha: ThemeConstants.opacity30),
         selectedColor: primaryColor,
         secondarySelectedColor: ThemeConstants.accent,
         labelPadding: const EdgeInsets.symmetric(horizontal: ThemeConstants.space2),
@@ -192,7 +192,7 @@ class AppTheme {
       ),
       
       // Tab Bar Theme
-      tabBarTheme: TabBarTheme(
+      tabBarTheme: TabBarThemeData(
         labelColor: primaryColor,
         unselectedLabelColor: textSecondaryColor.withValues(alpha: ThemeConstants.opacity70),
         indicatorSize: TabBarIndicatorSize.label,
@@ -219,7 +219,7 @@ class AppTheme {
       ),
       
       // Dialog Theme
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         backgroundColor: cardColor,
         titleTextStyle: AppTextStyles.h5.copyWith(color: textPrimaryColor),
         contentTextStyle: AppTextStyles.body2.copyWith(color: textSecondaryColor),
@@ -241,9 +241,9 @@ class AppTheme {
       // Slider Theme
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryColor,
-        inactiveTrackColor: primaryColor.withOpacity(ThemeConstants.opacity30),
+        inactiveTrackColor: primaryColor.withValues(alpha: ThemeConstants.opacity30),
         thumbColor: primaryColor,
-        overlayColor: primaryColor.withOpacity(ThemeConstants.opacity20),
+        overlayColor: primaryColor.withValues(alpha: ThemeConstants.opacity20),
         valueIndicatorColor: primaryColor.darken(0.1),
         valueIndicatorTextStyle: AppTextStyles.caption.copyWith(color: onPrimaryColor),
       ),
@@ -252,7 +252,7 @@ class AppTheme {
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: (isDark ? ThemeConstants.darkSurface : ThemeConstants.lightSurface)
-              .withOpacity(ThemeConstants.opacity90),
+              .withValues(alpha: ThemeConstants.opacity90),
           borderRadius: BorderRadius.circular(ThemeConstants.radiusSm),
         ),
         textStyle: AppTextStyles.caption.copyWith(color: textPrimaryColor),
@@ -267,8 +267,8 @@ class AppTheme {
     return ElevatedButton.styleFrom(
       backgroundColor: primaryColor,
       foregroundColor: onPrimaryColor,
-      disabledBackgroundColor: ThemeConstants.lightTextHint.withOpacity(ThemeConstants.opacity30),
-      disabledForegroundColor: ThemeConstants.lightTextHint.withOpacity(ThemeConstants.opacity70),
+      disabledBackgroundColor: ThemeConstants.lightTextHint.withValues(alpha: ThemeConstants.opacity30),
+      disabledForegroundColor: ThemeConstants.lightTextHint.withValues(alpha: ThemeConstants.opacity70),
       elevation: ThemeConstants.elevationNone,
       padding: const EdgeInsets.symmetric(
         horizontal: ThemeConstants.space6,
@@ -289,7 +289,7 @@ class AppTheme {
         color: primaryColor,
         width: ThemeConstants.borderMedium,
       ),
-      disabledForegroundColor: ThemeConstants.lightTextHint.withOpacity(ThemeConstants.opacity70),
+      disabledForegroundColor: ThemeConstants.lightTextHint.withValues(alpha: ThemeConstants.opacity70),
       padding: const EdgeInsets.symmetric(
         horizontal: ThemeConstants.space6,
         vertical: ThemeConstants.space4,
@@ -305,7 +305,7 @@ class AppTheme {
   static ButtonStyle _textButtonStyle(Color primaryColor) {
     return TextButton.styleFrom(
       foregroundColor: primaryColor,
-      disabledForegroundColor: ThemeConstants.lightTextHint.withOpacity(ThemeConstants.opacity70),
+      disabledForegroundColor: ThemeConstants.lightTextHint.withValues(alpha: ThemeConstants.opacity70),
       padding: const EdgeInsets.symmetric(
         horizontal: ThemeConstants.space4,
         vertical: ThemeConstants.space2,
@@ -327,8 +327,8 @@ class AppTheme {
     required Color textSecondaryColor,
   }) {
     return InputDecorationTheme(
-      fillColor: surfaceColor.withOpacity(
-        isDark ? ThemeConstants.opacity10 : ThemeConstants.opacity50
+      fillColor: surfaceColor.withValues(
+        alpha: isDark ? ThemeConstants.opacity10 : ThemeConstants.opacity50
       ),
       filled: true,
       contentPadding: const EdgeInsets.symmetric(
@@ -358,20 +358,20 @@ class AppTheme {
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
-        borderSide: BorderSide(
+        borderSide: const BorderSide(
           color: ThemeConstants.error,
           width: ThemeConstants.borderLight,
         ),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
-        borderSide: BorderSide(
+        borderSide: const BorderSide(
           color: ThemeConstants.error,
           width: ThemeConstants.borderThick,
         ),
       ),
       hintStyle: AppTextStyles.body2.copyWith(
-        color: textSecondaryColor.withOpacity(ThemeConstants.opacity70),
+        color: textSecondaryColor.withValues(alpha: ThemeConstants.opacity70),
       ),
       labelStyle: AppTextStyles.body2.copyWith(color: textSecondaryColor),
       errorStyle: AppTextStyles.caption.copyWith(color: ThemeConstants.error),
@@ -392,18 +392,18 @@ class AppTheme {
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return primaryColor.withOpacity(ThemeConstants.opacity50);
+          return primaryColor.withValues(alpha: ThemeConstants.opacity50);
         }
         if (states.contains(WidgetState.disabled)) {
           return (isDark ? ThemeConstants.darkSurface : ThemeConstants.lightSurface)
-              .withOpacity(ThemeConstants.opacity50);
+              .withValues(alpha: ThemeConstants.opacity50);
         }
         return (isDark ? ThemeConstants.darkTextSecondary : ThemeConstants.lightTextHint)
-            .withOpacity(ThemeConstants.opacity30);
+            .withValues(alpha: ThemeConstants.opacity30);
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-          return primaryColor.withOpacity(ThemeConstants.opacity10);
+          return primaryColor.withValues(alpha: ThemeConstants.opacity10);
         }
         return null;
       }),
@@ -431,7 +431,7 @@ class AppTheme {
           return BorderSide(
             width: ThemeConstants.borderMedium,
             color: (isDark ? ThemeConstants.darkTextSecondary : ThemeConstants.lightTextHint)
-                .withOpacity(ThemeConstants.opacity50),
+                .withValues(alpha: ThemeConstants.opacity50),
           );
         }
         return BorderSide(
@@ -444,7 +444,7 @@ class AppTheme {
       ),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-          return primaryColor.withOpacity(ThemeConstants.opacity10);
+          return primaryColor.withValues(alpha: ThemeConstants.opacity10);
         }
         return null;
       }),
@@ -458,13 +458,13 @@ class AppTheme {
       fillColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) return primaryColor;
         if (states.contains(WidgetState.disabled)) {
-          return textSecondaryColor.withOpacity(ThemeConstants.opacity50);
+          return textSecondaryColor.withValues(alpha: ThemeConstants.opacity50);
         }
         return textSecondaryColor;
       }),
       overlayColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.hovered) || states.contains(WidgetState.focused)) {
-          return primaryColor.withOpacity(ThemeConstants.opacity10);
+          return primaryColor.withValues(alpha: ThemeConstants.opacity10);
         }
         return null;
       }),

@@ -126,7 +126,7 @@ extension ColorExtensions on Color {
           : darken(strength - 0.5);
     }
     
-    return MaterialColor(value, swatch);
+    return MaterialColor(toARGB32(), swatch);
   }
 }
 

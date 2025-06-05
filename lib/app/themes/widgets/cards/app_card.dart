@@ -155,7 +155,7 @@ class AppCard extends StatelessWidget {
     final effectiveBorderRadius = borderRadius ?? ThemeConstants.radiusLg;
     
     return Container(
-      margin: margin ?? EdgeInsets.symmetric(
+      margin: margin ?? const EdgeInsets.symmetric(
         horizontal: ThemeConstants.space4,
         vertical: ThemeConstants.space2,
       ),
@@ -174,7 +174,7 @@ class AppCard extends StatelessWidget {
             child: Stack(
               children: [
                 Padding(
-                  padding: padding ?? EdgeInsets.all(ThemeConstants.space4),
+                  padding: padding ?? const EdgeInsets.all(ThemeConstants.space4),
                   child: _buildContent(context),
                 ),
                 if (badge != null) _buildBadge(context),
@@ -202,9 +202,9 @@ class AppCard extends StatelessWidget {
       case CardStyle.glassmorphism:
         return BoxDecoration(
           borderRadius: BorderRadius.circular(radius),
-          color: bgColor.withOpacity(ThemeConstants.opacity70),
+          color: bgColor.withValues(alpha: ThemeConstants.opacity70),
           border: Border.all(
-            color: context.isDarkMode ? Colors.white.withOpacity(ThemeConstants.opacity20) : color.withOpacity(ThemeConstants.opacity20),
+            color: context.isDarkMode ? Colors.white.withValues(alpha: ThemeConstants.opacity20) : color.withValues(alpha: ThemeConstants.opacity20),
             width: ThemeConstants.borderThin,
           ),
         );
@@ -322,7 +322,7 @@ class AppCard extends StatelessWidget {
       children: [
         if (subtitle != null)
           Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: ThemeConstants.space3,
               vertical: ThemeConstants.space1,
             ),
@@ -339,30 +339,30 @@ class AppCard extends StatelessWidget {
         if (subtitle != null) ThemeConstants.space3.h,
         
         Container(
-          padding: EdgeInsets.all(ThemeConstants.space4),
+          padding: const EdgeInsets.all(ThemeConstants.space4),
           decoration: BoxDecoration(
-            color: _getTextColor(context).withOpacity(ThemeConstants.opacity10),
+            color: _getTextColor(context).withValues(alpha: ThemeConstants.opacity10),
             borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             border: Border.all(
-              color: _getTextColor(context).withOpacity(ThemeConstants.opacity20),
+              color: _getTextColor(context).withValues(alpha: ThemeConstants.opacity20),
               width: ThemeConstants.borderThin,
             ),
           ),
           child: Stack(
             children: [
               // علامة اقتباس في البداية
-              Positioned(
+              const Positioned(
                 top: 0,
                 right: 0,
                 child: Icon(
                   Icons.format_quote,
                   size: ThemeConstants.iconSm,
-                  color: _getTextColor(context).withOpacity(ThemeConstants.opacity50),
+                  color: Colors.black26,
                 ),
               ),
               
               Padding(
-                padding: EdgeInsets.symmetric(vertical: ThemeConstants.space2),
+                padding: const EdgeInsets.symmetric(vertical: ThemeConstants.space2),
                 child: Text(
                   content ?? title ?? '',
                   textAlign: TextAlign.center,
@@ -382,7 +382,7 @@ class AppCard extends StatelessWidget {
                   child: Icon(
                     Icons.format_quote,
                     size: ThemeConstants.iconSm,
-                    color: _getTextColor(context).withOpacity(ThemeConstants.opacity50),
+                    color: _getTextColor(context).withValues(alpha: ThemeConstants.opacity50),
                   ),
                 ),
               ),
@@ -409,10 +409,10 @@ class AppCard extends StatelessWidget {
           width: 80,
           height: 80,
           decoration: BoxDecoration(
-            color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+            color: effectiveColor.withValues(alpha: ThemeConstants.opacity10),
             shape: BoxShape.circle,
             border: Border.all(
-              color: effectiveColor.withOpacity(ThemeConstants.opacity30),
+              color: effectiveColor.withValues(alpha: ThemeConstants.opacity30),
               width: ThemeConstants.borderMedium,
             ),
           ),
@@ -469,7 +469,7 @@ class AppCard extends StatelessWidget {
             width: ThemeConstants.icon2xl,
             height: ThemeConstants.icon2xl,
             decoration: BoxDecoration(
-              color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+              color: effectiveColor.withValues(alpha: ThemeConstants.opacity10),
               borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             ),
             child: Icon(
@@ -554,7 +554,7 @@ class AppCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress!,
               minHeight: 4,
-              backgroundColor: context.dividerColor.withOpacity(ThemeConstants.opacity50),
+              backgroundColor: context.dividerColor.withValues(alpha: ThemeConstants.opacity50),
               valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
             ),
           ),
@@ -572,9 +572,9 @@ class AppCard extends StatelessWidget {
           leading!
         else if (icon != null)
           Container(
-            padding: EdgeInsets.all(ThemeConstants.space2),
+            padding: const EdgeInsets.all(ThemeConstants.space2),
             decoration: BoxDecoration(
-              color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+              color: effectiveColor.withValues(alpha: ThemeConstants.opacity10),
               borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             ),
             child: Icon(
@@ -607,10 +607,10 @@ class AppCard extends StatelessWidget {
         if (currentCount != null && totalCount != null)
           Container(
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(ThemeConstants.opacity20),
+              color: Colors.black.withValues(alpha: ThemeConstants.opacity20),
               borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
             ),
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: ThemeConstants.space3,
               vertical: ThemeConstants.space1,
             ),
@@ -653,16 +653,16 @@ class AppCard extends StatelessWidget {
   Widget _buildAthkarBody(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.all(ThemeConstants.space5),
+      padding: const EdgeInsets.all(ThemeConstants.space5),
       decoration: BoxDecoration(
         color: style == CardStyle.gradient 
-            ? Colors.white.withOpacity(ThemeConstants.opacity10)
-            : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity10),
+            ? Colors.white.withValues(alpha: ThemeConstants.opacity10)
+            : (primaryColor ?? context.primaryColor).withValues(alpha: ThemeConstants.opacity10),
         borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
         border: Border.all(
           color: style == CardStyle.gradient
-              ? Colors.white.withOpacity(ThemeConstants.opacity20)
-              : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity20),
+              ? Colors.white.withValues(alpha: ThemeConstants.opacity20)
+              : (primaryColor ?? context.primaryColor).withValues(alpha: ThemeConstants.opacity20),
           width: ThemeConstants.borderThin,
         ),
       ),
@@ -682,14 +682,14 @@ class AppCard extends StatelessWidget {
   Widget _buildSource(BuildContext context) {
     return Center(
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: ThemeConstants.space4,
           vertical: ThemeConstants.space2,
         ),
         decoration: BoxDecoration(
           color: style == CardStyle.gradient
-              ? Colors.black.withOpacity(ThemeConstants.opacity20)
-              : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity10),
+              ? Colors.black.withValues(alpha: ThemeConstants.opacity20)
+              : (primaryColor ?? context.primaryColor).withValues(alpha: ThemeConstants.opacity10),
           borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
         ),
         child: Text(
@@ -705,7 +705,7 @@ class AppCard extends StatelessWidget {
     if (type == CardType.completion) {
       return Column(
         children: actions!.map((action) => Padding(
-          padding: EdgeInsets.only(bottom: ThemeConstants.space3),
+          padding: const EdgeInsets.only(bottom: ThemeConstants.space3),
           child: _buildActionButton(context, action, fullWidth: true),
         )).toList(),
       );
@@ -754,19 +754,19 @@ class AppCard extends StatelessWidget {
         },
         borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
         child: Container(
-          padding: EdgeInsets.symmetric(
+          padding: const EdgeInsets.symmetric(
             horizontal: ThemeConstants.space3,
             vertical: ThemeConstants.space2,
           ),
           decoration: BoxDecoration(
             color: style == CardStyle.gradient
-                ? Colors.white.withOpacity(ThemeConstants.opacity20)
-                : effectiveColor.withOpacity(ThemeConstants.opacity10),
+                ? Colors.white.withValues(alpha: ThemeConstants.opacity20)
+                : effectiveColor.withValues(alpha: ThemeConstants.opacity10),
             borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             border: Border.all(
               color: style == CardStyle.gradient
-                  ? Colors.white.withOpacity(ThemeConstants.opacity30)
-                  : effectiveColor.withOpacity(ThemeConstants.opacity30),
+                  ? Colors.white.withValues(alpha: ThemeConstants.opacity30)
+                  : effectiveColor.withValues(alpha: ThemeConstants.opacity30),
               width: ThemeConstants.borderThin,
             ),
           ),
@@ -799,7 +799,7 @@ class AppCard extends StatelessWidget {
       top: ThemeConstants.space2,
       left: ThemeConstants.space2,
       child: Container(
-        padding: EdgeInsets.symmetric(
+        padding: const EdgeInsets.symmetric(
           horizontal: ThemeConstants.space2,
           vertical: ThemeConstants.space1,
         ),
@@ -822,7 +822,7 @@ class AppCard extends StatelessWidget {
       top: ThemeConstants.space2,
       right: ThemeConstants.space2,
       child: Container(
-        padding: EdgeInsets.all(ThemeConstants.space1 / 2),
+        padding: const EdgeInsets.all(ThemeConstants.space1 / 2),
         decoration: BoxDecoration(
           color: effectiveColor,
           shape: BoxShape.circle,
@@ -842,12 +842,12 @@ class AppCard extends StatelessWidget {
 
   Color _getTextColor(BuildContext context, {bool isSecondary = false}) {
     if (style == CardStyle.gradient) {
-      return Colors.white.withOpacity(isSecondary ? ThemeConstants.opacity70 : 1.0);
+      return Colors.white.withValues(alpha: isSecondary ? ThemeConstants.opacity70 : 1.0);
     }
     
     if (backgroundColor != null) {
-      return backgroundColor!.contrastingTextColor.withOpacity(
-        isSecondary ? ThemeConstants.opacity70 : 1.0
+      return backgroundColor!.contrastingTextColor.withValues(
+        alpha: isSecondary ? ThemeConstants.opacity70 : 1.0
       );
     }
     
@@ -930,7 +930,7 @@ class AppCard extends StatelessWidget {
       icon: icon,
       primaryColor: primaryColor,
       actions: actions,
-      padding: EdgeInsets.all(ThemeConstants.space6),
+      padding: const EdgeInsets.all(ThemeConstants.space6),
     );
   }
 

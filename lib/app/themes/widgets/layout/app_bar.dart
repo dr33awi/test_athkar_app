@@ -1,7 +1,4 @@
-],
-    );
-  }
-}// lib/app/themes/widgets/layout/app_bar.dart
+// lib/app/themes/widgets/layout/app_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme_constants.dart';
