@@ -1,9 +1,11 @@
-// lib/app/themes/widgets/layout/app_bar.dart
+],
+    );
+  }
+}// lib/app/themes/widgets/layout/app_bar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_dimensions.dart';
-import '../../constants/app_typography.dart';
+import '../../theme_constants.dart';
+import '../../text_styles.dart';
 
 /// شريط التطبيق الموحد
 /// يستخدم بدلاً من AppBar الافتراضي
@@ -53,7 +55,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => Size.fromHeight(
-    (toolbarHeight ?? AppDimens.appBarHeight) + 
+    (toolbarHeight ?? ThemeConstants.appBarHeight) + 
     (bottom?.preferredSize.height ?? 0)
   );
 
@@ -68,17 +70,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       : (backgroundColor ?? theme.scaffoldBackgroundColor);
     
     final defaultForegroundColor = foregroundColor ?? 
-      (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary);
+      (isDark ? ThemeConstants.darkTextPrimary : ThemeConstants.lightTextPrimary);
 
     // نمط النص الافتراضي للعنوان
-    final defaultTitleStyle = titleTextStyle ?? AppTypography.h4.copyWith(
+    final defaultTitleStyle = titleTextStyle ?? AppTextStyles.h4.copyWith(
       color: defaultForegroundColor,
     );
 
     // أيقونات افتراضية
     final defaultIconTheme = iconTheme ?? IconThemeData(
       color: defaultForegroundColor,
-      size: AppDimens.iconMd,
+      size: ThemeConstants.iconMd,
     );
 
     return AppBar(
@@ -87,7 +89,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: leading,
       automaticallyImplyLeading: automaticallyImplyLeading,
       centerTitle: centerTitle,
-      elevation: elevation ?? (isTransparent ? 0 : AppDimens.elevationNone),
+      elevation: elevation ?? (isTransparent ? 0 : ThemeConstants.elevationNone),
       backgroundColor: defaultBackgroundColor,
       foregroundColor: defaultForegroundColor,
       bottom: bottom,
@@ -218,7 +220,7 @@ class AppBackButton extends StatelessWidget {
       icon: Icon(
         Icons.arrow_back_ios_rounded,
         color: color,
-        size: size ?? AppDimens.iconMd,
+        size: size ?? ThemeConstants.iconMd,
       ),
       onPressed: () {
         HapticFeedback.lightImpact();
@@ -254,7 +256,7 @@ class AppMenuButton extends StatelessWidget {
       icon: Icon(
         Icons.menu_rounded,
         color: color,
-        size: size ?? AppDimens.iconMd,
+        size: size ?? ThemeConstants.iconMd,
       ),
       onPressed: () {
         HapticFeedback.lightImpact();
@@ -308,7 +310,7 @@ class AppBarAction extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
-                color: badgeColor ?? AppColors.error,
+                color: badgeColor ?? ThemeConstants.error,
                 shape: BoxShape.circle,
               ),
               constraints: const BoxConstraints(

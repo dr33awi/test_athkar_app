@@ -1,9 +1,8 @@
 // lib/app/themes/widgets/feedback/app_snackbar.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_dimensions.dart';
-import '../../constants/app_typography.dart';
+import '../../theme_constants.dart';
+import '../../text_styles.dart';
 
 /// SnackBar عام وموحد للتطبيق
 class AppSnackBar {
@@ -15,7 +14,7 @@ class AppSnackBar {
     required String message,
     IconData? icon,
     Color? backgroundColor,
-    Color? textColor, // Added this parameter to allow customization
+    Color? textColor,
     Duration duration = const Duration(seconds: 2),
     EdgeInsetsGeometry? margin,
     SnackBarAction? action,
@@ -26,7 +25,6 @@ class AppSnackBar {
     }
 
     final theme = Theme.of(context);
-    // final isDark = theme.brightness == Brightness.dark; // Unused variable
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -35,16 +33,16 @@ class AppSnackBar {
             if (icon != null) ...[
               Icon(
                 icon,
-                color: textColor ?? Colors.white, // Use parameter or default
-                size: AppDimens.iconMd,
+                color: textColor ?? Colors.white,
+                size: ThemeConstants.iconMd,
               ),
-              const SizedBox(width: AppDimens.space3),
+              const SizedBox(width: ThemeConstants.space3),
             ],
             Expanded(
               child: Text(
                 message,
-                style: AppTypography.body2.copyWith(
-                  color: textColor ?? Colors.white, // Use parameter or default
+                style: AppTextStyles.body2.copyWith(
+                  color: textColor ?? Colors.white,
                 ),
               ),
             ),
@@ -53,9 +51,9 @@ class AppSnackBar {
         behavior: SnackBarBehavior.floating,
         backgroundColor: backgroundColor ?? theme.primaryColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+          borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
         ),
-        margin: margin ?? const EdgeInsets.all(AppDimens.space4),
+        margin: margin ?? const EdgeInsets.all(ThemeConstants.space4),
         duration: duration,
         action: action,
       ),
@@ -73,8 +71,8 @@ class AppSnackBar {
       context: context,
       message: message,
       icon: Icons.check_circle,
-      backgroundColor: AppColors.success,
-      textColor: Colors.white, // Explicitly white for success
+      backgroundColor: ThemeConstants.success,
+      textColor: Colors.white,
       duration: duration ?? const Duration(seconds: 2),
       action: action,
     );
@@ -91,8 +89,8 @@ class AppSnackBar {
       context: context,
       message: message,
       icon: Icons.error_outline,
-      backgroundColor: AppColors.error,
-      textColor: Colors.white, // Explicitly white for error
+      backgroundColor: ThemeConstants.error,
+      textColor: Colors.white,
       duration: duration ?? const Duration(seconds: 3),
       action: action,
     );
@@ -109,8 +107,8 @@ class AppSnackBar {
       context: context,
       message: message,
       icon: Icons.warning_amber_rounded,
-      backgroundColor: AppColors.warning,
-      textColor: AppColors.lightTextPrimary, // Or a color that contrasts with warning
+      backgroundColor: ThemeConstants.warning,
+      textColor: ThemeConstants.lightTextPrimary,
       duration: duration ?? const Duration(seconds: 3),
       action: action,
     );
@@ -127,8 +125,8 @@ class AppSnackBar {
       context: context,
       message: message,
       icon: Icons.info_outline,
-      backgroundColor: AppColors.info,
-      textColor: Colors.white, // Explicitly white for info
+      backgroundColor: ThemeConstants.info,
+      textColor: Colors.white,
       duration: duration ?? const Duration(seconds: 2),
       action: action,
     );
@@ -149,7 +147,7 @@ class AppSnackBar {
       context: context,
       message: message,
       icon: icon,
-      backgroundColor: backgroundColor, // Defaults to primary in `show`
+      backgroundColor: backgroundColor,
       duration: duration,
       action: SnackBarAction(
         label: undoLabel,
@@ -173,18 +171,18 @@ class AppSnackBar {
         content: Row(
           children: [
             const SizedBox(
-              width: AppDimens.iconMd,
-              height: AppDimens.iconMd,
+              width: ThemeConstants.iconMd,
+              height: ThemeConstants.iconMd,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             ),
-            const SizedBox(width: AppDimens.space3),
+            const SizedBox(width: ThemeConstants.space3),
             Expanded(
               child: Text(
                 message,
-                style: AppTypography.body2.copyWith(
+                style: AppTextStyles.body2.copyWith(
                   color: Colors.white,
                 ),
               ),
@@ -194,9 +192,9 @@ class AppSnackBar {
         behavior: SnackBarBehavior.floating,
         backgroundColor: theme.primaryColor,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+          borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
         ),
-        margin: const EdgeInsets.all(AppDimens.space4),
+        margin: const EdgeInsets.all(ThemeConstants.space4),
         duration: const Duration(days: 1), // لا تختفي تلقائياً
       ),
     );

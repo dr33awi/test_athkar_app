@@ -1,213 +1,184 @@
 // lib/app/themes/widgets/cards/app_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_dimensions.dart';
-import '../../constants/app_typography.dart';
-import '../../constants/app_animations.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import '../../theme_constants.dart';
 import '../../core/theme_extensions.dart';
 
-/// بطاقة عامة قابلة لإعادة الاستخدام في جميع أنحاء التطبيق
-/// تدعم أنماط مختلفة: عادية، متدرجة، زجاجية
-class AppCard extends StatefulWidget {
+/// أنواع البطاقات
+enum CardType {
+  normal,      // بطاقة عادية
+  athkar,      // بطاقة أذكار
+  quote,       // بطاقة اقتباس
+  completion,  // بطاقة إكمال
+  info,        // بطاقة معلومات
+  stat,        // بطاقة إحصائيات
+}
+
+/// أنماط البطاقات
+enum CardStyle {
+  normal,        // عادي
+  gradient,      // متدرج
+  glassmorphism, // زجاجي
+  outlined,      // محدد
+  elevated,      // مرتفع
+}
+
+/// إجراءات البطاقة
+class CardAction {
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+  final Color? color;
+  final bool isPrimary;
+
+  const CardAction({
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+    this.color,
+    this.isPrimary = false,
+  });
+}
+
+/// بطاقة موحدة لجميع الاستخدامات
+class AppCard extends StatelessWidget {
+  // النوع والأسلوب
+  final CardType type;
+  final CardStyle style;
+  
+  // المحتوى الأساسي
   final String? title;
   final String? subtitle;
   final String? content;
   final Widget? child;
-  final IconData? leadingIcon;
+  
+  // الأيقونات والصور
+  final IconData? icon;
   final Widget? leading;
-  final IconData? trailingIcon;
   final Widget? trailing;
+  final String? imageUrl;
+  
+  // الألوان والتصميم
   final Color? primaryColor;
   final Color? backgroundColor;
   final List<Color>? gradientColors;
-  final CardStyle cardStyle;
   final double? elevation;
   final double? borderRadius;
   final EdgeInsetsGeometry? padding;
   final EdgeInsetsGeometry? margin;
+  
+  // التفاعل
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
-  final bool isSelectable;
-  final bool isSelected;
+  final List<CardAction>? actions;
+  
+  // خصائص إضافية
   final String? badge;
   final Color? badgeColor;
-  final List<CardAction>? actions;
+  final bool isSelected;
   final bool showShadow;
   final bool animate;
-  final Duration? animationDuration;
+  
+  // خصائص خاصة بالأذكار
+  final int? currentCount;
+  final int? totalCount;
+  final bool? isFavorite;
+  final String? source;
+  final VoidCallback? onFavoriteToggle;
+  
+  // خصائص خاصة بالإحصائيات
+  final String? value;
+  final String? unit;
+  final double? progress;
 
   const AppCard({
     super.key,
+    this.type = CardType.normal,
+    this.style = CardStyle.normal,
     this.title,
     this.subtitle,
     this.content,
     this.child,
-    this.leadingIcon,
+    this.icon,
     this.leading,
-    this.trailingIcon,
     this.trailing,
+    this.imageUrl,
     this.primaryColor,
     this.backgroundColor,
     this.gradientColors,
-    this.cardStyle = CardStyle.normal,
     this.elevation,
     this.borderRadius,
     this.padding,
     this.margin,
     this.onTap,
     this.onLongPress,
-    this.isSelectable = false,
-    this.isSelected = false,
+    this.actions,
     this.badge,
     this.badgeColor,
-    this.actions,
+    this.isSelected = false,
     this.showShadow = true,
     this.animate = true,
-    this.animationDuration,
+    this.currentCount,
+    this.totalCount,
+    this.isFavorite,
+    this.source,
+    this.onFavoriteToggle,
+    this.value,
+    this.unit,
+    this.progress,
   });
 
   @override
-  State<AppCard> createState() => _AppCardState();
-}
-
-class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: widget.animationDuration ?? AppAnimations.durationFast,
-      vsync: this,
-    );
-
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.98,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: AppAnimations.curveDefault,
-    ));
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    if (widget.onTap != null) {
-      HapticFeedback.lightImpact();
-      if (widget.animate) {
-        if (mounted) {
-          setState(() => _isPressed = true);
-        }
-        _animationController.forward().then((_) {
-          if (mounted) {
-            _animationController.reverse().then((value) {
-              if (mounted) {
-                setState(() => _isPressed = false);
-              }
-            });
-          }
-        });
-      }
-      widget.onTap!();
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final cardPrimaryColor = widget.primaryColor ?? theme.primaryColor;
-
-    Widget cardContentWidget = _buildCardContent(context, isDark, cardPrimaryColor);
-
-    if (widget.animate && widget.onTap != null) {
-      return AnimatedBuilder(
-        animation: _scaleAnimation,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _isPressed ? _scaleAnimation.value : 1.0,
-            child: child,
-          );
-        },
-        child: cardContentWidget,
+    Widget card = _buildCard(context);
+    
+    if (animate) {
+      return AnimationConfiguration.synchronized(
+        duration: ThemeConstants.durationNormal,
+        child: SlideAnimation(
+          horizontalOffset: 50,
+          curve: ThemeConstants.curveSmooth,
+          child: FadeInAnimation(
+            curve: ThemeConstants.curveDefault,
+            child: card,
+          ),
+        ),
       );
     }
-    return cardContentWidget;
-  }
-  
-  BorderRadius _getEffectiveBorderRadius(BuildContext context) {
-    final theme = Theme.of(context);
-    if (widget.borderRadius != null) {
-        return BorderRadius.circular(widget.borderRadius!);
-    }
-    if (theme.cardTheme.shape is RoundedRectangleBorder) {
-        final shape = theme.cardTheme.shape as RoundedRectangleBorder;
-        if (shape.borderRadius is BorderRadius) {
-            return shape.borderRadius as BorderRadius;
-        }
-    }
-    return BorderRadius.circular(AppDimens.radiusLg);
+    
+    return card;
   }
 
-  Widget _buildCardContent(BuildContext context, bool isDark, Color cardPrimaryColor) {
-    final theme = Theme.of(context);
-    final effectiveBorderRadiusValue = _getEffectiveBorderRadius(context);
-
+  Widget _buildCard(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    final effectiveBorderRadius = borderRadius ?? ThemeConstants.radiusLg;
+    
     return Container(
-      margin: widget.margin ?? const EdgeInsets.symmetric(
-        horizontal: AppDimens.space4,
-        vertical: AppDimens.space2,
+      margin: margin ?? EdgeInsets.symmetric(
+        horizontal: ThemeConstants.space4,
+        vertical: ThemeConstants.space2,
       ),
       child: Material(
-        elevation: widget.showShadow ? (widget.elevation ?? theme.cardTheme.elevation ?? AppDimens.elevation4) : 0,
-        shadowColor: widget.showShadow ? cardPrimaryColor.withValues(alpha: AppColors.opacity20) : Colors.transparent,
-        borderRadius: effectiveBorderRadiusValue,
+        elevation: showShadow ? (elevation ?? ThemeConstants.elevation4) : 0,
+        shadowColor: showShadow ? effectiveColor.withValues(alpha: ThemeConstants.opacity20) : Colors.transparent,
+        borderRadius: BorderRadius.circular(effectiveBorderRadius),
         color: Colors.transparent,
         clipBehavior: Clip.antiAlias,
         child: Container(
-          decoration: _getCardDecoration(context, isDark, cardPrimaryColor, effectiveBorderRadiusValue),
+          decoration: _getDecoration(context, effectiveColor, effectiveBorderRadius),
           child: InkWell(
-            onTap: widget.onTap != null ? _handleTap : null,
-            onLongPress: widget.onLongPress,
-            borderRadius: effectiveBorderRadiusValue,
+            onTap: onTap,
+            onLongPress: onLongPress,
+            borderRadius: BorderRadius.circular(effectiveBorderRadius),
             child: Stack(
               children: [
                 Padding(
-                  padding: widget.padding ?? const EdgeInsets.all(AppDimens.space4),
-                  child: _buildContentStructure(context, isDark, cardPrimaryColor),
+                  padding: padding ?? EdgeInsets.all(ThemeConstants.space4),
+                  child: _buildContent(context),
                 ),
-                if (widget.badge != null)
-                  Positioned(
-                    top: AppDimens.space2,
-                    left: AppDimens.space2,
-                    child: _buildBadgeWidget(context, cardPrimaryColor),
-                  ),
-                if (widget.isSelectable && widget.isSelected)
-                  Positioned(
-                    top: AppDimens.space2,
-                    right: AppDimens.space2,
-                    child: Container(
-                      padding: const EdgeInsets.all(AppDimens.space1 / 2),
-                      decoration: BoxDecoration(
-                        color: cardPrimaryColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: _getCardBackgroundColor(context, isDark), width: 1.5)
-                      ),
-                      child: Icon(
-                        Icons.check,
-                        color: _getTextColor(context, isDark, cardPrimaryColor, isSecondary: false),
-                        size: AppDimens.iconSm,
-                      ),
-                    ),
-                  ),
+                if (badge != null) _buildBadge(context),
+                if (isSelected) _buildSelectionIndicator(context),
               ],
             ),
           ),
@@ -216,276 +187,587 @@ class _AppCardState extends State<AppCard> with SingleTickerProviderStateMixin {
     );
   }
 
-  Color _getCardBackgroundColor(BuildContext context, bool isDark) {
-    final theme = Theme.of(context);
-    return widget.backgroundColor ?? theme.cardTheme.color ?? (isDark
-            ? AppColors.darkCard
-            : AppColors.lightCard);
-  }
-
-  BoxDecoration _getCardDecoration(BuildContext context, bool isDark, Color cardPrimaryColor, BorderRadius borderRadius) {
-    final cardBgColor = _getCardBackgroundColor(context, isDark);
-
-    switch (widget.cardStyle) {
+  BoxDecoration _getDecoration(BuildContext context, Color color, double radius) {
+    final bgColor = backgroundColor ?? context.cardColor;
+    
+    switch (style) {
       case CardStyle.gradient:
         return BoxDecoration(
-          borderRadius: borderRadius,
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: widget.gradientColors ?? [
-              cardPrimaryColor,
-              cardPrimaryColor.darken(0.2),
-            ],
+          borderRadius: BorderRadius.circular(radius),
+          gradient: ThemeConstants.customGradient(
+            colors: gradientColors ?? [color, color.darken(0.2)],
           ),
         );
+        
       case CardStyle.glassmorphism:
         return BoxDecoration(
-          borderRadius: borderRadius,
-          color: cardBgColor.withValues(alpha: AppColors.opacity70),
+          borderRadius: BorderRadius.circular(radius),
+          color: bgColor.withOpacity(ThemeConstants.opacity70),
           border: Border.all(
-            color: (isDark ? Colors.white : cardPrimaryColor).withValues(alpha: AppColors.opacity20),
-            width: AppDimens.borderThin,
+            color: context.isDarkMode ? Colors.white.withOpacity(ThemeConstants.opacity20) : color.withOpacity(ThemeConstants.opacity20),
+            width: ThemeConstants.borderThin,
           ),
         );
+        
       case CardStyle.outlined:
         return BoxDecoration(
-          borderRadius: borderRadius,
-          color: cardBgColor,
+          borderRadius: BorderRadius.circular(radius),
+          color: bgColor,
           border: Border.all(
-            color: cardPrimaryColor.withValues(alpha: AppColors.opacity30),
-            width: AppDimens.borderMedium,
+            color: color.withValues(alpha: ThemeConstants.opacity30),
+            width: ThemeConstants.borderMedium,
           ),
         );
+        
+      case CardStyle.elevated:
+        return BoxDecoration(
+          borderRadius: BorderRadius.circular(radius),
+          color: bgColor,
+          boxShadow: ThemeConstants.shadowForElevation(elevation ?? 8),
+        );
+        
       case CardStyle.normal:
         return BoxDecoration(
-          borderRadius: borderRadius,
-          color: cardBgColor,
+          borderRadius: BorderRadius.circular(radius),
+          color: bgColor,
         );
     }
   }
 
-  Widget _buildContentStructure(BuildContext context, bool isDark, Color cardPrimaryColor) {
-    if (widget.child != null) {
-      return widget.child!;
+  Widget _buildContent(BuildContext context) {
+    // إذا كان هناك child مخصص، استخدمه
+    if (child != null) return child!;
+    
+    // بناء المحتوى حسب النوع
+    switch (type) {
+      case CardType.athkar:
+        return _buildAthkarContent(context);
+      case CardType.quote:
+        return _buildQuoteContent(context);
+      case CardType.completion:
+        return _buildCompletionContent(context);
+      case CardType.info:
+        return _buildInfoContent(context);
+      case CardType.stat:
+        return _buildStatContent(context);
+      case CardType.normal:
+        return _buildNormalContent(context);
     }
-    final theme = Theme.of(context);
+  }
 
+  Widget _buildNormalContent(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (widget.title != null || widget.leading != null || widget.trailing != null)
-          _buildHeaderWidget(context, isDark, cardPrimaryColor),
-        if (widget.subtitle != null) ...[
-          if (widget.title != null) const SizedBox(height: AppDimens.space1),
+        if (title != null || leading != null || trailing != null)
+          _buildHeader(context),
+        if (subtitle != null) ...[
+          if (title != null) ThemeConstants.space1.h,
           Text(
-            widget.subtitle!,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: _getTextColor(context, isDark, cardPrimaryColor, isSecondary: true),
-            ),
+            subtitle!,
+            style: context.bodyMedium?.textColor(_getTextColor(context, isSecondary: true)),
           ),
         ],
-        if (widget.content != null) ...[
-          const SizedBox(height: AppDimens.space3),
+        if (content != null) ...[
+          ThemeConstants.space3.h,
           Text(
-            widget.content!,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              color: _getTextColor(context, isDark, cardPrimaryColor),
-              height: 1.6,
-            ),
+            content!,
+            style: context.bodyLarge?.textColor(_getTextColor(context)),
           ),
         ],
-        if (widget.actions != null && widget.actions!.isNotEmpty) ...[
-          const SizedBox(height: AppDimens.space4),
-          _buildActionsWidget(context, isDark, cardPrimaryColor),
+        if (actions != null && actions!.isNotEmpty) ...[
+          ThemeConstants.space4.h,
+          _buildActions(context),
         ],
       ],
     );
   }
 
-  Widget _buildHeaderWidget(BuildContext context, bool isDark, Color cardPrimaryColor) {
-    final theme = Theme.of(context);
+  Widget _buildAthkarContent(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // الرأس مع العداد والمفضلة
+        if (currentCount != null || onFavoriteToggle != null)
+          _buildAthkarHeader(context),
+        
+        if (currentCount != null || onFavoriteToggle != null)
+          ThemeConstants.space3.h,
+        
+        // محتوى الذكر
+        _buildAthkarBody(context),
+        
+        // المصدر
+        if (source != null) ...[
+          ThemeConstants.space3.h,
+          _buildSource(context),
+        ],
+        
+        // الإجراءات
+        if (actions != null && actions!.isNotEmpty) ...[
+          ThemeConstants.space4.h,
+          _buildActions(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildQuoteContent(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (subtitle != null)
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: ThemeConstants.space3,
+              vertical: ThemeConstants.space1,
+            ),
+            decoration: BoxDecoration(
+              color: effectiveColor.withValues(alpha: ThemeConstants.opacity20),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+            ),
+            child: Text(
+              subtitle!,
+              style: context.labelMedium?.textColor(_getTextColor(context)).semiBold,
+            ),
+          ),
+        
+        if (subtitle != null) ThemeConstants.space3.h,
+        
+        Container(
+          padding: EdgeInsets.all(ThemeConstants.space4),
+          decoration: BoxDecoration(
+            color: _getTextColor(context).withOpacity(ThemeConstants.opacity10),
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+            border: Border.all(
+              color: _getTextColor(context).withOpacity(ThemeConstants.opacity20),
+              width: ThemeConstants.borderThin,
+            ),
+          ),
+          child: Stack(
+            children: [
+              // علامة اقتباس في البداية
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Icon(
+                  Icons.format_quote,
+                  size: ThemeConstants.iconSm,
+                  color: _getTextColor(context).withOpacity(ThemeConstants.opacity50),
+                ),
+              ),
+              
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: ThemeConstants.space2),
+                child: Text(
+                  content ?? title ?? '',
+                  textAlign: TextAlign.center,
+                  style: context.bodyLarge?.textColor(_getTextColor(context)).copyWith(
+                    fontSize: 18,
+                    height: 1.8,
+                  ),
+                ),
+              ),
+              
+              // علامة اقتباس في النهاية
+              Positioned(
+                bottom: 0,
+                left: 0,
+                child: Transform.rotate(
+                  angle: 3.14159,
+                  child: Icon(
+                    Icons.format_quote,
+                    size: ThemeConstants.iconSm,
+                    color: _getTextColor(context).withOpacity(ThemeConstants.opacity50),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        if (source != null) ...[
+          ThemeConstants.space3.h,
+          _buildSource(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCompletionContent(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // الأيقونة
+        Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: effectiveColor.withOpacity(ThemeConstants.opacity30),
+              width: ThemeConstants.borderMedium,
+            ),
+          ),
+          child: Icon(
+            icon ?? Icons.check_circle_outline,
+            color: effectiveColor,
+            size: ThemeConstants.icon2xl,
+          ),
+        ),
+        
+        ThemeConstants.space5.h,
+        
+        // العنوان
+        if (title != null)
+          Text(
+            title!,
+            style: context.headlineMedium?.textColor(_getTextColor(context)),
+            textAlign: TextAlign.center,
+          ),
+        
+        if (content != null) ...[
+          ThemeConstants.space3.h,
+          Text(
+            content!,
+            textAlign: TextAlign.center,
+            style: context.bodyLarge?.textColor(_getTextColor(context)),
+          ),
+        ],
+        
+        if (subtitle != null) ...[
+          ThemeConstants.space2.h,
+          Text(
+            subtitle!,
+            textAlign: TextAlign.center,
+            style: context.bodyMedium?.textColor(_getTextColor(context, isSecondary: true)),
+          ),
+        ],
+        
+        if (actions != null && actions!.isNotEmpty) ...[
+          ThemeConstants.space6.h,
+          _buildActions(context),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildInfoContent(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
     return Row(
       children: [
-        if (widget.leading != null)
-          widget.leading!
-        else if (widget.leadingIcon != null)
+        if (icon != null)
           Container(
-            padding: const EdgeInsets.all(AppDimens.space2),
+            width: ThemeConstants.icon2xl,
+            height: ThemeConstants.icon2xl,
             decoration: BoxDecoration(
-              color: cardPrimaryColor.withValues(alpha: AppColors.opacity10),
-              borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+              color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             ),
             child: Icon(
-              widget.leadingIcon,
-              color: cardPrimaryColor,
-              size: AppDimens.iconMd,
+              icon,
+              color: effectiveColor,
+              size: ThemeConstants.iconLg,
             ),
           ),
-        if ((widget.leading != null || widget.leadingIcon != null) && widget.title != null)
-          const SizedBox(width: AppDimens.space3),
-        if (widget.title != null)
+        
+        if (icon != null) ThemeConstants.space4.w,
+        
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title != null)
+                Text(
+                  title!,
+                  style: context.titleMedium?.semiBold.textColor(_getTextColor(context)),
+                ),
+              if (subtitle != null) ...[
+                ThemeConstants.space1.h,
+                Text(
+                  subtitle!,
+                  style: context.bodyMedium?.textColor(_getTextColor(context, isSecondary: true)),
+                ),
+              ],
+            ],
+          ),
+        ),
+        
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+
+  Widget _buildStatContent(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (icon != null)
+              Icon(
+                icon,
+                color: effectiveColor,
+                size: ThemeConstants.iconLg,
+              ),
+            if (onTap != null)
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: ThemeConstants.iconSm,
+                color: _getTextColor(context, isSecondary: true),
+              ),
+          ],
+        ),
+        
+        ThemeConstants.space2.h,
+        
+        if (value != null)
+          Text(
+            value!,
+            style: context.headlineMedium?.textColor(effectiveColor).bold,
+          ),
+        
+        if (title != null) ...[
+          ThemeConstants.space1.h,
+          Text(
+            title!,
+            style: context.bodyMedium?.textColor(_getTextColor(context, isSecondary: true)),
+          ),
+        ],
+        
+        if (progress != null) ...[
+          ThemeConstants.space3.h,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+            child: LinearProgressIndicator(
+              value: progress!,
+              minHeight: 4,
+              backgroundColor: context.dividerColor.withOpacity(ThemeConstants.opacity50),
+              valueColor: AlwaysStoppedAnimation<Color>(effectiveColor),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
+    return Row(
+      children: [
+        if (leading != null)
+          leading!
+        else if (icon != null)
+          Container(
+            padding: EdgeInsets.all(ThemeConstants.space2),
+            decoration: BoxDecoration(
+              color: effectiveColor.withOpacity(ThemeConstants.opacity10),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+            ),
+            child: Icon(
+              icon,
+              color: effectiveColor,
+              size: ThemeConstants.iconMd,
+            ),
+          ),
+        
+        if ((leading != null || icon != null) && title != null)
+          ThemeConstants.space3.w,
+        
+        if (title != null)
           Expanded(
             child: Text(
-              widget.title!,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: _getTextColor(context, isDark, cardPrimaryColor),
-                fontWeight: AppTypography.semiBold,
-              ),
+              title!,
+              style: context.titleMedium?.textColor(_getTextColor(context)).semiBold,
             ),
           ),
-        if (widget.trailing != null)
-          widget.trailing!
-        else if (widget.trailingIcon != null)
-          Icon(
-            widget.trailingIcon,
-            color: _getTextColor(context, isDark, cardPrimaryColor, isSecondary: true),
-            size: AppDimens.iconMd,
+        
+        if (trailing != null) trailing!,
+      ],
+    );
+  }
+
+  Widget _buildAthkarHeader(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        if (currentCount != null && totalCount != null)
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(ThemeConstants.opacity20),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+            ),
+            padding: EdgeInsets.symmetric(
+              horizontal: ThemeConstants.space3,
+              vertical: ThemeConstants.space1,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(
+                    icon,
+                    color: Colors.white,
+                    size: ThemeConstants.iconSm,
+                  ),
+                  ThemeConstants.space1.w,
+                ],
+                Text(
+                  'عدد التكرار $currentCount/$totalCount',
+                  style: context.labelMedium?.textColor(Colors.white).semiBold,
+                ),
+              ],
+            ),
+          ),
+        
+        if (onFavoriteToggle != null)
+          IconButton(
+            icon: Icon(
+              isFavorite == true ? Icons.favorite : Icons.favorite_border,
+              color: style == CardStyle.gradient ? Colors.white : primaryColor ?? context.primaryColor,
+              size: ThemeConstants.iconMd,
+            ),
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              onFavoriteToggle!();
+            },
+            tooltip: isFavorite == true ? 'إزالة من المفضلة' : 'إضافة للمفضلة',
           ),
       ],
     );
   }
 
-  Widget _buildBadgeWidget(BuildContext context, Color cardPrimaryColor) {
-    final theme = Theme.of(context);
-    final badgeBgColor = widget.badgeColor ?? theme.colorScheme.secondary;
+  Widget _buildAthkarBody(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimens.space2,
-        vertical: AppDimens.space1,
-      ),
+      width: double.infinity,
+      padding: EdgeInsets.all(ThemeConstants.space5),
       decoration: BoxDecoration(
-        color: badgeBgColor,
-        borderRadius: BorderRadius.circular(AppDimens.radiusFull),
+        color: style == CardStyle.gradient 
+            ? Colors.white.withOpacity(ThemeConstants.opacity10)
+            : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity10),
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+        border: Border.all(
+          color: style == CardStyle.gradient
+              ? Colors.white.withOpacity(ThemeConstants.opacity20)
+              : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity20),
+          width: ThemeConstants.borderThin,
+        ),
       ),
       child: Text(
-        widget.badge!,
-        style: AppTypography.caption.copyWith(
-          color: ThemeData.estimateBrightnessForColor(badgeBgColor) == Brightness.dark
-                 ? Colors.white
-                 : Colors.black,
-          fontWeight: AppTypography.semiBold,
+        content ?? title ?? '',
+        textAlign: TextAlign.center,
+        style: context.bodyLarge?.textColor(_getTextColor(context)).copyWith(
+          fontSize: 20,
+          fontFamily: ThemeConstants.fontFamilyArabic,
+          fontWeight: ThemeConstants.semiBold,
+          height: 2.0,
         ),
       ),
     );
   }
 
-  Widget _buildActionsWidget(BuildContext context, bool isDark, Color cardPrimaryColor) {
-    return Wrap(
-      spacing: AppDimens.space2,
-      runSpacing: AppDimens.space2,
-      children: widget.actions!.map((action) {
-        return _CardActionButton(
-          action: action,
-          cardPrimaryColor: cardPrimaryColor,
-          isDark: isDark,
-          isGradientCard: widget.cardStyle == CardStyle.gradient,
-          cardBackgroundColor: _getCardBackgroundColor(context, isDark),
-        );
-      }).toList(),
+  Widget _buildSource(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: ThemeConstants.space4,
+          vertical: ThemeConstants.space2,
+        ),
+        decoration: BoxDecoration(
+          color: style == CardStyle.gradient
+              ? Colors.black.withOpacity(ThemeConstants.opacity20)
+              : (primaryColor ?? context.primaryColor).withOpacity(ThemeConstants.opacity10),
+          borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+        ),
+        child: Text(
+          source!,
+          style: context.labelLarge?.textColor(_getTextColor(context)).semiBold,
+        ),
+      ),
     );
   }
 
-  Color _getTextColor(BuildContext context, bool isDark, Color cardPrimaryColor, {bool isSecondary = false}) {
-    final theme = Theme.of(context);
-    if (widget.cardStyle == CardStyle.gradient) {
-      return Colors.white.withValues(alpha: isSecondary ? AppColors.opacity70 : 1.0);
+  Widget _buildActions(BuildContext context) {
+    // للبطاقات من نوع completion، عرض الإجراءات بشكل عمودي
+    if (type == CardType.completion) {
+      return Column(
+        children: actions!.map((action) => Padding(
+          padding: EdgeInsets.only(bottom: ThemeConstants.space3),
+          child: _buildActionButton(context, action, fullWidth: true),
+        )).toList(),
+      );
     }
     
-    Color? customBgColor = widget.backgroundColor;
-    if (customBgColor != null) {
-         return ThemeData.estimateBrightnessForColor(customBgColor) == Brightness.dark
-             ? (isSecondary ? AppColors.darkTextSecondary : AppColors.darkTextPrimary)
-             : (isSecondary ? AppColors.lightTextSecondary : AppColors.lightTextPrimary);
-    }
-
-    return isSecondary
-      ? (theme.textTheme.bodyMedium?.color ?? (isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary))
-      : (theme.textTheme.bodyLarge?.color ?? (isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary));
+    // للبطاقات الأخرى، عرض الإجراءات بشكل أفقي
+    return Wrap(
+      spacing: ThemeConstants.space2,
+      runSpacing: ThemeConstants.space2,
+      children: actions!.map((action) => _buildActionButton(context, action)).toList(),
+    );
   }
-}
 
-enum CardStyle {
-  normal,
-  gradient,
-  glassmorphism,
-  outlined,
-}
-
-class CardAction {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-  final Color? color;
-
-  const CardAction({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.color,
-  });
-}
-
-class _CardActionButton extends StatelessWidget {
-  final CardAction action;
-  final Color cardPrimaryColor;
-  final bool isDark;
-  final bool isGradientCard;
-  final Color cardBackgroundColor;
-
-  const _CardActionButton({
-    required this.action,
-    required this.cardPrimaryColor,
-    required this.isDark,
-    required this.isGradientCard,
-    required this.cardBackgroundColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final buttonColor = action.color ?? cardPrimaryColor;
-    final Color effectiveTextColor;
-
-    if (isGradientCard) {
-      effectiveTextColor = Colors.white;
-    } else {
-      bool isButtonBgLight = ThemeData.estimateBrightnessForColor(buttonColor.withValues(alpha: AppColors.opacity10)) == Brightness.light;
-      if (isDark) {
-        effectiveTextColor = isButtonBgLight ? AppColors.lightTextPrimary : AppColors.darkTextPrimary;
-      } else {
-        effectiveTextColor = action.color != null
-            ? (ThemeData.estimateBrightnessForColor(action.color!) == Brightness.dark ? Colors.white : Colors.black)
-            : cardPrimaryColor;
-      }
+  Widget _buildActionButton(BuildContext context, CardAction action, {bool fullWidth = false}) {
+    final effectiveColor = action.color ?? primaryColor ?? context.primaryColor;
+    
+    if (action.isPrimary) {
+      return SizedBox(
+        width: fullWidth ? double.infinity : null,
+        child: ElevatedButton.icon(
+          onPressed: () {
+            HapticFeedback.lightImpact();
+            action.onPressed();
+          },
+          icon: Icon(action.icon, size: ThemeConstants.iconSm),
+          label: Text(action.label),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: effectiveColor,
+            foregroundColor: effectiveColor.contrastingTextColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
+            ),
+          ),
+        ),
+      );
     }
-
+    
+    // زر ثانوي
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+      borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
           action.onPressed();
         },
-        borderRadius: BorderRadius.circular(AppDimens.radiusMd),
-        splashColor: buttonColor.withValues(alpha: AppColors.opacity20),
-        highlightColor: buttonColor.withValues(alpha: AppColors.opacity10),
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.space3,
-            vertical: AppDimens.space2,
+          padding: EdgeInsets.symmetric(
+            horizontal: ThemeConstants.space3,
+            vertical: ThemeConstants.space2,
           ),
           decoration: BoxDecoration(
-            color: isGradientCard
-                ? Colors.white.withValues(alpha: AppColors.opacity20)
-                : buttonColor.withValues(alpha: AppColors.opacity10),
-            borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+            color: style == CardStyle.gradient
+                ? Colors.white.withOpacity(ThemeConstants.opacity20)
+                : effectiveColor.withOpacity(ThemeConstants.opacity10),
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             border: Border.all(
-              color: isGradientCard
-                  ? Colors.white.withValues(alpha: AppColors.opacity30)
-                  : buttonColor.withValues(alpha: AppColors.opacity30),
-              width: AppDimens.borderThin,
+              color: style == CardStyle.gradient
+                  ? Colors.white.withOpacity(ThemeConstants.opacity30)
+                  : effectiveColor.withOpacity(ThemeConstants.opacity30),
+              width: ThemeConstants.borderThin,
             ),
           ),
           child: Row(
@@ -493,21 +775,200 @@ class _CardActionButton extends StatelessWidget {
             children: [
               Icon(
                 action.icon,
-                color: effectiveTextColor,
-                size: AppDimens.iconSm,
+                color: style == CardStyle.gradient ? Colors.white : effectiveColor,
+                size: ThemeConstants.iconSm,
               ),
-              const SizedBox(width: AppDimens.space2),
+              ThemeConstants.space2.w,
               Text(
                 action.label,
-                style: AppTypography.label2.copyWith(
-                  color: effectiveTextColor,
-                  fontWeight: AppTypography.semiBold,
-                ),
+                style: context.labelMedium?.textColor(
+                  style == CardStyle.gradient ? Colors.white : effectiveColor
+                ).semiBold,
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBadge(BuildContext context) {
+    final badgeBgColor = badgeColor ?? context.colorScheme.secondary;
+    
+    return Positioned(
+      top: ThemeConstants.space2,
+      left: ThemeConstants.space2,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: ThemeConstants.space2,
+          vertical: ThemeConstants.space1,
+        ),
+        decoration: BoxDecoration(
+          color: badgeBgColor,
+          borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+        ),
+        child: Text(
+          badge!,
+          style: context.labelSmall?.textColor(badgeBgColor.contrastingTextColor).semiBold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectionIndicator(BuildContext context) {
+    final effectiveColor = primaryColor ?? context.primaryColor;
+    
+    return Positioned(
+      top: ThemeConstants.space2,
+      right: ThemeConstants.space2,
+      child: Container(
+        padding: EdgeInsets.all(ThemeConstants.space1 / 2),
+        decoration: BoxDecoration(
+          color: effectiveColor,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: backgroundColor ?? context.cardColor,
+            width: 1.5,
+          ),
+        ),
+        child: Icon(
+          Icons.check,
+          color: effectiveColor.contrastingTextColor,
+          size: ThemeConstants.iconSm,
+        ),
+      ),
+    );
+  }
+
+  Color _getTextColor(BuildContext context, {bool isSecondary = false}) {
+    if (style == CardStyle.gradient) {
+      return Colors.white.withOpacity(isSecondary ? ThemeConstants.opacity70 : 1.0);
+    }
+    
+    if (backgroundColor != null) {
+      return backgroundColor!.contrastingTextColor.withOpacity(
+        isSecondary ? ThemeConstants.opacity70 : 1.0
+      );
+    }
+    
+    return isSecondary ? context.textSecondaryColor : context.textPrimaryColor;
+  }
+
+  // Factory constructors للتوافق مع الكود القديم
+  factory AppCard.simple({
+    required String title,
+    String? subtitle,
+    IconData? icon,
+    VoidCallback? onTap,
+  }) {
+    return AppCard(
+      type: CardType.normal,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onTap: onTap,
+    );
+  }
+
+  factory AppCard.athkar({
+    required String content,
+    String? source,
+    int currentCount = 0,
+    int totalCount = 1,
+    bool isFavorite = false,
+    Color? primaryColor,
+    VoidCallback? onTap,
+    VoidCallback? onFavoriteToggle,
+    List<CardAction>? actions,
+  }) {
+    return AppCard(
+      type: CardType.athkar,
+      style: CardStyle.gradient,
+      content: content,
+      source: source,
+      currentCount: currentCount,
+      totalCount: totalCount,
+      isFavorite: isFavorite,
+      primaryColor: primaryColor,
+      onTap: onTap,
+      onFavoriteToggle: onFavoriteToggle,
+      actions: actions,
+    );
+  }
+
+  factory AppCard.quote({
+    required String quote,
+    String? author,
+    String? category,
+    Color? primaryColor,
+    List<Color>? gradientColors,
+  }) {
+    return AppCard(
+      type: CardType.quote,
+      style: CardStyle.gradient,
+      content: quote,
+      source: author,
+      subtitle: category,
+      primaryColor: primaryColor,
+      gradientColors: gradientColors,
+    );
+  }
+
+  factory AppCard.completion({
+    required String title,
+    required String message,
+    String? subMessage,
+    IconData icon = Icons.check_circle_outline,
+    Color? primaryColor,
+    List<CardAction> actions = const [],
+  }) {
+    return AppCard(
+      type: CardType.completion,
+      title: title,
+      content: message,
+      subtitle: subMessage,
+      icon: icon,
+      primaryColor: primaryColor,
+      actions: actions,
+      padding: EdgeInsets.all(ThemeConstants.space6),
+    );
+  }
+
+  factory AppCard.info({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    VoidCallback? onTap,
+    Color? iconColor,
+    Widget? trailing,
+  }) {
+    return AppCard(
+      type: CardType.info,
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      onTap: onTap,
+      primaryColor: iconColor,
+      trailing: trailing,
+    );
+  }
+
+  factory AppCard.stat({
+    required String title,
+    required String value,
+    required IconData icon,
+    Color? color,
+    VoidCallback? onTap,
+    double? progress,
+  }) {
+    return AppCard(
+      type: CardType.stat,
+      title: title,
+      value: value,
+      icon: icon,
+      primaryColor: color,
+      onTap: onTap,
+      progress: progress,
     );
   }
 }

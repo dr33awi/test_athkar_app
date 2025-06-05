@@ -1,9 +1,8 @@
 // lib/app/themes/widgets/dialogs/app_info_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../constants/app_colors.dart';
-import '../../constants/app_dimensions.dart';
-import '../../constants/app_typography.dart';
+import '../../theme_constants.dart';
+import '../../text_styles.dart';
 
 /// حوار عام لعرض المعلومات
 class AppInfoDialog extends StatelessWidget {
@@ -81,7 +80,7 @@ class AppInfoDialog extends StatelessWidget {
       title: title,
       content: content,
       icon: icon,
-      accentColor: destructive ? AppColors.error : accentColor,
+      accentColor: destructive ? ThemeConstants.error : accentColor,
       closeButtonText: cancelText,
       actions: [
         DialogAction(
@@ -101,24 +100,24 @@ class AppInfoDialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(icon, color: color, size: AppDimens.iconMd),
-          const SizedBox(width: AppDimens.space3),
+          Icon(icon, color: color, size: ThemeConstants.iconMd),
+          const SizedBox(width: ThemeConstants.space3),
           Expanded(
             child: Text(
               title,
-              style: AppTypography.h5,
+              style: AppTextStyles.h5,
             ),
           ),
         ],
       ),
       content: customContent ?? _buildDefaultContent(context, color),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppDimens.radiusLg),
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
       ),
       actionsPadding: const EdgeInsets.only(
-        left: AppDimens.space4,
-        right: AppDimens.space4,
-        bottom: AppDimens.space3,
+        left: ThemeConstants.space4,
+        right: ThemeConstants.space4,
+        bottom: ThemeConstants.space3,
       ),
       actions: _buildActions(context, color),
     );
@@ -134,30 +133,30 @@ class AppInfoDialog extends StatelessWidget {
         if (content != null)
           Text(
             content!,
-            style: AppTypography.body1.copyWith(
+            style: AppTextStyles.body1.copyWith(
               height: 1.6,
             ),
           ),
         if (subtitle != null) ...[
-          const SizedBox(height: AppDimens.space3),
+          const SizedBox(height: ThemeConstants.space3),
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: AppDimens.space3,
-              vertical: AppDimens.space2,
+              horizontal: ThemeConstants.space3,
+              vertical: ThemeConstants.space2,
             ),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: AppColors.opacity10),
-              borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+              color: color.withOpacity(ThemeConstants.opacity10),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
               border: Border.all(
-                color: color.withValues(alpha: AppColors.opacity20),
-                width: AppDimens.borderThin,
+                color: color.withOpacity(ThemeConstants.opacity20),
+                width: ThemeConstants.borderThin,
               ),
             ),
             child: Text(
               subtitle!,
-              style: AppTypography.body2.copyWith(
+              style: AppTextStyles.body2.copyWith(
                 color: color,
-                fontWeight: AppTypography.medium,
+                fontWeight: ThemeConstants.medium,
               ),
             ),
           ),
@@ -188,7 +187,7 @@ class AppInfoDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: color,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimens.radiusMd),
+              borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
             ),
           ),
           child: Text(action.label),
@@ -200,7 +199,7 @@ class AppInfoDialog extends StatelessWidget {
         child: Text(
           action.label,
           style: TextStyle(
-            color: action.isDestructive ? AppColors.error : color,
+            color: action.isDestructive ? ThemeConstants.error : color,
           ),
         ),
       );
