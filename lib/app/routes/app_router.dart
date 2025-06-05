@@ -1,6 +1,6 @@
 // lib/app/routes/app_router.dart
 import 'package:flutter/material.dart';
-import '../../features/home/presentation/screens/home_screen.dart';
+import '../../features/home/screens/home_screen.dart';
 
 class AppRouter {
   // Routes
@@ -11,6 +11,8 @@ class AppRouter {
   static const String favorites = '/favorites';
   static const String settingsRoute = '/settings';
   static const String quoteDetails = '/quote-details';
+
+
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final routeName = settings.name;

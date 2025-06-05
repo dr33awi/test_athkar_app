@@ -1,13 +1,13 @@
-// lib/features/favorites/presentation/screens/favorites_screen.dart
-import 'package:athkar_app/app/themes/theme_constants.dart';
-import 'package:athkar_app/features/home/models/daily_quote_model.dart';
+// lib/features/home/favorites/presentation/screens/favorites_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+
+import '../../../../app/themes/app_theme.dart';
+import '../../../quotes/models/daily_quote_model.dart';
 
 class FavoritesScreen extends StatefulWidget {
   const FavoritesScreen({super.key, this.newFavoriteQuote});
@@ -15,15 +15,15 @@ class FavoritesScreen extends StatefulWidget {
   final HighlightItem? newFavoriteQuote;
 
   @override
-  _FavoritesScreenState createState() => _FavoritesScreenState();
+  State<FavoritesScreen> createState() => _FavoritesScreenState();
 }
 
 class _FavoritesScreenState extends State<FavoritesScreen> {
   // قوائم للمفضلة حسب النوع
-  List<HighlightItem> _favoriteQuranVerses = []; // آيات القرآن
-  List<HighlightItem> _favoriteHadiths = []; // الأحاديث
-  List<HighlightItem> _favoritePrayers = []; // الأدعية
-  List<HighlightItem> _favoriteAthkar = []; // الأذكار
+  List<HighlightItem> _favoriteQuranVerses = [];
+  List<HighlightItem> _favoriteHadiths = [];
+  List<HighlightItem> _favoritePrayers = [];
+  List<HighlightItem> _favoriteAthkar = [];
   
   // الفئة المحددة حاليًا
   String _selectedCategory = 'quran';
@@ -124,7 +124,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         });
       }
     } catch (e) {
-      print('Error loading favorites: $e');
+      debugPrint('Error loading favorites: $e');
       // في حالة حدوث خطأ، قم بمسح البيانات القديمة
       await prefs.remove('favoriteQuranVerses');
       await prefs.remove('favoriteHadiths');
@@ -258,7 +258,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       // حذف القائمة القديمة
       await prefs.remove('favoriteQuotes');
     } catch (e) {
-      print('Error saving favorites: $e');
+      debugPrint('Error saving favorites: $e');
     }
   }
 
@@ -304,22 +304,24 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     
     String text = '${quote.quote}\n\n${quote.source}';
     Clipboard.setData(ClipboardData(text: text)).then((_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              const Text('تم النسخ إلى الحافظة', style: TextStyle(fontSize: 16)),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text('تم النسخ إلى الحافظة', style: TextStyle(fontSize: 16)),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            duration: const Duration(seconds: 2),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            margin: const EdgeInsets.all(16),
           ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+        );
+      }
     });
     
     Future.delayed(const Duration(milliseconds: 100), () {
@@ -435,10 +437,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       default:
         return isDark
           ? [
-            Theme.of(context).colorScheme.primary.withOpacity(0.7),
+            Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
             Theme.of(context).colorScheme.primary,
           ]
-          : [ThemeColors.primary, ThemeColors.primaryLight];
+          : [ThemeConstants.primary, ThemeConstants.primaryLight];
     }
   }
   
@@ -477,8 +479,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     // تحديد ألوان الخلفية حسب الوضع
-    final backgroundColor = isDark ? Colors.grey[900] : ThemeColors.surface;
-    final cardBackgroundColor = isDark ? Colors.grey[850] : Colors.white;
+    final backgroundColor = isDark ? Colors.grey[900] : ThemeConstants.lightSurface;
     final textColor = isDark ? Colors.white : Colors.black;
     
     return Scaffold(
@@ -543,7 +544,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   // بناء شبكة الفئات
   Widget _buildCategoriesGrid() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? Colors.white : ThemeColors.primary;
+    final titleColor = isDark ? Colors.white : ThemeConstants.primary;
     
     // إعداد قائمة بالفئات التي تحتوي على عناصر
     List<Map<String, dynamic>> categories = [];
@@ -682,7 +683,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 child: Icon(
                   icon,
                   size: 80,
-                  color: Colors.white.withOpacity(0.1),
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
               
@@ -695,7 +696,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       width: 38,
                       height: 38,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -722,7 +723,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
+                              color: Colors.white.withValues(alpha: 0.25),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -784,7 +785,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
+                    color: Colors.white.withValues(alpha: 0.25),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -816,7 +817,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   // مؤشر التحميل
   Widget _buildLoadingIndicator() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final loadingColor = isDark ? Colors.white : ThemeColors.primary;
+    final loadingColor = isDark ? Colors.white : ThemeConstants.primary;
     
     return Center(
       child: Column(
@@ -877,7 +878,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               child: FadeInAnimation(
                 child: Card(
                   elevation: 8,
-                  shadowColor: isDark ? Colors.black54 : gradientColors[0].withOpacity(0.3),
+                  shadowColor: isDark ? Colors.black54 : gradientColors[0].withValues(alpha: 0.3),
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -904,7 +905,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                               // عنوان الاقتباس
                               Container(
                                 decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(20),
                                 ),
                                 padding: const EdgeInsets.symmetric(
@@ -956,10 +957,10 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
+                              color: Colors.white.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.15),
+                                color: Colors.white.withValues(alpha: 0.15),
                                 width: 1,
                               ),
                             ),
@@ -985,7 +986,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -1054,7 +1055,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
               vertical: 8,
             ),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -1085,7 +1086,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   // عرض رسالة عند عدم وجود عناصر
   Widget _buildEmptyView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final titleColor = isDark ? Colors.white : ThemeColors.primary;
+    final titleColor = isDark ? Colors.white : ThemeConstants.primary;
     final subtitleColor = isDark ? Colors.grey[400] : Colors.grey[600];
     
     return Center(

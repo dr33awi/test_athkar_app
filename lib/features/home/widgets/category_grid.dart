@@ -1,15 +1,15 @@
 // lib/features/home/presentation/widgets/category_grid.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../../../../app/routes/app_router.dart';
-import '../../../../core/constants/app_constants.dart';
+import '../../../app/routes/app_router.dart';
+import '../../../core/constants/app_constants.dart';
 
 /// تم تعديل استيراد EnhancedPrayerTimesScreen بدلاً من PrayerTimesScreen
 /// حيث أن الملف الجديد يستخدم هذا الاسم 
-import '../../../prayers/presentation/screens/prayer_times_screen.dart';
-import '../../../athkar/presentation/screens/athkar_screen.dart';
-import '../../../home/favorites/presentation/screens/favorites_screen.dart';
-import '../../../prayers/presentation/screens/qibla_screen.dart'; // إضافة استيراد شاشة القبلة
+import '../../prayers/presentation/screens/prayer_times_screen.dart';
+import '../../athkar/presentation/screens/athkar_screen.dart';
+import '../favorites/presentation/screens/favorites_screen.dart';
+import '../../prayers/presentation/screens/qibla_screen.dart'; // إضافة استيراد شاشة القبلة
 
 class CategoryGrid extends StatefulWidget {
   const CategoryGrid({Key? key}) : super(key: key);

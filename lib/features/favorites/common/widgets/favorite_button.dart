@@ -1,7 +1,7 @@
 // lib/features/common/widgets/favorite_button.dart
 import 'package:athkar_app/app/routes/app_router.dart';
 import 'package:flutter/material.dart';
-import '../../../models/daily_quote_model.dart';
+import '../../../quotes/models/daily_quote_model.dart';
 
 class FavoriteButton extends StatelessWidget {
   final String quote;

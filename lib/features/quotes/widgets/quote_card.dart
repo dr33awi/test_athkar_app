@@ -1,6 +1,6 @@
 // lib/features/quotes/presentation/widgets/quote_card.dart
 import 'package:athkar_app/app/themes/theme_constants.dart';
-import 'package:athkar_app/features/home/models/daily_quote_model.dart';
+import 'package:athkar_app/features/quotes/models/daily_quote_model.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';

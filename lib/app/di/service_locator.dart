@@ -22,8 +22,6 @@ import 'package:athkar_app/core/infrastructure/services/notifications/notificati
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_service.dart';
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_service_impl.dart';
 
-
-
 // معالج الأخطاء
 import '../../core/error/error_handler.dart';
 
@@ -39,8 +37,7 @@ class ServiceLocator {
 
   /// تهيئة جميع الخدمات
   static Future<void> init() async {
-    final instance = ServiceLocator();
-    await instance._initializeServices();
+    await _instance._initializeServices();
   }
 
   /// التحقق من تهيئة الخدمات
@@ -68,10 +65,10 @@ class ServiceLocator {
       // 4. خدمات الأذونات
       _registerPermissionServices();
 
-      // 6. خدمات الإشعارات
+      // 5. خدمات الإشعارات
       await _registerNotificationServices();
 
-      // 7. معالج الأخطاء
+      // 6. معالج الأخطاء
       _registerErrorHandler();
 
       _isInitialized = true;

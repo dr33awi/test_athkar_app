@@ -6,7 +6,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app/di/service_locator.dart';
 import 'app/app.dart';
-import 'app/routes/app_router.dart';
+// تم إزالة import غير المستخدم: import 'app/routes/app_router.dart';
 import 'core/infrastructure/services/notifications/notification_service.dart';
 import 'core/infrastructure/services/storage/storage_service.dart';
 import 'core/constants/app_constants.dart';
@@ -68,16 +68,13 @@ Future<void> main() async {
 /// تهيئة جميع الخدمات
 Future<void> _initAllServices() async {
   try {
-    // تهيئة الخدمات الأساسية أولاً
-    await ServiceLocator().initEssentialServices();
-    debugPrint('الخدمات الأساسية تم تهيئتها بنجاح');
-    
-    // محاولة تهيئة باقي الخدمات
-    await ServiceLocator().initRemainingServices();
+    // تهيئة ServiceLocator
+    await ServiceLocator.init();
     debugPrint('جميع الخدمات تم تهيئتها بنجاح');
   } catch (e) {
     debugPrint('خطأ في تهيئة الخدمات: $e');
     // التطبيق سيستمر مع الخدمات الأساسية على الأقل
+    rethrow;
   }
 }
 
@@ -127,7 +124,8 @@ class AppLifecycleObserver extends WidgetsBindingObserver {
         await notificationService.dispose();
       }
       
-      await ServiceLocator().dispose();
+      // استخدام الطريقة الثابتة بشكل صحيح
+      await ServiceLocator.dispose();
       
       debugPrint('تم تنظيف الموارد بنجاح');
     } catch (e) {

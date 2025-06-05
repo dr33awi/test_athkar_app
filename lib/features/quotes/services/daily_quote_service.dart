@@ -1,6 +1,6 @@
 // lib/features/quotes/data/services/daily_quote_service.dart
 import 'dart:math';
-import 'package:athkar_app/features/home/models/daily_quote_model.dart';
+import 'package:athkar_app/features/quotes/models/daily_quote_model.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

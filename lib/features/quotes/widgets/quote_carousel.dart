@@ -1,6 +1,6 @@
 // lib/features/quotes/presentation/widgets/quote_carousel.dart
 import 'package:athkar_app/app/themes/theme_constants.dart';
-import 'package:athkar_app/features/home/models/daily_quote_model.dart';
+import 'package:athkar_app/features/quotes/models/daily_quote_model.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
