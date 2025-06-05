@@ -22,9 +22,7 @@ import 'package:athkar_app/core/infrastructure/services/notifications/notificati
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_service.dart';
 import 'package:athkar_app/core/infrastructure/services/permissions/permission_service_impl.dart';
 
-// خدمات الموقع
-import '../../core/services/location/location_service.dart';
-import '../../core/services/location/location_service_impl.dart';
+
 
 // معالج الأخطاء
 import '../../core/error/error_handler.dart';
@@ -69,9 +67,6 @@ class ServiceLocator {
 
       // 4. خدمات الأذونات
       _registerPermissionServices();
-
-      // 5. خدمات الموقع
-      _registerLocationServices();
 
       // 6. خدمات الإشعارات
       await _registerNotificationServices();
@@ -151,21 +146,6 @@ class ServiceLocator {
     }
   }
 
-  /// تسجيل خدمات الموقع
-  void _registerLocationServices() {
-    debugPrint('ServiceLocator: تسجيل خدمات الموقع...');
-
-    if (!getIt.isRegistered<LocationService>()) {
-      getIt.registerLazySingleton<LocationService>(
-        () => LocationServiceImpl(
-          logger: getIt<LoggerService>(),
-          permissionService: getIt<PermissionService>(),
-          storage: getIt<StorageService>(),
-        ),
-      );
-    }
-  }
-
   /// تسجيل خدمات الإشعارات
   Future<void> _registerNotificationServices() async {
     debugPrint('ServiceLocator: تسجيل خدمات الإشعارات...');
@@ -238,11 +218,6 @@ class ServiceLocator {
         await getIt<NotificationService>().dispose();
       }
 
-      // تنظيف الموقع
-      if (getIt.isRegistered<LocationService>()) {
-        await getIt<LocationService>().dispose();
-      }
-
       // تنظيف الأذونات
       if (getIt.isRegistered<PermissionService>()) {
         await getIt<PermissionService>().dispose();
@@ -277,76 +252,19 @@ extension ServiceLocatorExtensions on BuildContext {
   
   /// التحقق من وجود خدمة
   bool hasService<T extends Object>() => getIt.isRegistered<T>();
-}
-
-/// خدمة الموقع (واجهة بسيطة)
-abstract class LocationService {
-  Future<LocationData?> getCurrentLocation();
-  Future<bool> requestLocationPermission();
-  Future<bool> isLocationServiceEnabled();
-  Stream<LocationData> get locationStream;
-  Future<void> dispose();
-}
-
-/// بيانات الموقع
-class LocationData {
-  final double latitude;
-  final double longitude;
-  final double? accuracy;
-  final DateTime timestamp;
-
-  LocationData({
-    required this.latitude,
-    required this.longitude,
-    this.accuracy,
-    DateTime? timestamp,
-  }) : timestamp = timestamp ?? DateTime.now();
-}
-
-/// تنفيذ بسيط لخدمة الموقع
-class LocationServiceImpl implements LocationService {
-  final LoggerService _logger;
-  final PermissionService _permissionService;
-  final StorageService _storage;
-
-  LocationServiceImpl({
-    required LoggerService logger,
-    required PermissionService permissionService,
-    required StorageService storage,
-  }) : _logger = logger,
-       _permissionService = permissionService,
-       _storage = storage;
-
-  @override
-  Future<LocationData?> getCurrentLocation() async {
-    // تنفيذ بسيط - يمكنك استخدام geolocator
-    _logger.info(message: 'Getting current location');
-    
-    // موقع وهمي للاختبار
-    return LocationData(
-      latitude: 21.4225,
-      longitude: 39.8262,
-      accuracy: 10,
-    );
-  }
-
-  @override
-  Future<bool> requestLocationPermission() async {
-    final status = await _permissionService.requestPermission(AppPermissionType.location);
-    return status == AppPermissionStatus.granted;
-  }
-
-  @override
-  Future<bool> isLocationServiceEnabled() async {
-    // يمكن استخدام geolocator للتحقق الفعلي
-    return true;
-  }
-
-  @override
-  Stream<LocationData> get locationStream => Stream.empty();
-
-  @override
-  Future<void> dispose() async {
-    _logger.debug(message: 'LocationService disposed');
-  }
+  
+  /// الحصول على خدمة التخزين
+  StorageService get storageService => getIt<StorageService>();
+  
+  /// الحصول على خدمة الإشعارات
+  NotificationService get notificationService => getIt<NotificationService>();
+  
+  /// الحصول على خدمة الأذونات
+  PermissionService get permissionService => getIt<PermissionService>();
+  
+  /// الحصول على خدمة السجلات
+  LoggerService get loggerService => getIt<LoggerService>();
+  
+  /// الحصول على معالج الأخطاء
+  AppErrorHandler get errorHandler => getIt<AppErrorHandler>();
 }
