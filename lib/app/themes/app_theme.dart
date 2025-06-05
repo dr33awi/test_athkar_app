@@ -5,6 +5,31 @@ import 'theme_constants.dart';
 import 'text_styles.dart';
 import 'core/theme_extensions.dart';
 
+// ===== Barrel Exports =====
+export 'theme_constants.dart';
+export 'text_styles.dart';
+export 'core/theme_extensions.dart';
+
+// Widgets exports
+export 'widgets/cards/app_card.dart';
+export 'widgets/dialogs/app_info_dialog.dart';
+export 'widgets/feedback/app_snackbar.dart';
+export 'widgets/layout/app_bar.dart';
+export 'widgets/states/app_empty_state.dart';
+export 'widgets/core/app_button.dart';
+export 'widgets/core/app_text_field.dart';
+export 'widgets/core/app_loading.dart';
+
+// Animation exports
+export 'package:flutter_staggered_animations/flutter_staggered_animations.dart'
+    show
+        AnimationConfiguration,
+        AnimationLimiter,
+        FadeInAnimation,
+        SlideAnimation,
+        ScaleAnimation,
+        FlipAnimation;
+
 /// نظام الثيم الموحد للتطبيق
 class AppTheme {
   AppTheme._();
@@ -47,6 +72,9 @@ class AppTheme {
     final bool isDark = brightness == Brightness.dark;
     final Color onPrimaryColor = primaryColor.contrastingTextColor;
     final Color onSecondaryColor = ThemeConstants.accent.contrastingTextColor;
+
+    // Create text theme
+    final textTheme = _createTextTheme(textPrimaryColor, textSecondaryColor);
 
     return ThemeData(
       brightness: brightness,
@@ -103,10 +131,7 @@ class AppTheme {
       ),
       
       // Text Theme
-      textTheme: AppTextStyles.createTextTheme(
-        color: textPrimaryColor,
-        secondaryColor: textSecondaryColor,
-      ),
+      textTheme: textTheme,
       
       // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -258,6 +283,47 @@ class AppTheme {
         textStyle: AppTextStyles.caption.copyWith(color: textPrimaryColor),
         preferBelow: false,
       ),
+    );
+  }
+
+  // ===== Private Helper Methods =====
+  
+  static TextTheme _createTextTheme(Color primaryColor, Color secondaryColor) {
+    // Using a map to reduce repetition
+    final styles = {
+      'displayLarge': AppTextStyles.h1,
+      'displayMedium': AppTextStyles.h2,
+      'displaySmall': AppTextStyles.h3,
+      'headlineLarge': AppTextStyles.h1,
+      'headlineMedium': AppTextStyles.h2,
+      'headlineSmall': AppTextStyles.h3,
+      'titleLarge': AppTextStyles.h4,
+      'titleMedium': AppTextStyles.h5,
+      'titleSmall': AppTextStyles.h5.copyWith(fontSize: ThemeConstants.textSizeMd),
+      'bodyLarge': AppTextStyles.body1,
+      'bodyMedium': AppTextStyles.body2,
+      'bodySmall': AppTextStyles.caption,
+      'labelLarge': AppTextStyles.label1,
+      'labelMedium': AppTextStyles.label2,
+      'labelSmall': AppTextStyles.caption,
+    };
+    
+    return TextTheme(
+      displayLarge: styles['displayLarge']!.copyWith(color: primaryColor),
+      displayMedium: styles['displayMedium']!.copyWith(color: primaryColor),
+      displaySmall: styles['displaySmall']!.copyWith(color: primaryColor),
+      headlineLarge: styles['headlineLarge']!.copyWith(color: primaryColor),
+      headlineMedium: styles['headlineMedium']!.copyWith(color: primaryColor),
+      headlineSmall: styles['headlineSmall']!.copyWith(color: primaryColor),
+      titleLarge: styles['titleLarge']!.copyWith(color: primaryColor),
+      titleMedium: styles['titleMedium']!.copyWith(color: primaryColor),
+      titleSmall: styles['titleSmall']!.copyWith(color: primaryColor),
+      bodyLarge: styles['bodyLarge']!.copyWith(color: primaryColor),
+      bodyMedium: styles['bodyMedium']!.copyWith(color: secondaryColor),
+      bodySmall: styles['bodySmall']!.copyWith(color: secondaryColor),
+      labelLarge: styles['labelLarge']!.copyWith(color: primaryColor),
+      labelMedium: styles['labelMedium']!.copyWith(color: secondaryColor),
+      labelSmall: styles['labelSmall']!.copyWith(color: secondaryColor),
     );
   }
 
