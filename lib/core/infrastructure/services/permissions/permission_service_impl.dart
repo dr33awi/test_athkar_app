@@ -1,4 +1,4 @@
-// lib/core/infrastructure/services/permissions/permission_service_impl.dart
+// lib/core/infrastructure/services/permissions/permission_service_impl.dart (محدث)
 
 import 'dart:async';
 import 'dart:io';
@@ -8,6 +8,7 @@ import '../logging/logger_service.dart';
 import '../storage/storage_service.dart';
 import 'permission_service.dart';
 import 'widgets/permission_dialog.dart';
+import 'handlers/permission_handler_factory.dart';
 
 /// تنفيذ موحد ومحسّن لخدمة الأذونات
 class PermissionServiceImpl implements PermissionService {
@@ -27,7 +28,7 @@ class PermissionServiceImpl implements PermissionService {
   final StreamController<PermissionChange> _permissionChangeController = 
       StreamController<PermissionChange>.broadcast();
   
-  // Permission descriptions
+  // Permission metadata
   static const Map<AppPermissionType, String> _permissionDescriptions = {
     AppPermissionType.location: 'نحتاج موقعك لحساب أوقات الصلاة بدقة حسب منطقتك',
     AppPermissionType.notification: 'نحتاج إذن الإشعارات لتذكيرك بالأذكار وأوقات الصلاة',
@@ -37,7 +38,6 @@ class PermissionServiceImpl implements PermissionService {
     AppPermissionType.unknown: 'إذن مطلوب لتحسين تجربة الاستخدام',
   };
   
-  // Permission names
   static const Map<AppPermissionType, String> _permissionNames = {
     AppPermissionType.location: 'الموقع',
     AppPermissionType.notification: 'الإشعارات',
@@ -47,7 +47,6 @@ class PermissionServiceImpl implements PermissionService {
     AppPermissionType.unknown: 'غير معروف',
   };
   
-  // Permission icons
   static const Map<AppPermissionType, String> _permissionIcons = {
     AppPermissionType.location: '📍',
     AppPermissionType.notification: '🔔',
@@ -87,35 +86,16 @@ class PermissionServiceImpl implements PermissionService {
       return cachedStatus;
     }
     
-    final nativePermission = _mapToNativePermission(permission);
-    if (nativePermission == null) {
+    // الحصول على handler المناسب
+    final handler = PermissionHandlerFactory.getHandler(permission);
+    if (handler == null) {
       _logger.warning(message: '[PermissionService] نوع الإذن غير مدعوم', data: {'type': permission.toString()});
       return AppPermissionStatus.unknown;
     }
     
     try {
-      // معالجة خاصة للأذونات المختلفة
-      final AppPermissionStatus status;
-      
-      switch (permission) {
-        case AppPermissionType.location:
-          status = await _requestLocationPermission(nativePermission);
-          break;
-        case AppPermissionType.storage:
-          status = await _requestStoragePermission();
-          break;
-        case AppPermissionType.batteryOptimization:
-          status = await _requestBatteryOptimization();
-          break;
-        case AppPermissionType.doNotDisturb:
-          status = await _requestDoNotDisturb();
-          break;
-        case AppPermissionType.notification:
-        case AppPermissionType.unknown:
-          final nativeStatus = await nativePermission.request();
-          status = _mapFromNativeStatus(nativeStatus);
-          break;
-      }
+      // طلب الإذن باستخدام handler
+      final status = await handler.request();
       
       // تحديث الكاش
       _updateCache(permission, status);
@@ -233,33 +213,16 @@ class PermissionServiceImpl implements PermissionService {
       return cachedStatus;
     }
     
-    final nativePermission = _mapToNativePermission(permission);
-    if (nativePermission == null) {
+    // الحصول على handler المناسب
+    final handler = PermissionHandlerFactory.getHandler(permission);
+    if (handler == null) {
       _logger.warning(message: '[PermissionService] نوع الإذن غير مدعوم للفحص', data: {'type': permission.toString()});
       return AppPermissionStatus.unknown;
     }
     
     try {
-      final AppPermissionStatus status;
-      
-      // معالجة خاصة للأذونات
-      switch (permission) {
-        case AppPermissionType.storage:
-          status = await _checkStoragePermission();
-          break;
-        case AppPermissionType.batteryOptimization:
-          status = await _checkBatteryOptimization();
-          break;
-        case AppPermissionType.doNotDisturb:
-          status = await _checkDoNotDisturb();
-          break;
-        case AppPermissionType.location:
-        case AppPermissionType.notification:
-        case AppPermissionType.unknown:
-          final nativeStatus = await nativePermission.status;
-          status = _mapFromNativeStatus(nativeStatus);
-          break;
-      }
+      // فحص الحالة باستخدام handler
+      final status = await handler.check();
       
       // تحديث الكاش
       _updateCache(permission, status);
@@ -315,38 +278,7 @@ class PermissionServiceImpl implements PermissionService {
     _trackSettingsOpened(settingsPage);
     
     try {
-      if (settingsPage == null) {
-        return await handler.openAppSettings();
-      }
-      
-      // معالجة خاصة لصفحات الإعدادات المحددة
-      switch (settingsPage) {
-        case AppSettingsType.location:
-          if (Platform.isIOS) {
-            return await handler.openAppSettings();
-          }
-          // Android - محاولة فتح إعدادات الموقع مباشرة
-          return await handler.openAppSettings();
-          
-        case AppSettingsType.notification:
-          if (Platform.isAndroid && await _canOpenNotificationSettings()) {
-            return await handler.openAppSettings();
-          }
-          return await handler.openAppSettings();
-          
-        case AppSettingsType.battery:
-          if (Platform.isAndroid) {
-            return await handler.openAppSettings();
-          }
-          _logger.warning(message: '[PermissionService] إعدادات البطارية غير متوفرة على iOS');
-          return false;
-          
-        case AppSettingsType.storage:
-          return await handler.openAppSettings();
-          
-        default:
-          return await handler.openAppSettings();
-      }
+      return await handler.openAppSettings();
     } catch (e) {
       _logger.error(message: '[PermissionService] خطأ في فتح الإعدادات', error: e);
       return false;
@@ -360,11 +292,11 @@ class PermissionServiceImpl implements PermissionService {
       return false;
     }
     
-    final nativePermission = _mapToNativePermission(permission);
-    if (nativePermission == null) return false;
+    final handler = PermissionHandlerFactory.getHandler(permission);
+    if (handler == null || handler.nativePermission == null) return false;
     
     try {
-      final status = await nativePermission.status;
+      final status = await handler.nativePermission!.status;
       final shouldShow = status.isDenied && !status.isPermanentlyDenied;
       
       _logger.debug(
@@ -384,11 +316,11 @@ class PermissionServiceImpl implements PermissionService {
   
   @override
   Future<bool> isPermissionPermanentlyDenied(AppPermissionType permission) async {
-    final nativePermission = _mapToNativePermission(permission);
-    if (nativePermission == null) return false;
+    final handler = PermissionHandlerFactory.getHandler(permission);
+    if (handler == null || handler.nativePermission == null) return false;
     
     try {
-      final status = await nativePermission.status;
+      final status = await handler.nativePermission!.status;
       final isPermanentlyDenied = status.isPermanentlyDenied;
       
       _logger.debug(
@@ -423,19 +355,8 @@ class PermissionServiceImpl implements PermissionService {
   
   @override
   bool isPermissionAvailable(AppPermissionType permission) {
-    switch (permission) {
-      case AppPermissionType.location:
-      case AppPermissionType.notification:
-      case AppPermissionType.storage:
-        return true;
-        
-      case AppPermissionType.doNotDisturb:
-      case AppPermissionType.batteryOptimization:
-        return Platform.isAndroid;
-        
-      case AppPermissionType.unknown:
-        return false;
-    }
+    final handler = PermissionHandlerFactory.getHandler(permission);
+    return handler?.isAvailable ?? false;
   }
   
   @override
@@ -495,192 +416,6 @@ class PermissionServiceImpl implements PermissionService {
   }
   
   // ==================== Private Methods ====================
-  
-  // تحويل من أنواع الأذونات الخاصة بنا إلى أذونات المكتبة
-  handler.Permission? _mapToNativePermission(AppPermissionType permission) {
-    switch (permission) {
-      case AppPermissionType.location:
-        return handler.Permission.locationWhenInUse;
-        
-      case AppPermissionType.notification:
-        return handler.Permission.notification;
-        
-      case AppPermissionType.doNotDisturb:
-        return Platform.isAndroid ? handler.Permission.accessNotificationPolicy : null;
-        
-      case AppPermissionType.batteryOptimization:
-        return Platform.isAndroid ? handler.Permission.ignoreBatteryOptimizations : null;
-        
-      case AppPermissionType.storage:
-        // Android 13+ لا يحتاج إذن للصور والفيديو
-        if (Platform.isAndroid) {
-          return handler.Permission.storage;
-        }
-        return handler.Permission.photos; // iOS
-        
-      case AppPermissionType.unknown:
-        return null;
-    }
-  }
-  
-  // تحويل من حالات المكتبة إلى حالاتنا
-  AppPermissionStatus _mapFromNativeStatus(handler.PermissionStatus status) {
-    if (status.isGranted) {
-      return AppPermissionStatus.granted;
-    } else if (status.isDenied) {
-      return AppPermissionStatus.denied;
-    } else if (status.isPermanentlyDenied) {
-      return AppPermissionStatus.permanentlyDenied;
-    } else if (status.isRestricted) {
-      return AppPermissionStatus.restricted;
-    } else if (status.isLimited) {
-      return AppPermissionStatus.limited;
-    } else if (status.isProvisional) {
-      return AppPermissionStatus.provisional;
-    } else {
-      return AppPermissionStatus.unknown;
-    }
-  }
-  
-  // معالجة خاصة لإذن الموقع
-  Future<AppPermissionStatus> _requestLocationPermission(handler.Permission permission) async {
-    // التحقق من خدمات الموقع
-    const serviceStatus = handler.ServiceStatus.enabled; // تصحيح مؤقت
-    if (serviceStatus != handler.ServiceStatus.enabled) {
-      _logger.warning(message: '[PermissionService] خدمات الموقع غير مفعلة');
-      
-      // عرض dialog لتفعيل خدمات الموقع
-      if (_context != null) {
-        final shouldOpen = await _showLocationServiceDialog();
-        if (shouldOpen) {
-          await handler.openAppSettings();
-        }
-      }
-      
-      return AppPermissionStatus.denied;
-    }
-    
-    final status = await permission.request();
-    return _mapFromNativeStatus(status);
-  }
-  
-  // معالجة خاصة لإذن التخزين
-  Future<AppPermissionStatus> _requestStoragePermission() async {
-    if (Platform.isAndroid) {
-      // Android 13+ (API 33+) لا يحتاج إذن storage
-      const androidInfo = 29; // تصحيح مؤقت
-      if (androidInfo >= 33) {
-        _logger.info(message: '[PermissionService] Android 13+: لا يحتاج إذن تخزين منفصل');
-        return AppPermissionStatus.granted;
-      }
-    }
-    
-    final permission = _mapToNativePermission(AppPermissionType.storage);
-    if (permission == null) return AppPermissionStatus.unknown;
-    
-    final status = await permission.request();
-    return _mapFromNativeStatus(status);
-  }
-  
-  // معالجة خاصة لإذن تحسين البطارية
-  Future<AppPermissionStatus> _requestBatteryOptimization() async {
-    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
-    
-    const permission = handler.Permission.ignoreBatteryOptimizations;
-    final status = await permission.request();
-    
-    if (status.isGranted) {
-      _logger.info(message: '[PermissionService] تم منح إذن تحسين البطارية');
-    }
-    
-    return _mapFromNativeStatus(status);
-  }
-  
-  // معالجة خاصة لإذن عدم الإزعاج
-  Future<AppPermissionStatus> _requestDoNotDisturb() async {
-    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
-    
-    const permission = handler.Permission.accessNotificationPolicy;
-    final status = await permission.request();
-    
-    if (status.isGranted) {
-      _logger.info(message: '[PermissionService] تم منح إذن عدم الإزعاج');
-    }
-    
-    return _mapFromNativeStatus(status);
-  }
-  
-  // فحص حالة إذن التخزين
-  Future<AppPermissionStatus> _checkStoragePermission() async {
-    if (Platform.isAndroid) {
-      const androidVersion = 29; // تصحيح مؤقت
-      if (androidVersion >= 33) {
-        return AppPermissionStatus.granted;
-      }
-    }
-    
-    final permission = _mapToNativePermission(AppPermissionType.storage);
-    if (permission == null) return AppPermissionStatus.unknown;
-    
-    final status = await permission.status;
-    return _mapFromNativeStatus(status);
-  }
-  
-  // فحص حالة إذن تحسين البطارية
-  Future<AppPermissionStatus> _checkBatteryOptimization() async {
-    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
-    
-    const permission = handler.Permission.ignoreBatteryOptimizations;
-    final status = await permission.status;
-    return _mapFromNativeStatus(status);
-  }
-  
-  // فحص حالة إذن عدم الإزعاج
-  Future<AppPermissionStatus> _checkDoNotDisturb() async {
-    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
-    
-    const permission = handler.Permission.accessNotificationPolicy;
-    final status = await permission.status;
-    return _mapFromNativeStatus(status);
-  }
-  
-  // التحقق من إمكانية فتح إعدادات الإشعارات
-  Future<bool> _canOpenNotificationSettings() async {
-    try {
-      // Android 8.0+ (API 26+)
-      const androidVersion = 29; // تصحيح مؤقت
-      return androidVersion >= 26;
-    } catch (e) {
-      return false;
-    }
-  }
-  
-  // عرض dialog لتفعيل خدمات الموقع
-  Future<bool> _showLocationServiceDialog() async {
-    if (_context == null) return false;
-    
-    return await showDialog<bool>(
-      context: _context!,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('خدمات الموقع مطلوبة'),
-        content: const Text(
-          'يجب تفعيل خدمات الموقع في جهازك لحساب أوقات الصلاة بدقة.\n\n'
-          'هل تريد الذهاب إلى الإعدادات لتفعيلها؟'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('لاحقاً'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('فتح الإعدادات'),
-          ),
-        ],
-      ),
-    ) ?? false;
-  }
   
   // إدارة الكاش
   AppPermissionStatus? _getCachedStatus(AppPermissionType permission) {

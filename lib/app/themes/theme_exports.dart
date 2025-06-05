@@ -14,7 +14,7 @@ export 'core/theme_extensions.dart';
 
 // ===== البطاقات =====
 export 'widgets/cards/app_card.dart';
-export 'widgets/cards/athkar_card.dart';
+// تم حذف: export 'widgets/cards/athkar_card.dart';
 
 // ===== الحوارات =====
 export 'widgets/dialogs/app_info_dialog.dart';
