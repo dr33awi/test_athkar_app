@@ -184,7 +184,7 @@ static TextTheme createTextTheme({
   /// نص للتلميحات
   static TextStyle hintText(BuildContext context) {
     return caption.copyWith(
-      color: ThemeConstants.textSecondary(context).withOpacity(0.7),
+      color: ThemeConstants.textSecondary(context).withValues(alpha: 0.7),
     );
   }
 
