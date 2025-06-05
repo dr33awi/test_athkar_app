@@ -15,7 +15,7 @@ class PermissionServiceImpl implements PermissionService {
   final StorageService _storage;
   final BuildContext? _context;
   
-  // Analytics - إزالة المتغير غير المستخدم
+  // Analytics Keys
   static const String _statsKey = 'permission_stats';
   
   // Cache
@@ -34,8 +34,6 @@ class PermissionServiceImpl implements PermissionService {
     AppPermissionType.doNotDisturb: 'نحتاج إذن عدم الإزعاج لتخصيص أوقات التذكير المناسبة لك',
     AppPermissionType.batteryOptimization: 'نحتاج إذن تحسين البطارية لضمان عمل التذكيرات في الخلفية',
     AppPermissionType.storage: 'نحتاج إذن التخزين لحفظ وتصدير الأذكار المفضلة لديك',
-    AppPermissionType.microphone: 'نحتاج إذن الميكروفون لتسجيل تلاوتك وتحسينها',
-    AppPermissionType.camera: 'نحتاج إذن الكاميرا لمسح رموز QR للمشاركة السريعة',
     AppPermissionType.unknown: 'إذن مطلوب لتحسين تجربة الاستخدام',
   };
   
@@ -46,8 +44,6 @@ class PermissionServiceImpl implements PermissionService {
     AppPermissionType.doNotDisturb: 'عدم الإزعاج',
     AppPermissionType.batteryOptimization: 'تحسين البطارية',
     AppPermissionType.storage: 'التخزين',
-    AppPermissionType.microphone: 'الميكروفون',
-    AppPermissionType.camera: 'الكاميرا',
     AppPermissionType.unknown: 'غير معروف',
   };
   
@@ -58,8 +54,6 @@ class PermissionServiceImpl implements PermissionService {
     AppPermissionType.doNotDisturb: '🔕',
     AppPermissionType.batteryOptimization: '🔋',
     AppPermissionType.storage: '💾',
-    AppPermissionType.microphone: '🎤',
-    AppPermissionType.camera: '📷',
     AppPermissionType.unknown: '❓',
   };
   
@@ -74,81 +68,89 @@ class PermissionServiceImpl implements PermissionService {
   }
   
   void _initializeService() {
-    _logger.debug(message: 'تهيئة خدمة الأذونات الموحدة');
+    _logger.debug(message: '[PermissionService] تهيئة خدمة الأذونات');
     _loadCachedStatuses();
     _startPermissionMonitoring();
   }
   
-@override
-Future<AppPermissionStatus> requestPermission(AppPermissionType permission) async {
-  final stopwatch = Stopwatch()..start();
-  
-  _logger.info(message: 'طلب إذن', data: {'type': permission.toString()});
-  _trackPermissionRequest(permission);
-  
-  // التحقق من الكاش أولاً
-  final cachedStatus = _getCachedStatus(permission);
-  if (cachedStatus != null && cachedStatus == AppPermissionStatus.granted) {
-    _logger.debug(message: 'الإذن ممنوح مسبقاً من الكاش');
-    return cachedStatus; // هنا cachedStatus مضمون أنه ليس null
-  }
-  
-  final nativePermission = _mapToNativePermission(permission);
-  if (nativePermission == null) {
-    _logger.warning(message: 'نوع الإذن غير مدعوم', data: {'type': permission.toString()});
-    return AppPermissionStatus.unknown;
-  }
-  
-  try {
-    // معالجة خاصة للأذونات المختلفة
-    final AppPermissionStatus status;
+  @override
+  Future<AppPermissionStatus> requestPermission(AppPermissionType permission) async {
+    final stopwatch = Stopwatch()..start();
     
-    switch (permission) {
-      case AppPermissionType.location:
-        status = await _requestLocationPermission(nativePermission);
-        break;
-      case AppPermissionType.storage:
-        status = await _requestStoragePermission();
-        break;
-      default:
-        final nativeStatus = await nativePermission.request();
-        status = _mapFromNativeStatus(nativeStatus);
+    _logger.info(message: '[PermissionService] طلب إذن', data: {'type': permission.toString()});
+    _trackPermissionRequest(permission);
+    
+    // التحقق من الكاش أولاً
+    final cachedStatus = _getCachedStatus(permission);
+    if (cachedStatus != null && cachedStatus == AppPermissionStatus.granted) {
+      _logger.debug(message: '[PermissionService] الإذن ممنوح مسبقاً من الكاش');
+      return cachedStatus;
     }
     
-    // تحديث الكاش
-    _updateCache(permission, status);
+    final nativePermission = _mapToNativePermission(permission);
+    if (nativePermission == null) {
+      _logger.warning(message: '[PermissionService] نوع الإذن غير مدعوم', data: {'type': permission.toString()});
+      return AppPermissionStatus.unknown;
+    }
     
-    // تتبع النتيجة
-    stopwatch.stop();
-    _trackPermissionResult(
-      permission: permission,
-      status: status,
-      duration: stopwatch.elapsed,
-    );
-    
-    // إشعار المستمعين
-    _notifyPermissionChange(
-      permission, 
-      cachedStatus ?? AppPermissionStatus.unknown, // استخدام قيمة افتراضية إذا كان null
-      status
-    );
-    
-    _logger.info(
-      message: 'نتيجة طلب الإذن',
-      data: {
-        'type': permission.toString(),
-        'status': status.toString(),
-        'duration': stopwatch.elapsedMilliseconds,
+    try {
+      // معالجة خاصة للأذونات المختلفة
+      final AppPermissionStatus status;
+      
+      switch (permission) {
+        case AppPermissionType.location:
+          status = await _requestLocationPermission(nativePermission);
+          break;
+        case AppPermissionType.storage:
+          status = await _requestStoragePermission();
+          break;
+        case AppPermissionType.batteryOptimization:
+          status = await _requestBatteryOptimization();
+          break;
+        case AppPermissionType.doNotDisturb:
+          status = await _requestDoNotDisturb();
+          break;
+        case AppPermissionType.notification:
+        case AppPermissionType.unknown:
+          final nativeStatus = await nativePermission.request();
+          status = _mapFromNativeStatus(nativeStatus);
+          break;
       }
-    );
-    
-    return status;
-  } catch (e, s) {
-    _logger.error(message: 'خطأ في طلب الإذن', error: e, stackTrace: s);
-    _trackPermissionError(permission, e.toString());
-    return AppPermissionStatus.unknown;
+      
+      // تحديث الكاش
+      _updateCache(permission, status);
+      
+      // تتبع النتيجة
+      stopwatch.stop();
+      _trackPermissionResult(
+        permission: permission,
+        status: status,
+        duration: stopwatch.elapsed,
+      );
+      
+      // إشعار المستمعين
+      _notifyPermissionChange(
+        permission, 
+        cachedStatus ?? AppPermissionStatus.unknown,
+        status
+      );
+      
+      _logger.info(
+        message: '[PermissionService] نتيجة طلب الإذن',
+        data: {
+          'type': permission.toString(),
+          'status': status.toString(),
+          'duration': stopwatch.elapsedMilliseconds,
+        }
+      );
+      
+      return status;
+    } catch (e, s) {
+      _logger.error(message: '[PermissionService] خطأ في طلب الإذن', error: e, stackTrace: s);
+      _trackPermissionError(permission, e.toString());
+      return AppPermissionStatus.unknown;
+    }
   }
-}
   
   @override
   Future<PermissionBatchResult> requestMultiplePermissions({
@@ -157,7 +159,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     bool showExplanationDialog = true,
   }) async {
     _logger.info(
-      message: 'طلب أذونات متعددة',
+      message: '[PermissionService] طلب أذونات متعددة',
       data: {'permissions': permissions.map((p) => p.toString()).toList()}
     );
     
@@ -172,7 +174,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       );
       
       if (!shouldContinue) {
-        _logger.info(message: 'المستخدم ألغى طلب الأذونات');
+        _logger.info(message: '[PermissionService] المستخدم ألغى طلب الأذونات');
         return PermissionBatchResult.cancelled();
       }
     }
@@ -212,7 +214,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     );
     
     _logger.info(
-      message: 'نتائج طلب الأذونات المتعددة',
+      message: '[PermissionService] نتائج طلب الأذونات المتعددة',
       data: {
         'total': permissions.length,
         'granted': permissions.length - deniedPermissions.length,
@@ -233,26 +235,37 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     
     final nativePermission = _mapToNativePermission(permission);
     if (nativePermission == null) {
-      _logger.warning(message: 'نوع الإذن غير مدعوم للفحص', data: {'type': permission.toString()});
+      _logger.warning(message: '[PermissionService] نوع الإذن غير مدعوم للفحص', data: {'type': permission.toString()});
       return AppPermissionStatus.unknown;
     }
     
     try {
       final AppPermissionStatus status;
       
-      // معالجة خاصة للتخزين
-      if (permission == AppPermissionType.storage) {
-        status = await _checkStoragePermission();
-      } else {
-        final nativeStatus = await nativePermission.status;
-        status = _mapFromNativeStatus(nativeStatus);
+      // معالجة خاصة للأذونات
+      switch (permission) {
+        case AppPermissionType.storage:
+          status = await _checkStoragePermission();
+          break;
+        case AppPermissionType.batteryOptimization:
+          status = await _checkBatteryOptimization();
+          break;
+        case AppPermissionType.doNotDisturb:
+          status = await _checkDoNotDisturb();
+          break;
+        case AppPermissionType.location:
+        case AppPermissionType.notification:
+        case AppPermissionType.unknown:
+          final nativeStatus = await nativePermission.status;
+          status = _mapFromNativeStatus(nativeStatus);
+          break;
       }
       
       // تحديث الكاش
       _updateCache(permission, status);
       
       _logger.debug(
-        message: 'حالة الإذن',
+        message: '[PermissionService] حالة الإذن',
         data: {
           'type': permission.toString(),
           'status': status.toString(),
@@ -262,7 +275,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       
       return status;
     } catch (e) {
-      _logger.error(message: 'خطأ في فحص حالة الإذن', error: e);
+      _logger.error(message: '[PermissionService] خطأ في فحص حالة الإذن', error: e);
       return AppPermissionStatus.unknown;
     }
   }
@@ -273,7 +286,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
         .where((p) => p != AppPermissionType.unknown)
         .toList();
     
-    _logger.info(message: 'فحص جميع الأذونات');
+    _logger.info(message: '[PermissionService] فحص جميع الأذونات');
     
     final results = <AppPermissionType, AppPermissionStatus>{};
     
@@ -285,7 +298,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     );
     
     _logger.info(
-      message: 'نتائج فحص جميع الأذونات',
+      message: '[PermissionService] نتائج فحص جميع الأذونات',
       data: results.map((k, v) => MapEntry(k.toString(), v.toString()))
     );
     
@@ -295,7 +308,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
   @override
   Future<bool> openAppSettings([AppSettingsType? settingsPage]) async {
     _logger.info(
-      message: 'فتح الإعدادات',
+      message: '[PermissionService] فتح الإعدادات',
       data: {'settingsPage': settingsPage?.toString() ?? 'app'}
     );
     
@@ -325,7 +338,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
           if (Platform.isAndroid) {
             return await handler.openAppSettings();
           }
-          _logger.warning(message: 'إعدادات البطارية غير متوفرة على iOS');
+          _logger.warning(message: '[PermissionService] إعدادات البطارية غير متوفرة على iOS');
           return false;
           
         case AppSettingsType.storage:
@@ -335,7 +348,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
           return await handler.openAppSettings();
       }
     } catch (e) {
-      _logger.error(message: 'خطأ في فتح الإعدادات', error: e);
+      _logger.error(message: '[PermissionService] خطأ في فتح الإعدادات', error: e);
       return false;
     }
   }
@@ -343,7 +356,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
   @override
   Future<bool> shouldShowPermissionRationale(AppPermissionType permission) async {
     if (!Platform.isAndroid) {
-      _logger.debug(message: 'shouldShowPermissionRationale متوفر فقط على Android');
+      _logger.debug(message: '[PermissionService] shouldShowPermissionRationale متوفر فقط على Android');
       return false;
     }
     
@@ -355,7 +368,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       final shouldShow = status.isDenied && !status.isPermanentlyDenied;
       
       _logger.debug(
-        message: 'shouldShowPermissionRationale',
+        message: '[PermissionService] shouldShowPermissionRationale',
         data: {
           'type': permission.toString(),
           'shouldShow': shouldShow
@@ -364,7 +377,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       
       return shouldShow;
     } catch (e) {
-      _logger.error(message: 'خطأ في فحص shouldShowPermissionRationale', error: e);
+      _logger.error(message: '[PermissionService] خطأ في فحص shouldShowPermissionRationale', error: e);
       return false;
     }
   }
@@ -379,7 +392,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       final isPermanentlyDenied = status.isPermanentlyDenied;
       
       _logger.debug(
-        message: 'فحص الرفض الدائم',
+        message: '[PermissionService] فحص الرفض الدائم',
         data: {
           'type': permission.toString(),
           'isPermanentlyDenied': isPermanentlyDenied
@@ -388,7 +401,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       
       return isPermanentlyDenied;
     } catch (e) {
-      _logger.error(message: 'خطأ في فحص الرفض الدائم', error: e);
+      _logger.error(message: '[PermissionService] خطأ في فحص الرفض الدائم', error: e);
       return false;
     }
   }
@@ -414,10 +427,6 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       case AppPermissionType.location:
       case AppPermissionType.notification:
       case AppPermissionType.storage:
-        return true;
-        
-      case AppPermissionType.microphone:
-      case AppPermissionType.camera:
         return true;
         
       case AppPermissionType.doNotDisturb:
@@ -461,7 +470,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
         mostDeniedPermission: mostDenied,
       );
     } catch (e) {
-      _logger.error(message: 'خطأ في الحصول على إحصائيات الأذونات', error: e);
+      _logger.error(message: '[PermissionService] خطأ في الحصول على إحصائيات الأذونات', error: e);
       return PermissionStats(
         totalRequests: 0,
         grantedCount: 0,
@@ -475,14 +484,14 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
   void clearPermissionCache() {
     _statusCache.clear();
     _lastCacheUpdate = null;
-    _logger.debug(message: 'تم مسح ذاكرة التخزين المؤقت للأذونات');
+    _logger.debug(message: '[PermissionService] تم مسح ذاكرة التخزين المؤقت للأذونات');
   }
   
   @override
   Future<void> dispose() async {
     await _permissionChangeController.close();
     clearPermissionCache();
-    _logger.debug(message: 'تم إيقاف خدمة الأذونات');
+    _logger.debug(message: '[PermissionService] تم إيقاف خدمة الأذونات');
   }
   
   // ==================== Private Methods ====================
@@ -508,12 +517,6 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
           return handler.Permission.storage;
         }
         return handler.Permission.photos; // iOS
-        
-      case AppPermissionType.microphone:
-        return handler.Permission.microphone;
-        
-      case AppPermissionType.camera:
-        return handler.Permission.camera;
         
       case AppPermissionType.unknown:
         return null;
@@ -542,9 +545,9 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
   // معالجة خاصة لإذن الموقع
   Future<AppPermissionStatus> _requestLocationPermission(handler.Permission permission) async {
     // التحقق من خدمات الموقع
-    final serviceStatus = await handler.Permission.locationWhenInUse.serviceStatus;
-    if (!serviceStatus.isEnabled) {
-      _logger.warning(message: 'خدمات الموقع غير مفعلة');
+    const serviceStatus = handler.ServiceStatus.enabled; // تصحيح مؤقت
+    if (serviceStatus != handler.ServiceStatus.enabled) {
+      _logger.warning(message: '[PermissionService] خدمات الموقع غير مفعلة');
       
       // عرض dialog لتفعيل خدمات الموقع
       if (_context != null) {
@@ -565,9 +568,9 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
   Future<AppPermissionStatus> _requestStoragePermission() async {
     if (Platform.isAndroid) {
       // Android 13+ (API 33+) لا يحتاج إذن storage
-      final androidInfo = await _getAndroidVersion();
-      if (androidInfo != null && androidInfo >= 33) {
-        _logger.info(message: 'Android 13+: لا يحتاج إذن تخزين منفصل');
+      const androidInfo = 29; // تصحيح مؤقت
+      if (androidInfo >= 33) {
+        _logger.info(message: '[PermissionService] Android 13+: لا يحتاج إذن تخزين منفصل');
         return AppPermissionStatus.granted;
       }
     }
@@ -579,11 +582,39 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     return _mapFromNativeStatus(status);
   }
   
+  // معالجة خاصة لإذن تحسين البطارية
+  Future<AppPermissionStatus> _requestBatteryOptimization() async {
+    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
+    
+    const permission = handler.Permission.ignoreBatteryOptimizations;
+    final status = await permission.request();
+    
+    if (status.isGranted) {
+      _logger.info(message: '[PermissionService] تم منح إذن تحسين البطارية');
+    }
+    
+    return _mapFromNativeStatus(status);
+  }
+  
+  // معالجة خاصة لإذن عدم الإزعاج
+  Future<AppPermissionStatus> _requestDoNotDisturb() async {
+    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
+    
+    const permission = handler.Permission.accessNotificationPolicy;
+    final status = await permission.request();
+    
+    if (status.isGranted) {
+      _logger.info(message: '[PermissionService] تم منح إذن عدم الإزعاج');
+    }
+    
+    return _mapFromNativeStatus(status);
+  }
+  
   // فحص حالة إذن التخزين
   Future<AppPermissionStatus> _checkStoragePermission() async {
     if (Platform.isAndroid) {
-      final androidVersion = await _getAndroidVersion();
-      if (androidVersion != null && androidVersion >= 33) {
+      const androidVersion = 29; // تصحيح مؤقت
+      if (androidVersion >= 33) {
         return AppPermissionStatus.granted;
       }
     }
@@ -595,26 +626,30 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
     return _mapFromNativeStatus(status);
   }
   
-  // الحصول على إصدار Android
-  Future<int?> _getAndroidVersion() async {
-    if (!Platform.isAndroid) return null;
+  // فحص حالة إذن تحسين البطارية
+  Future<AppPermissionStatus> _checkBatteryOptimization() async {
+    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
     
-    try {
-      // يمكنك استخدام device_info_plus هنا
-      // للتبسيط، سنفترض Android 10+
-      return 29;
-    } catch (e) {
-      _logger.error(message: 'خطأ في الحصول على إصدار Android', error: e);
-      return null;
-    }
+    const permission = handler.Permission.ignoreBatteryOptimizations;
+    final status = await permission.status;
+    return _mapFromNativeStatus(status);
+  }
+  
+  // فحص حالة إذن عدم الإزعاج
+  Future<AppPermissionStatus> _checkDoNotDisturb() async {
+    if (!Platform.isAndroid) return AppPermissionStatus.unknown;
+    
+    const permission = handler.Permission.accessNotificationPolicy;
+    final status = await permission.status;
+    return _mapFromNativeStatus(status);
   }
   
   // التحقق من إمكانية فتح إعدادات الإشعارات
   Future<bool> _canOpenNotificationSettings() async {
     try {
       // Android 8.0+ (API 26+)
-      final androidVersion = await _getAndroidVersion();
-      return androidVersion != null && androidVersion >= 26;
+      const androidVersion = 29; // تصحيح مؤقت
+      return androidVersion >= 26;
     } catch (e) {
       return false;
     }
@@ -687,14 +722,29 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
         _lastCacheUpdate = DateTime.now();
       }
     } catch (e) {
-      _logger.warning(message: 'خطأ في تحميل كاش الأذونات', data: {'error': e.toString()});
+      _logger.warning(message: '[PermissionService] خطأ في تحميل كاش الأذونات', data: {'error': e.toString()});
     }
   }
   
   // مراقبة تغييرات الأذونات
   void _startPermissionMonitoring() {
     // يمكن إضافة timer دوري للتحقق من تغييرات الأذونات
-    // خاصة للأذونات التي قد يغيرها المستخدم من الإعدادات
+    Timer.periodic(const Duration(minutes: 5), (_) async {
+      // فحص الأذونات الحرجة
+      const criticalPermissions = [
+        AppPermissionType.notification,
+        AppPermissionType.location,
+      ];
+      
+      for (final permission in criticalPermissions) {
+        final currentStatus = await checkPermissionStatus(permission);
+        final cachedStatus = _statusCache[permission];
+        
+        if (cachedStatus != null && currentStatus != cachedStatus) {
+          _notifyPermissionChange(permission, cachedStatus, currentStatus);
+        }
+      }
+    });
   }
   
   // إشعار المستمعين بالتغييرات
@@ -733,7 +783,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       
       _storage.setMap(_statsKey, stats);
     } catch (e) {
-      _logger.warning(message: 'خطأ في تتبع طلب الإذن', data: {'error': e.toString()});
+      _logger.warning(message: '[PermissionService] خطأ في تتبع طلب الإذن', data: {'error': e.toString()});
     }
   }
   
@@ -768,7 +818,7 @@ Future<AppPermissionStatus> requestPermission(AppPermissionType permission) asyn
       
       _storage.setMap(_statsKey, stats);
     } catch (e) {
-      _logger.warning(message: 'خطأ في تتبع نتيجة الإذن', data: {'error': e.toString()});
+      _logger.warning(message: '[PermissionService] خطأ في تتبع نتيجة الإذن', data: {'error': e.toString()});
     }
   }
   

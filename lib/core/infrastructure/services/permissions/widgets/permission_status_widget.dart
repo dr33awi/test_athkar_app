@@ -162,10 +162,6 @@ class PermissionStatusWidget extends StatelessWidget {
         return 'الإشعارات';
       case AppPermissionType.storage:
         return 'التخزين';
-      case AppPermissionType.microphone:
-        return 'الميكروفون';
-      case AppPermissionType.camera:
-        return 'الكاميرا';
       case AppPermissionType.doNotDisturb:
         return 'عدم الإزعاج';
       case AppPermissionType.batteryOptimization:

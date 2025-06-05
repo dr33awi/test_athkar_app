@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+
 /// أنواع الأذونات المطلوبة لتطبيق الأذكار
 enum AppPermissionType {
   location,           // لحساب أوقات الصلاة
@@ -9,8 +10,6 @@ enum AppPermissionType {
   doNotDisturb,      // لتخصيص أوقات التذكير
   batteryOptimization, // لضمان عمل التطبيق
   storage,           // لحفظ وتصدير الأذكار
-  microphone,        // للتسميع الصوتي
-  camera,            // لمسح QR codes
   unknown,
 }
 
