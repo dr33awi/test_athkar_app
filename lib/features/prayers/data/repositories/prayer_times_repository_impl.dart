@@ -1,7 +1,7 @@
 // lib/data/repositories/prayer_times_repository_impl.dart
 import 'package:athkar_app/core/error/error_handler.dart';
 import 'package:athkar_app/features/prayers/domain/services/prayer_times_service.dart';
-import 'package:athkar_app/features/prayers/domain/services/qibla_service.dart';
+import 'package:athkar_app/features/qibla/qibla_service.dart';
 
 import '../../domain/prayer_times_service.dart';
 import '../../domain/entities/prayer_times.dart';

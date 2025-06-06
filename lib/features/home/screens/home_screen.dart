@@ -14,21 +14,11 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: context.backgroundColor,
       body: CustomScrollView(
         slivers: [
-          // App Bar
+          // App Bar - تم تبسيطه
           SliverAppBar(
-            expandedHeight: 120,
             floating: true,
             backgroundColor: context.backgroundColor,
             elevation: 0,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                'تطبيق الأذكار',
-                style: context.headlineMedium?.copyWith(
-                  fontWeight: ThemeConstants.bold,
-                ),
-              ),
-              centerTitle: true,
-            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
@@ -39,20 +29,8 @@ class HomeScreen extends StatelessWidget {
           
           // Welcome Message
           SliverToBoxAdapter(
-            child: Container(
-              margin: const EdgeInsets.all(ThemeConstants.space4),
+            child: Padding(
               padding: const EdgeInsets.all(ThemeConstants.space4),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    context.primaryColor.withOpacity(0.1),
-                    context.primaryColor.withOpacity(0.05),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                ),
-                borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
-              ),
               child: Row(
                 children: [
                   Icon(

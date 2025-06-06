@@ -1,4 +1,4 @@
-// lib/features/home/presentation/widgets/category_grid.dart
+// lib/features/home/widgets/category_grid.dart
 // تصميم مبتكر - نمط Timeline مع تدرجات ديناميكية
 
 import 'package:flutter/material.dart';
@@ -169,18 +169,47 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
         height: 120,
         child: Stack(
           children: [
-            // الخلفية المتدرجة
+            // الخلفية المتدرجة - تم تحديثها لتكون غير شفافة
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
+                color: context.cardColor, // إضافة لون خلفية صلب
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    category.gradient[0].withOpacity(isDark ? 0.25 : 0.15),
-                    category.gradient[1].withOpacity(isDark ? 0.15 : 0.08),
-                  ],
+                  colors: isDark
+                      ? [
+                          // ألوان أكثر قتامة للوضع الداكن
+                          Color.alphaBlend(
+                            category.gradient[0].withOpacity(0.3),
+                            context.cardColor,
+                          ),
+                          Color.alphaBlend(
+                            category.gradient[1].withOpacity(0.2),
+                            context.cardColor,
+                          ),
+                        ]
+                      : [
+                          // ألوان أكثر إشراقاً للوضع الفاتح
+                          Color.lerp(
+                            context.cardColor,
+                            category.gradient[0],
+                            0.15,
+                          )!,
+                          Color.lerp(
+                            context.cardColor,
+                            category.gradient[1],
+                            0.08,
+                          )!,
+                        ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: category.gradient[0].withOpacity(0.15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
             ),
             

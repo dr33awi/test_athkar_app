@@ -5,7 +5,7 @@ import '../../domain/prayer_times_service.dart';
 import '../../domain/entities/prayer_times.dart';
 import '../../../settings/domain/entities/settings.dart';
 import '../../domain/usecases/get_prayer_times.dart';
-import '../../domain/usecases/get_qibla_direction.dart';
+import '../../../qibla/get_qibla_direction.dart';
 
 class PrayerTimesProvider extends ChangeNotifier {
   final GetPrayerTimes _getPrayerTimes;

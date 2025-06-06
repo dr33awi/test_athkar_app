@@ -1,9 +1,9 @@
 // lib/presentation/screens/home/widgets/qibla_section.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../app/routes/app_router.dart';
-import '../providers/prayer_times_provider.dart';
-import '../../../../app/themes/loading_widget.dart';
+import '../../app/routes/app_router.dart';
+import '../prayers/presentation/providers/prayer_times_provider.dart';
+import '../../app/themes/loading_widget.dart';
 
 class QiblaSection extends StatelessWidget {
   const QiblaSection({super.key});

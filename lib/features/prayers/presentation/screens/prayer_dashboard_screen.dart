@@ -14,7 +14,7 @@ import '../providers/prayer_times_provider.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
 import '../../../../app/themes/loading_widget.dart';
 import '../widgets/prayer_times_section.dart';
-import '../widgets/qibla_section.dart';
+import '../../../qibla/qibla_section.dart';
 
 class PrayerDashboardScreen extends StatefulWidget {
   const PrayerDashboardScreen({Key? key}) : super(key: key);

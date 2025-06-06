@@ -4,9 +4,9 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../../core/infrastructure/services/logging/logger_service.dart';
-import '../../../../core/infrastructure/services/permissions/permission_service.dart';
-import '../../domain/services/qibla_service.dart';
+import '../../core/infrastructure/services/logging/logger_service.dart';
+import '../../core/infrastructure/services/permissions/permission_service.dart';
+import 'qibla_service.dart';
 
 /// Implementation of Qibla service
 class QiblaServiceImpl implements QiblaService {

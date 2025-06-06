@@ -1,5 +1,5 @@
 // lib/domain/usecases/prayers/get_qibla_direction.dart
-import '../repositories/prayer_times_repository.dart';
+import '../prayers/domain/repositories/prayer_times_repository.dart';
 
 class GetQiblaDirection {
   final PrayerTimesRepository repository;

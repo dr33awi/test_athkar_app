@@ -82,7 +82,7 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
     final minutes = remainingMinutes % 60;
     
     if (hours > 0) {
-      return '$hours ساعة و $minutes دقيقة';
+      return '$hours س $minutes د';
     } else {
       return '$minutes دقيقة';
     }
@@ -105,7 +105,7 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: ThemeConstants.space4),
-      height: 280,
+      height: 300, // زيادة الارتفاع قليلاً
       child: Stack(
         children: [
           // الخلفية المتدرجة
@@ -150,7 +150,7 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
               onTap: _navigateToPrayerTimes,
               borderRadius: BorderRadius.circular(28),
               child: Container(
-                padding: const EdgeInsets.all(ThemeConstants.space5),
+                padding: const EdgeInsets.all(ThemeConstants.space4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -158,41 +158,46 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.mosque,
-                                  color: isDark ? Colors.white : nextPrayer.gradient[0],
-                                  size: 24,
-                                ),
-                                ThemeConstants.space2.w,
-                                Text(
-                                  'مواقيت الصلاة',
-                                  style: context.titleLarge?.copyWith(
-                                    fontWeight: ThemeConstants.bold,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.mosque,
                                     color: isDark ? Colors.white : nextPrayer.gradient[0],
+                                    size: 20,
                                   ),
-                                ),
-                              ],
-                            ),
-                            ThemeConstants.space1.h,
-                            Text(
-                              'الجمعة، ٢٤ رجب ١٤٤٦',
-                              style: context.labelMedium?.copyWith(
-                                color: (isDark ? Colors.white : nextPrayer.gradient[0])
-                                    .withOpacity(0.7),
+                                  ThemeConstants.space2.w,
+                                  Flexible(
+                                    child: Text(
+                                      'مواقيت الصلاة',
+                                      style: context.titleMedium?.copyWith(
+                                        fontWeight: ThemeConstants.bold,
+                                        color: isDark ? Colors.white : nextPrayer.gradient[0],
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              ThemeConstants.space1.h,
+                              Text(
+                                'الجمعة، ٢٤ رجب',
+                                style: context.labelSmall?.copyWith(
+                                  color: (isDark ? Colors.white : nextPrayer.gradient[0])
+                                      .withOpacity(0.7),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         // ساعة رقمية
                         Container(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: ThemeConstants.space3,
-                            vertical: ThemeConstants.space2,
+                            horizontal: ThemeConstants.space2,
+                            vertical: ThemeConstants.space1,
                           ),
                           decoration: BoxDecoration(
                             color: (isDark ? Colors.white : Colors.black)
@@ -200,16 +205,17 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
                                 Icons.access_time,
-                                size: 16,
+                                size: 14,
                                 color: isDark ? Colors.white : nextPrayer.gradient[0],
                               ),
                               ThemeConstants.space1.w,
                               Text(
                                 '${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-                                style: context.titleSmall?.copyWith(
+                                style: context.labelMedium?.copyWith(
                                   fontWeight: ThemeConstants.bold,
                                   color: isDark ? Colors.white : nextPrayer.gradient[0],
                                 ),
@@ -220,11 +226,11 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                       ],
                     ),
                     
-                    ThemeConstants.space4.h,
+                    ThemeConstants.space3.h,
                     
                     // بطاقة الصلاة القادمة
                     Container(
-                      padding: const EdgeInsets.all(ThemeConstants.space4),
+                      padding: const EdgeInsets.all(ThemeConstants.space3),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: nextPrayer.gradient,
@@ -244,8 +250,8 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                         children: [
                           // الأيقونة
                           Container(
-                            width: 60,
-                            height: 60,
+                            width: 50,
+                            height: 50,
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(16),
@@ -253,11 +259,11 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                             child: Icon(
                               nextPrayer.icon,
                               color: Colors.white,
-                              size: 32,
+                              size: 28,
                             ),
                           ),
                           
-                          ThemeConstants.space4.w,
+                          ThemeConstants.space3.w,
                           
                           // المعلومات
                           Expanded(
@@ -266,13 +272,14 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                               children: [
                                 Text(
                                   'الصلاة القادمة',
-                                  style: context.labelMedium?.copyWith(
+                                  style: context.labelSmall?.copyWith(
                                     color: Colors.white.withOpacity(0.8),
+                                    fontSize: 11,
                                   ),
                                 ),
                                 Text(
                                   nextPrayer.name,
-                                  style: context.headlineSmall?.copyWith(
+                                  style: context.titleMedium?.copyWith(
                                     fontWeight: ThemeConstants.bold,
                                     color: Colors.white,
                                   ),
@@ -287,14 +294,15 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                             children: [
                               Text(
                                 nextPrayer.time,
-                                style: context.headlineMedium?.copyWith(
+                                style: context.headlineSmall?.copyWith(
                                   fontWeight: ThemeConstants.bold,
                                   color: Colors.white,
                                 ),
                               ),
                               Text(
                                 'بعد ${_getTimeRemaining()}',
-                                style: context.labelSmall?.copyWith(
+                                style: TextStyle(
+                                  fontSize: 10,
                                   color: Colors.white.withOpacity(0.8),
                                 ),
                               ),
@@ -304,57 +312,68 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                       ),
                     ),
                     
-                    ThemeConstants.space4.h,
+                    ThemeConstants.space3.h,
                     
-                    // Timeline للصلوات
+                    // Timeline للصلوات - محدث
                     Expanded(
-                      child: Stack(
-                        children: [
-                          // خط الزمن
-                          Positioned(
-                            top: 20,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 2,
-                              decoration: BoxDecoration(
-                                color: context.dividerColor.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(1),
-                              ),
-                            ),
-                          ),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final availableWidth = constraints.maxWidth;
+                          final progressWidth = availableWidth * _getDayProgress();
                           
-                          // مؤشر التقدم
-                          Positioned(
-                            top: 20,
-                            left: 0,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 
-                                     _getDayProgress() * 0.85,
-                              height: 2,
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    nextPrayer.gradient[0],
-                                    nextPrayer.gradient[1],
-                                  ],
+                          return Stack(
+                            alignment: Alignment.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              // خط الزمن
+                              Positioned(
+                                top: 16,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    color: context.dividerColor.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(1),
+                                  ),
                                 ),
-                                borderRadius: BorderRadius.circular(1),
                               ),
-                            ),
-                          ),
-                          
-                          // الصلوات
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: _prayerTimes
-                                .map((prayer) => _buildTimelineItem(
-                                      context,
-                                      prayer,
-                                    ))
-                                .toList(),
-                          ),
-                        ],
+                              
+                              // مؤشر التقدم
+                              Positioned(
+                                top: 16,
+                                left: 0,
+                                child: Container(
+                                  width: progressWidth.clamp(0.0, availableWidth),
+                                  height: 2,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        nextPrayer.gradient[0],
+                                        nextPrayer.gradient[1],
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(1),
+                                  ),
+                                ),
+                              ),
+                              
+                              // الصلوات
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: _prayerTimes
+                                      .map((prayer) => _buildTimelineItem(
+                                            context,
+                                            prayer,
+                                          ))
+                                      .toList(),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -372,11 +391,12 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
     final isActive = prayer.isNext;
     
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         // النقطة على الخط
         Container(
-          width: 40,
-          height: 40,
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             gradient: prayer.isPassed || isActive
@@ -406,16 +426,17 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
             color: prayer.isPassed || isActive
                 ? Colors.white
                 : context.textSecondaryColor.withOpacity(0.5),
-            size: 18,
+            size: 16,
           ),
         ),
         
-        ThemeConstants.space2.h,
+        ThemeConstants.space1.h,
         
         // اسم الصلاة
         Text(
           prayer.name,
-          style: context.labelSmall?.copyWith(
+          style: TextStyle(
+            fontSize: 11,
             color: isActive
                 ? (isDark ? Colors.white : prayer.gradient[0])
                 : prayer.isPassed
@@ -423,12 +444,15 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                     : context.textSecondaryColor.withOpacity(0.5),
             fontWeight: isActive ? ThemeConstants.semiBold : null,
           ),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.visible,
         ),
         
         // الوقت
         Text(
           prayer.time,
-          style: context.labelSmall?.copyWith(
+          style: TextStyle(
+            fontSize: 10,
             color: isActive
                 ? prayer.gradient[0]
                 : prayer.isPassed
@@ -436,6 +460,7 @@ class _PrayerTimesCardState extends State<PrayerTimesCard> {
                     : context.textSecondaryColor.withOpacity(0.5),
             fontWeight: ThemeConstants.bold,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
