@@ -29,6 +29,7 @@ class QuickStatsCard extends StatelessWidget {
               value: '$dailyProgress%',
               label: 'إنجاز اليوم',
               color: ThemeConstants.success,
+              progress: dailyProgress / 100,
               onTap: () => onStatTap('daily_progress'),
             ),
           ),
@@ -72,17 +73,87 @@ class QuickStatsCard extends StatelessWidget {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    double? progress,
   }) {
-    return AppCard.stat(
-      title: label,
-      value: value,
-      icon: icon,
-      color: color,
-      onTap: () {
-        HapticFeedback.lightImpact();
-        onTap();
-      },
-      progress: label == 'إنجاز اليوم' ? dailyProgress / 100 : null,
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          onTap();
+        },
+        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+        child: Container(
+          padding: const EdgeInsets.all(ThemeConstants.space4),
+          decoration: BoxDecoration(
+            color: context.cardColor,
+            borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+            border: Border.all(
+              color: context.dividerColor.withOpacity(0.5),
+              width: ThemeConstants.borderThin,
+            ),
+            boxShadow: ThemeConstants.shadowSm,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: color,
+                  size: ThemeConstants.iconMd,
+                ),
+              ),
+              
+              ThemeConstants.space3.h,
+              
+              // Value
+              Text(
+                value,
+                style: context.headlineSmall?.copyWith(
+                  color: color,
+                  fontWeight: ThemeConstants.bold,
+                ),
+              ),
+              
+              ThemeConstants.space1.h,
+              
+              // Label
+              Text(
+                label,
+                style: context.bodySmall?.copyWith(
+                  color: context.textSecondaryColor,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              
+              // Progress bar if needed
+              if (progress != null) ...[
+                ThemeConstants.space3.h,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(ThemeConstants.radiusFull),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 4,
+                    backgroundColor: context.dividerColor.withOpacity(0.3),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
