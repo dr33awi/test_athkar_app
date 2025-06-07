@@ -27,10 +27,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'مواقيت الصلاة',
       subtitle: 'أوقات الصلوات الخمس',
       icon: Icons.mosque,
-      backgroundIcon: Icons.access_time_filled,
       gradient: [Color(0xFF1E88E5), Color(0xFF1565C0)],
-      progress: 0.85,
-      stats: '5 صلوات يومياً',
       routeName: AppRouter.prayerTimes,
     ),
     CategoryItem(
@@ -38,10 +35,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'الأذكار',
       subtitle: 'أذكار الصباح والمساء',
       icon: Icons.auto_awesome,
-      backgroundIcon: Icons.menu_book,
       gradient: [Color(0xFF00897B), Color(0xFF00695C)],
-      progress: 0.65,
-      stats: '132 ذكر متنوع',
       routeName: AppRouter.athkar,
     ),
     CategoryItem(
@@ -49,10 +43,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'القرآن الكريم',
       subtitle: 'تلاوة وحفظ وتدبر',
       icon: Icons.book,
-      backgroundIcon: Icons.import_contacts,
       gradient: [Color(0xFF5E35B1), Color(0xFF4527A0)],
-      progress: 0.45,
-      stats: '114 سورة',
       routeName: '/quran',
     ),
     CategoryItem(
@@ -60,10 +51,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'اتجاه القبلة',
       subtitle: 'البوصلة الذكية',
       icon: Icons.navigation,
-      backgroundIcon: Icons.explore,
       gradient: [Color(0xFFE53935), Color(0xFFD32F2F)],
-      progress: 1.0,
-      stats: 'دقة 100%',
       routeName: AppRouter.qibla,
     ),
     CategoryItem(
@@ -71,10 +59,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'المسبحة الرقمية',
       subtitle: 'عداد التسبيح الذكي',
       icon: Icons.radio_button_checked,
-      backgroundIcon: Icons.fingerprint,
       gradient: [Color(0xFFFB8C00), Color(0xFFEF6C00)],
-      progress: 0.33,
-      stats: '1000+ تسبيحة',
       routeName: '/tasbih',
     ),
     CategoryItem(
@@ -82,10 +67,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       title: 'الأدعية',
       subtitle: 'أدعية من القرآن والسنة',
       icon: Icons.pan_tool,
-      backgroundIcon: Icons.favorite,
       gradient: [Color(0xFF00ACC1), Color(0xFF00838F)],
-      progress: 0.78,
-      stats: '200+ دعاء',
       routeName: '/dua',
     ),
   ];
@@ -166,10 +148,10 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
       scale: isSelected ? 0.95 : 1.0,
       duration: const Duration(milliseconds: 150),
       child: Container(
-        height: 120,
+        height: 100,
         child: Stack(
           children: [
-            // الخلفية المتدرجة - بدون شفافية
+            // الخلفية المتدرجة
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
@@ -190,16 +172,16 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
             
             // النمط الدائري المتحرك
             Positioned(
-              right: -40,
-              top: -40,
+              right: -30,
+              top: -30,
               child: AnimatedBuilder(
                 animation: _animationController,
                 builder: (context, child) {
                   return Transform.rotate(
                     angle: _animationController.value * 2 * math.pi,
                     child: Container(
-                      width: 120,
-                      height: 120,
+                      width: 100,
+                      height: 100,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -213,17 +195,6 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
               ),
             ),
             
-            // أيقونة الخلفية
-            Positioned(
-              left: -30,
-              bottom: -30,
-              child: Icon(
-                category.backgroundIcon,
-                size: 100,
-                color: Colors.white.withOpacity(0.1),
-              ),
-            ),
-            
             // المحتوى
             Material(
               color: Colors.transparent,
@@ -232,16 +203,16 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                 onTap: () => _onCategoryTap(category, index),
                 borderRadius: BorderRadius.circular(24),
                 child: Container(
-                  padding: const EdgeInsets.all(ThemeConstants.space4),
+                  padding: const EdgeInsets.all(ThemeConstants.space3),
                   child: Row(
                     children: [
                       // الأيقونة الرئيسية
                       Container(
-                        width: 70,
-                        height: 70,
+                        width: 60,
+                        height: 60,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: Colors.white.withOpacity(0.3),
                             width: 1.5,
@@ -249,8 +220,8 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -260,14 +231,14 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                             Icon(
                               category.icon,
                               color: Colors.white,
-                              size: 32,
+                              size: 28,
                             ),
-                            // مؤشر التقدم الدائري
+                            // مؤشر التقدم الدائري - مضاء بالكامل
                             SizedBox(
-                              width: 60,
-                              height: 60,
+                              width: 52,
+                              height: 52,
                               child: CircularProgressIndicator(
-                                value: category.progress,
+                                value: 1.0,
                                 strokeWidth: 2,
                                 backgroundColor: Colors.white.withOpacity(0.2),
                                 valueColor: AlwaysStoppedAnimation<Color>(
@@ -287,39 +258,12 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    category.title,
-                                    style: context.titleMedium?.copyWith(
-                                      fontWeight: ThemeConstants.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: ThemeConstants.space2,
-                                    vertical: ThemeConstants.space1,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.white.withOpacity(0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    '${(category.progress * 100).toInt()}%',
-                                    style: context.labelSmall?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: ThemeConstants.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              category.title,
+                              style: context.titleMedium?.copyWith(
+                                fontWeight: ThemeConstants.bold,
+                                color: Colors.white,
+                              ),
                             ),
                             
                             ThemeConstants.space1.h,
@@ -333,57 +277,30 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                             
                             ThemeConstants.space2.h,
                             
-                            // Timeline Progress Bar
-                            Stack(
-                              children: [
-                                Container(
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(2),
+                            // Progress Bar - مضاء بالكامل
+                            Container(
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.white.withOpacity(0.5),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 0),
                                   ),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor: category.progress,
-                                  child: Container(
-                                    height: 4,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(2),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.white.withOpacity(0.5),
-                                          blurRadius: 4,
-                                          offset: const Offset(0, 0),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            
-                            ThemeConstants.space2.h,
-                            
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  category.stats,
-                                  style: context.labelSmall?.copyWith(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontWeight: ThemeConstants.medium,
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  size: 14,
-                                  color: Colors.white.withOpacity(0.7),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ],
                         ),
+                      ),
+                      
+                      // Arrow icon
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: Colors.white.withOpacity(0.7),
                       ),
                     ],
                   ),
@@ -402,10 +319,7 @@ class CategoryItem {
   final String title;
   final String subtitle;
   final IconData icon;
-  final IconData backgroundIcon;
   final List<Color> gradient;
-  final double progress;
-  final String stats;
   final String? routeName;
 
   const CategoryItem({
@@ -413,10 +327,7 @@ class CategoryItem {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.backgroundIcon,
     required this.gradient,
-    required this.progress,
-    required this.stats,
     this.routeName,
   });
 }

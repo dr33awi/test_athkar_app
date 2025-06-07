@@ -22,9 +22,8 @@ class QuickStatsCard extends StatefulWidget {
 
 class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStateMixin {
   late AnimationController _progressController;
-  late AnimationController _pulseController;
+  late AnimationController _rotationController;
   late Animation<double> _progressAnimation;
-  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
@@ -44,19 +43,11 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
       curve: Curves.easeOutBack,
     ));
     
-    // Pulse animation for streak
-    _pulseController = AnimationController(
-      duration: const Duration(seconds: 2),
+    // Rotation animation for background pattern
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 10),
       vsync: this,
-    )..repeat(reverse: true);
-    
-    _pulseAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    )..repeat();
     
     // Start animations
     _progressController.forward();
@@ -65,7 +56,7 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
   @override
   void dispose() {
     _progressController.dispose();
-    _pulseController.dispose();
+    _rotationController.dispose();
     super.dispose();
   }
 
@@ -73,10 +64,10 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: ThemeConstants.space4),
-      height: 140,
+      height: 160,
       child: Row(
         children: [
-          // Daily progress - Circular design
+          // Daily progress - Modern circular design
           Expanded(
             flex: 2,
             child: _buildCircularProgressCard(context),
@@ -94,11 +85,10 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
                   child: _buildModernStatItem(
                     context: context,
                     icon: Icons.favorite,
-                    value: '24',
                     label: 'المفضلة',
                     gradient: [
-                      Color(0xFFFF6B6B),
-                      Color(0xFFEE5A6F),
+                      Color(0xFFE91E63),
+                      Color(0xFFC2185B),
                     ],
                     onTap: () => widget.onStatTap('favorites'),
                   ),
@@ -108,25 +98,17 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
                 
                 // Streak with animation
                 Expanded(
-                  child: AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
-                        child: _buildModernStatItem(
-                          context: context,
-                          icon: Icons.local_fire_department,
-                          value: '7',
-                          label: 'أيام متتالية',
-                          gradient: [
-                            Color(0xFFFF9F43),
-                            Color(0xFFEE5A24),
-                          ],
-                          onTap: () => widget.onStatTap('achievements'),
-                          isAnimated: true,
-                        ),
-                      );
-                    },
+                  child: _buildModernStatItem(
+                    context: context,
+                    icon: Icons.local_fire_department,
+                    backgroundIcon: Icons.whatshot_outlined,
+                    label: 'أيام متتالية',
+                    gradient: [
+                      Color(0xFFF57C00),
+                      Color(0xFFE65100),
+                    ],
+                    onTap: () => widget.onStatTap('achievements'),
+                    isStreak: true,
                   ),
                 ),
               ],
@@ -138,29 +120,32 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
   }
 
   Widget _buildCircularProgressCard(BuildContext context) {
+    final isDark = context.isDarkMode;
+    final gradient = [
+      Color(0xFF2196F3),
+      Color(0xFF1976D2),
+    ];
+    
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(ThemeConstants.radiusXl),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
           widget.onStatTap('daily_progress');
         },
-        borderRadius: BorderRadius.circular(ThemeConstants.radiusXl),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                ThemeConstants.primary,
-                ThemeConstants.primaryDark,
-              ],
+              colors: gradient,
             ),
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusXl),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: ThemeConstants.primary.withOpacity(0.3),
+                color: gradient[0].withOpacity(0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -169,37 +154,37 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Background pattern
-              Positioned(
-                top: -20,
-                right: -20,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withOpacity(0.1),
-                  ),
-                ),
-              ),
-              
               // Content
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Circular progress
+                  // Circular progress with modern design
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Background circle
+                      // Outer decorative ring
                       Container(
-                        width: 80,
-                        height: 80,
+                        width: 90,
+                        height: 90,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.2),
-                            width: 8,
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                      
+                      // Background circle
+                      Container(
+                        width: 75,
+                        height: 75,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.2),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1.5,
                           ),
                         ),
                       ),
@@ -208,33 +193,43 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
                       AnimatedBuilder(
                         animation: _progressAnimation,
                         builder: (context, child) {
-                          return CustomPaint(
-                            size: const Size(80, 80),
-                            painter: CircularProgressPainter(
-                              progress: _progressAnimation.value,
-                              color: Colors.white,
-                              backgroundColor: Colors.white.withOpacity(0.2),
-                              strokeWidth: 8,
+                          return SizedBox(
+                            width: 75,
+                            height: 75,
+                            child: CircularProgressIndicator(
+                              value: _progressAnimation.value,
+                              strokeWidth: 6,
+                              backgroundColor: Colors.transparent,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           );
                         },
                       ),
                       
                       // Percentage text
-                      Column(
+                      Row(
                         mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            '${widget.dailyProgress}',
-                            style: context.headlineSmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: ThemeConstants.bold,
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '%',
+                              style: context.titleMedium?.copyWith(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: ThemeConstants.semiBold,
+                              ),
                             ),
                           ),
                           Text(
-                            '%',
-                            style: context.labelSmall?.copyWith(
-                              color: Colors.white.withOpacity(0.8),
+                            '${widget.dailyProgress}',
+                            style: context.headlineMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: ThemeConstants.bold,
+                              fontSize: 32,
                             ),
                           ),
                         ],
@@ -248,7 +243,17 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
                     'إنجاز اليوم',
                     style: context.titleSmall?.copyWith(
                       color: Colors.white,
-                      fontWeight: ThemeConstants.semiBold,
+                      fontWeight: ThemeConstants.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  
+                  Text(
+                    'استمر في التقدم',
+                    style: context.bodySmall?.copyWith(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                      fontWeight: ThemeConstants.medium,
                     ),
                   ),
                 ],
@@ -263,177 +268,141 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
   Widget _buildModernStatItem({
     required BuildContext context,
     required IconData icon,
-    required String value,
     required String label,
     required List<Color> gradient,
     required VoidCallback onTap,
-    bool isAnimated = false,
+    bool isStreak = false,
   }) {
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+      borderRadius: BorderRadius.circular(24),
       child: InkWell(
         onTap: () {
           HapticFeedback.lightImpact();
           onTap();
         },
-        borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
+        borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: ThemeConstants.space4,
-            vertical: ThemeConstants.space3,
-          ),
           decoration: BoxDecoration(
-            color: context.cardColor,
-            borderRadius: BorderRadius.circular(ThemeConstants.radiusLg),
-            border: Border.all(
-              color: gradient[0].withOpacity(0.2),
-              width: ThemeConstants.borderMedium,
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradient,
             ),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: gradient[0].withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
+                color: gradient[0].withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
-          child: Row(
+          child: Stack(
             children: [
-              // Icon with gradient background
+              // Content
               Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: gradient,
-                  ),
-                  borderRadius: BorderRadius.circular(ThemeConstants.radiusMd),
-                  boxShadow: [
-                    BoxShadow(
-                      color: gradient[0].withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 24,
-                ),
-              ),
-              
-              ThemeConstants.space3.w,
-              
-              // Text content
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.all(ThemeConstants.space3),
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          value,
-                          style: context.headlineSmall?.copyWith(
-                            color: context.textPrimaryColor,
-                            fontWeight: ThemeConstants.bold,
-                          ),
+                    // Icon with modern container
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
                         ),
-                        if (isAnimated) ...[
-                          ThemeConstants.space2.w,
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: gradient[0],
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: gradient[0].withOpacity(0.5),
-                                  blurRadius: 4,
-                                  spreadRadius: 1,
+                      ),
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            icon,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                          if (isStreak)
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  color: Colors.yellowAccent,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.yellowAccent.withOpacity(0.5),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
                                 ),
-                              ],
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    
+                    ThemeConstants.space3.w,
+                    
+                    // Text content
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: context.titleMedium?.copyWith(
+                              color: Colors.white,
+                              fontWeight: ThemeConstants.bold,
                             ),
                           ),
+                          
+                          ThemeConstants.space2.h,
+                          
+                          // Progress bar
+                          Stack(
+                            children: [
+                              Container(
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              Container(
+                                height: 4,
+                                width: 80,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.white.withOpacity(0.5),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
-                      ],
-                    ),
-                    Text(
-                      label,
-                      style: context.bodySmall?.copyWith(
-                        color: context.textSecondaryColor,
                       ),
                     ),
                   ],
                 ),
-              ),
-              
-              // Arrow
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: gradient[0].withOpacity(0.5),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-}
-
-// Custom painter for circular progress
-class CircularProgressPainter extends CustomPainter {
-  final double progress;
-  final Color color;
-  final Color backgroundColor;
-  final double strokeWidth;
-
-  CircularProgressPainter({
-    required this.progress,
-    required this.color,
-    required this.backgroundColor,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width - strokeWidth) / 2;
-    
-    // Background circle
-    final backgroundPaint = Paint()
-      ..color = backgroundColor
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    canvas.drawCircle(center, radius, backgroundPaint);
-    
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-    
-    final progressAngle = 2 * math.pi * progress;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -math.pi / 2,
-      progressAngle,
-      false,
-      progressPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(CircularProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress;
   }
 }
