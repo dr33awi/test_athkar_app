@@ -85,6 +85,7 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
                   child: _buildModernStatItem(
                     context: context,
                     icon: Icons.favorite,
+                    backgroundIcon: Icons.favorite_border,
                     label: 'المفضلة',
                     gradient: [
                       Color(0xFFE91E63),
@@ -154,6 +155,42 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
           child: Stack(
             alignment: Alignment.center,
             children: [
+              // Animated background pattern
+              Positioned(
+                right: -40,
+                top: -40,
+                child: AnimatedBuilder(
+                  animation: _rotationController,
+                  builder: (context, child) {
+                    return Transform.rotate(
+                      angle: _rotationController.value * 2 * math.pi,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              
+              // Background icon
+              Positioned(
+                left: -20,
+                bottom: -20,
+                child: Icon(
+                  Icons.trending_up,
+                  size: 80,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+              
               // Content
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -268,6 +305,7 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
   Widget _buildModernStatItem({
     required BuildContext context,
     required IconData icon,
+    required IconData backgroundIcon,
     required String label,
     required List<Color> gradient,
     required VoidCallback onTap,
@@ -300,6 +338,31 @@ class _QuickStatsCardState extends State<QuickStatsCard> with TickerProviderStat
           ),
           child: Stack(
             children: [
+              // Background pattern
+              Positioned(
+                right: -20,
+                top: -20,
+                child: Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.1),
+                  ),
+                ),
+              ),
+              
+              // Background icon
+              Positioned(
+                left: -15,
+                bottom: -15,
+                child: Icon(
+                  backgroundIcon,
+                  size: 60,
+                  color: Colors.white.withOpacity(0.1),
+                ),
+              ),
+              
               // Content
               Container(
                 padding: const EdgeInsets.all(ThemeConstants.space3),
