@@ -169,45 +169,20 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
         height: 120,
         child: Stack(
           children: [
-            // الخلفية المتدرجة - تم تحديثها لتكون غير شفافة
+            // الخلفية المتدرجة - بدون شفافية
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
-                color: context.cardColor, // إضافة لون خلفية صلب
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: isDark
-                      ? [
-                          // ألوان أكثر قتامة للوضع الداكن
-                          Color.alphaBlend(
-                            category.gradient[0].withOpacity(0.3),
-                            context.cardColor,
-                          ),
-                          Color.alphaBlend(
-                            category.gradient[1].withOpacity(0.2),
-                            context.cardColor,
-                          ),
-                        ]
-                      : [
-                          // ألوان أكثر إشراقاً للوضع الفاتح
-                          Color.lerp(
-                            context.cardColor,
-                            category.gradient[0],
-                            0.15,
-                          )!,
-                          Color.lerp(
-                            context.cardColor,
-                            category.gradient[1],
-                            0.08,
-                          )!,
-                        ],
+                  colors: category.gradient,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: category.gradient[0].withOpacity(0.15),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: category.gradient[0].withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
@@ -228,7 +203,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: category.gradient[0].withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.1),
                           width: 2,
                         ),
                       ),
@@ -245,7 +220,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
               child: Icon(
                 category.backgroundIcon,
                 size: 100,
-                color: category.gradient[1].withOpacity(0.05),
+                color: Colors.white.withOpacity(0.1),
               ),
             ),
             
@@ -265,17 +240,17 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                         width: 70,
                         height: 70,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: category.gradient,
-                          ),
+                          color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: category.gradient[0].withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 8),
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -319,7 +294,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                                     category.title,
                                     style: context.titleMedium?.copyWith(
                                       fontWeight: ThemeConstants.bold,
-                                      color: isDark ? Colors.white : category.gradient[0],
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
@@ -329,13 +304,17 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                                     vertical: ThemeConstants.space1,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: category.gradient[0].withOpacity(0.1),
+                                    color: Colors.white.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.3),
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Text(
                                     '${(category.progress * 100).toInt()}%',
                                     style: context.labelSmall?.copyWith(
-                                      color: category.gradient[0],
+                                      color: Colors.white,
                                       fontWeight: ThemeConstants.bold,
                                     ),
                                   ),
@@ -348,8 +327,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                             Text(
                               category.subtitle,
                               style: context.bodySmall?.copyWith(
-                                color: (isDark ? Colors.white : category.gradient[0])
-                                    .withOpacity(0.7),
+                                color: Colors.white.withOpacity(0.8),
                               ),
                             ),
                             
@@ -361,7 +339,7 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                                 Container(
                                   height: 4,
                                   decoration: BoxDecoration(
-                                    color: context.dividerColor.withOpacity(0.2),
+                                    color: Colors.white.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(2),
                                   ),
                                 ),
@@ -370,15 +348,13 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                                   child: Container(
                                     height: 4,
                                     decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: category.gradient,
-                                      ),
+                                      color: Colors.white,
                                       borderRadius: BorderRadius.circular(2),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: category.gradient[0].withOpacity(0.5),
+                                          color: Colors.white.withOpacity(0.5),
                                           blurRadius: 4,
-                                          offset: const Offset(0, 1),
+                                          offset: const Offset(0, 0),
                                         ),
                                       ],
                                     ),
@@ -395,14 +371,14 @@ class _CategoryGridState extends State<CategoryGrid> with SingleTickerProviderSt
                                 Text(
                                   category.stats,
                                   style: context.labelSmall?.copyWith(
-                                    color: category.gradient[0],
+                                    color: Colors.white.withOpacity(0.9),
                                     fontWeight: ThemeConstants.medium,
                                   ),
                                 ),
                                 Icon(
                                   Icons.arrow_forward_ios_rounded,
                                   size: 14,
-                                  color: category.gradient[0].withOpacity(0.5),
+                                  color: Colors.white.withOpacity(0.7),
                                 ),
                               ],
                             ),
